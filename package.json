@@ -1,0 +1,48 @@
+{
+  "name": "node-red-contrib-tuya-devices",
+  "description": "Use Tuya devices local in NodeRed",
+  "version": "1.0.0-beta.1",
+  "license": "MIT",
+  "author": "Peter Simeonov",
+  "keywords": [
+    "node-red",
+    "tuya",
+    "smart home",
+    "home automation"
+  ],
+  "homepage": "https://github.com/simeonovp/node-red-contrib-tuya-devices",
+  "bugs": {
+    "url": "https://github.com/simeonovp/node-red-contrib-tuya-devices/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simeonovp/node-red-contrib-tuya-devices.git"
+  },
+  "scripts": {
+    "test": "standard"
+  },
+  "node-red": {
+    "nodes": {
+      "tuya-device": "nodes/tuya_device.js",
+      "tuya-manager": "nodes/tuya_manager.js"
+    }
+  },
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "mqtt": "4.2.6",
+    "request": "^2.88.2",
+    "tuya_cloud_sdk_nodejs": "1.0.0",
+    "tuyapi": "~7.5.1"
+  },
+  "devDependencies": {
+    "standard": "*"
+  },
+  "files": [
+    "package.json",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "img/*",
+    "nodes/*"
+  ]
+}

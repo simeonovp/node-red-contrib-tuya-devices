@@ -4,6 +4,26 @@
     <input type="text" id="node-config-input-dbUri">
   </div>
   <div class="form-row">
+    <label for="node-config-input-accessId"><i class="fa fa-tag"></i> AccessId</label>
+    <input type="text" id="node-config-input-accessId">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-accessKey"><i class="fa fa-tag"></i> AccessKey</label>
+    <input type="text" id="node-config-input-accessKey">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-region"><i class="fa fa-tag"></i> Region</label>
+    <input type="text" id="node-config-input-region">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
+    <input type="text" id="node-config-input-userId">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-deviceId"><i class="fa fa-tag"></i> Any deviceId</label>
+    <input type="text" id="node-config-input-deviceId">
+  </div>
+  <div class="form-row">
     <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-config-input-name" placeholder="Name">
   </div>
@@ -22,6 +42,11 @@
     category: 'config',
     defaults: {
       dbUri: { value: ''},
+      accessId: { value: '', required: true }, // TODO move to credentials
+      accessKey: { value: '', required: true }, // TODO move to credentials
+      region: { value: '' }, //TODO make selection
+      userId: { value: '' },
+      deviceId: { value: '' },
       name: { value: '', required: true },
       network: { value: '' }
     },
