@@ -1,0 +1,34 @@
+<script type="text/html" data-template-name="tuya-manager">
+  <div class="form-row">
+    <label for="node-config-input-dbUri"><i class="fa fa-tag"></i> DB uri</label>
+    <input type="text" id="node-config-input-dbUri">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name">
+  </div>
+  <hr>
+  <div class="form-row">
+    <label for="node-config-input-network"><i class="fa fa-tag"></i> Network</label>
+    <input type="text" id="node-config-input-network" placeholder="192.168.1.0/24">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tuya-manager">
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('tuya-manager', {
+    category: 'config',
+    defaults: {
+      dbUri: { value: ''},
+      name: { value: '', required: true },
+      network: { value: '' }
+    },
+    label: function() {
+      return this.name || 'Tuya Manager'
+    },
+    oneditprepare: function () {
+    }
+  })
+</script>
