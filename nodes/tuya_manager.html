@@ -1,36 +1,36 @@
 <script type="text/html" data-template-name="tuya-manager">
   <div class="form-row">
-    <label for="node-config-input-dbUri"><i class="fa fa-tag"></i> DB uri</label>
-    <input type="text" id="node-config-input-dbUri">
+    <label for="node-input-dbUri"><i class="fa fa-tag"></i> DB uri</label>
+    <input type="text" id="node-input-dbUri">
   </div>
   <div class="form-row">
-    <label for="node-config-input-accessId"><i class="fa fa-tag"></i> AccessId</label>
-    <input type="text" id="node-config-input-accessId">
+    <label for="node-input-accessId"><i class="fa fa-tag"></i> AccessId</label>
+    <input type="text" id="node-input-accessId">
   </div>
   <div class="form-row">
-    <label for="node-config-input-accessKey"><i class="fa fa-tag"></i> AccessKey</label>
-    <input type="text" id="node-config-input-accessKey">
+    <label for="node-input-accessKey"><i class="fa fa-tag"></i> AccessKey</label>
+    <input type="text" id="node-input-accessKey">
   </div>
   <div class="form-row">
-    <label for="node-config-input-region"><i class="fa fa-tag"></i> Region</label>
-    <input type="text" id="node-config-input-region">
+    <label for="node-input-region"><i class="fa fa-tag"></i> Region</label>
+    <input type="text" id="node-input-region">
   </div>
   <div class="form-row">
-    <label for="node-config-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
-    <input type="text" id="node-config-input-userId">
+    <label for="node-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
+    <input type="text" id="node-input-userId">
   </div>
   <div class="form-row">
-    <label for="node-config-input-deviceId"><i class="fa fa-tag"></i> Any deviceId</label>
-    <input type="text" id="node-config-input-deviceId">
+    <label for="node-input-deviceId"><i class="fa fa-tag"></i> Any deviceId</label>
+    <input type="text" id="node-input-deviceId">
   </div>
   <div class="form-row">
-    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-config-input-name" placeholder="Name">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
   </div>
   <hr>
   <div class="form-row">
-    <label for="node-config-input-network"><i class="fa fa-tag"></i> Network</label>
-    <input type="text" id="node-config-input-network" placeholder="192.168.1.0/24">
+    <label for="node-input-network"><i class="fa fa-tag"></i> Network</label>
+    <input type="text" id="node-input-network" placeholder="192.168.1.0/24">
   </div>
 </script>
 
@@ -39,7 +39,7 @@
 
 <script type="text/javascript">
   RED.nodes.registerType('tuya-manager', {
-    category: 'config',
+    category: 'tuya',
     defaults: {
       dbUri: { value: ''},
       accessId: { value: '', required: true }, // TODO move to credentials
@@ -47,7 +47,7 @@
       region: { value: '' }, //TODO make selection
       userId: { value: '' },
       deviceId: { value: '' },
-      name: { value: '', required: true },
+      name: { value: '' },
       network: { value: '' }
     },
     label: function() {
