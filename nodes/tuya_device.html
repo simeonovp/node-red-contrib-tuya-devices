@@ -1,43 +1,17 @@
 <script type="text/html" data-template-name="tuya-device">
   <div class="form-row">
-    <ul id="node-input-tuya-tabs"></ul>
+    <label for="node-input-device"><i class="fa fa-dot-circle-o"></i> Device</label>
+    <input type="text" id="node-input-device">
+    <datalist id="list-avail-devices"></datalist>
   </div>
-  <div id="node-input-tabs-content">
-    <div id="tuya-settings-tab" style="display:none">
-      <div class="form-row">
-        <label for="node-input-device"><i class="fa fa-dot-circle-o"></i> Device</label>
-        <input type="text" id="node-input-device">
-        <datalist id="list-avail-devices"></datalist>
-      </div>
-      <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
-      </div>
-    </div>
-    <div id="tuya-advanced-tab" style="display:none">
-      <div class="form-row">
-        <label for="node-input-ip"><i class="fa fa-tag"></i> IP address</label>
-        <a id="node-input-ip" href="" target="_blank"></a>
-      </div>
-    </div>
-    <div id="tuya-mqtt-tab" style="display:none">
-      <div class="form-row">
-        <label for="node-input-fullTopic"><i class="fa fa-wrench"></i> Full topic</label>
-        <input type="text" id="node-input-fullTopic" placeholder="Full topic (Default: %prefix%/%topic%/)">
-      </div>
-      <div class="form-row">
-        <label for="node-input-cmndPrefix"><i class="fa fa-comment"></i> cmnd</label>
-        <input type="text" id="node-input-cmndPrefix" placeholder="Command topic prefix (Default: cmnd)">
-      </div>
-      <div class="form-row">
-        <label for="node-input-statPrefix"><i class="fa fa-comment"></i> stat</label>
-        <input type="text" id="node-input-statPrefix" placeholder="Stat topic prefix (Default: stat)">
-      </div>
-      <div class="form-row">
-        <label for="node-input-telePrefix"><i class="fa fa-comment"></i> tele</label>
-        <input type="text" id="node-input-telePrefix" placeholder="Telemetry topic prefix (Default: tele)">
-      </div>
-    </div>
+  <div class="form-row">
+    <label for="node-input-dps"><i class="fa fa-dot-circle-o"></i> Data point</label>
+    <input type="text" id="node-input-dps">
+    <datalist id="list-avail-dps"></datalist>
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
   </div>
 </script>
 
@@ -47,32 +21,26 @@
 <script type="text/javascript">
    RED.nodes.registerType('tuya-device', {
     category: 'tuya',
+    color: '#C7E9C0',
     defaults: {
-      // node specific
-      device: { value: '' }, //MQTT topic
+      device: { type: 'tuya-local-device' },
+      dps: { value: '' },
       name: { value: '' },
-      // Advanced
-      ip: { value: '' },
-      // Mqtt
-      fullTopic: { value: '' },
-      cmndPrefix: { value: '' },
-      statPrefix: { value: '' },
-      telePrefix: { value: '' },
     },
-    label: function() {
-      return this.name || this.device || 'Tuya Devce'
-    },
+    icon: 'tuya-device.svg',
+    paletteLabel: 'Device',
+    inputs: 1,
+    outputs: 1,
+    label: function() { return this.name || this.device || 'Tuya Device' },
     oneditprepare: function () {
-      const tabs = RED.tabs.create({
-        id: 'node-input-tuya-tabs',
-        onchange: function (tab) {
-          $('#node-input-tabs-content').children().hide()
-          $('#' + tab.id).show()
-        }
-      })
-      tabs.addTab({ id: 'tuya-settings-tab', label: 'Settings' })
-      tabs.addTab({ id: 'tuya-advanced-tab', label: 'Advanced' })
-      tabs.addTab({ id: 'tuya-mqtt-tab', label: 'MQTT' })
-    }
+      // const device = $('#node-input-device').val()
+      // $('#list-avail-devices').html('')
+      // const rlist = []
+      // if (device) rlist.push(`<option value='${device}'></option>`)
+      // TODO
+      // $('#list-avail-devices').append(rlist.join(''))
+      // $('#node-config-input-device').attr('list', 'list-avail-devices')
+      // $('#node-config-input-device').attr('autocomplete', 'on')
+  }
   })
 </script>

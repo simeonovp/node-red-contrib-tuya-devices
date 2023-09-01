@@ -1,0 +1,78 @@
+<script type="text/html" data-template-name="tuya-local-device">
+  <div class="form-row">
+    <ul id="node-config-input-tuya-tabs"></ul>
+  </div>
+  <div id="node-config-input-tabs-content">
+    <div id="tuya-settings-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-manager"><i class="fa fa-dot-circle-o"></i> Manager</label>
+        <input type="text" id="node-config-config-input-manager">
+        <datalist id="list-avail-devices"></datalist>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+      </div>
+    </div>
+    <div id="tuya-advanced-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
+        <a id="node-config-input-ip" href="" target="_blank"></a>
+      </div>
+    </div>
+    <div id="tuya-mqtt-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> Full topic</label>
+        <input type="text" id="node-config-input-fullTopic" placeholder="Full topic (Default: %prefix%/%topic%/)">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-cmndPrefix"><i class="fa fa-comment"></i> cmnd</label>
+        <input type="text" id="node-config-input-cmndPrefix" placeholder="Command topic prefix (Default: cmnd)">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-statPrefix"><i class="fa fa-comment"></i> stat</label>
+        <input type="text" id="node-config-input-statPrefix" placeholder="Stat topic prefix (Default: stat)">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-telePrefix"><i class="fa fa-comment"></i> tele</label>
+        <input type="text" id="node-config-input-telePrefix" placeholder="Telemetry topic prefix (Default: tele)">
+      </div>
+    </div>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tuya-local-device">
+</script>
+
+<script type="text/javascript">
+   RED.nodes.registerType('tuya-local-device', {
+    category: 'config',
+    defaults: {
+      // node specific
+      manager: { type: 'tuya-manager', required: false },
+      id: { value: '', required: true },
+      key: { value: '' },
+      name: { value: '' },
+      // Advanced
+      ip: { value: '' },
+      // Mqtt
+      fullTopic: { value: '' },
+      cmndPrefix: { value: '' },
+      statPrefix: { value: '' },
+      telePrefix: { value: '' },
+    },
+    label: function() { return this.name || 'Tuya Devce' },
+    oneditprepare: function () {
+      const tabs = RED.tabs.create({
+        id: 'node-config-input-tuya-tabs',
+        onchange: function (tab) {
+          $('#node-config-input-tabs-content').children().hide()
+          $('#' + tab.id).show()
+        }
+      })
+      tabs.addTab({ id: 'tuya-settings-tab', label: 'Settings' })
+      tabs.addTab({ id: 'tuya-advanced-tab', label: 'Advanced' })
+      tabs.addTab({ id: 'tuya-mqtt-tab', label: 'MQTT' })
+    }
+  })
+</script>

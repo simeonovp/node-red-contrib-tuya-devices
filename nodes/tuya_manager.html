@@ -1,27 +1,15 @@
 <script type="text/html" data-template-name="tuya-manager">
   <div class="form-row">
+    <label for="node-input-cloud"><i class="fa fa-tag"></i> Cloud access</label>
+    <input type="text" id="node-input-cloud">
+  </div>
+  <div class="form-row">
     <label for="node-input-dbUri"><i class="fa fa-tag"></i> DB uri</label>
     <input type="text" id="node-input-dbUri">
   </div>
   <div class="form-row">
-    <label for="node-input-accessId"><i class="fa fa-tag"></i> AccessId</label>
-    <input type="text" id="node-input-accessId">
-  </div>
-  <div class="form-row">
-    <label for="node-input-accessKey"><i class="fa fa-tag"></i> AccessKey</label>
-    <input type="text" id="node-input-accessKey">
-  </div>
-  <div class="form-row">
-    <label for="node-input-region"><i class="fa fa-tag"></i> Region</label>
-    <input type="text" id="node-input-region">
-  </div>
-  <div class="form-row">
     <label for="node-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
     <input type="text" id="node-input-userId">
-  </div>
-  <div class="form-row">
-    <label for="node-input-deviceId"><i class="fa fa-tag"></i> Any deviceId</label>
-    <input type="text" id="node-input-deviceId">
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -38,22 +26,111 @@
 </script>
 
 <script type="text/javascript">
+  const helpers = {
+    get: (url) => {
+      const Httpreq = new XMLHttpRequest() // a new request
+      Httpreq.open('GET', url, false)
+      Httpreq.send(null)
+      return Httpreq.responseText
+    },
+
+    getTable: (data, table) => { return data && data[table] },
+
+    findTableRaw: (data, table, col, val, ignorecase = false) => {
+      const arr = getTable(data, table)
+      if (ignorecase) {
+        val = val.toUpperCase()
+        return arr && arr.find(row => (row[col].toUpperCase() === val))
+      }
+      return arr && arr.find(row => (row[col] === val))
+    },
+  }
+
+  const context = {
+    dbSet: {},
+    addConfigNode: function (type, obj) {
+      const _def = RED.nodes.getType(type)
+      if (!_def) return console.error(`Config node type '${type}' not registered`)
+      const id = RED.nodes.id()
+      let y = { id, _def, type, z: '', users: [] }
+      for (let o in y, _def.defaults) {
+        _def.defaults[o].value && (y[o] = JSON.parse(JSON.stringify(_def.defaults[o].value)))
+      }
+      console.log(`Add new ${type} node (${JSON.stringify(obj)})`)
+      const e = obj ? {...y, ...obj} : y
+      RED.nodes.add(e)
+    },
+
+    updateConfigNode: function (node, type, obj) {
+      if (node) {
+        for (let key in obj) {
+          if (Array.isArray(obj[key])) {
+            if (node[key] && !Array.isArray(node[key])) continue
+            if (JSON.stringify(node[key]) !== JSON.stringify(obj[key])) {
+              console.warn(`Change config (type:${type}, node:${node.name}) node property '${key}' (${JSON.stringify(node[key])} -> ${JSON.stringify(obj[key])})`)
+              node[key] = obj[key]
+            }
+          }
+          else if (node[key] !== obj[key]) {
+            console.warn(`Change config (type:${type}, node:${node.name}) node property '${key}' (${JSON.stringify(node[key])} -> ${JSON.stringify(obj[key])})`)
+            node[key] = obj[key]
+          }
+        }
+      }
+      else SIP.addConfigNode(type, obj)
+    },
+
+    getConfigIdsWithType: function (type) {
+      const re = []
+      return (RED.nodes.eachConfig(n => { if (n.type === type) re.push(n.id) }), re)
+    },
+
+    removeConfigNodes: function (type) {
+      const re = SIP.getConfigIdsWithType(type)
+      re.length && console.log(`Remove all ${re.length} config nodes of type '${type}'`)
+      for (let id of re) {
+        console.log(`Remove node id:'${id}'`)
+        RED.nodes.remove(id)
+      }
+    },
+
+    findConfigByTypeIdx: function (type, idx) {
+      let m
+      return (RED.nodes.eachConfig(n => (m = (n.type === type) && (n.index == idx) && n, !m)), m)
+    },
+
+    findFirstNodeByType: function (type) {
+      let m
+      return (RED.nodes.eachNode(n => (m = n, !(n.type === type))), m)
+    }
+  }
+
   RED.nodes.registerType('tuya-manager', {
     category: 'tuya',
+    color: '#C7E9C0',
     defaults: {
-      dbUri: { value: ''},
-      accessId: { value: '', required: true }, // TODO move to credentials
-      accessKey: { value: '', required: true }, // TODO move to credentials
-      region: { value: '' }, //TODO make selection
+      cloud: { type: 'tuya-cloud', required: false },
+      dbUri: { value: '' },
       userId: { value: '' },
-      deviceId: { value: '' },
       name: { value: '' },
       network: { value: '' }
     },
-    label: function() {
-      return this.name || 'Tuya Manager'
-    },
+    icon: 'tuya-manager.svg',
+    paletteLabel: 'Device',
+    inputs: 1,
+    outputs: 1,
+    label: function() {return this.name || 'Tuya Manager' },
     oneditprepare: function () {
+      const project = this.name
+      const resDir = project && (`resources/node-red-contrib-tuya-devices/${project || 'default'}/`) || ''
+      const deviceNodes = {}
+      RED.nodes.eachConfig(n => { if (n.type === 'tuya-local-device') deviceNodes[n.id] = n })
+
+      const getDevices = () => {
+        const resp = resDir && helpers.get(resDir + 'devices.json')
+        return resp && (resp[0] == '{') && JSON.parse(resp)
+      }
+
     }
   })
 </script>

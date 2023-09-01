@@ -1,0 +1,54 @@
+<script type="text/html" data-template-name="tuya-cloud">
+  <div class="form-row">
+    <label for="node-config-input-accessId"><i class="fa fa-user"></i> AccessId</label>
+    <input type="text" id="node-config-input-accessId">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-accessKey"><i class="fa fa-lock"></i> AccessKey</label>
+    <input type="text" id="node-config-input-accessKey">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-region"><i class="fa fa-tag"></i> Region</label>
+    <select id="node-config-input-region" style="width:120px !important">
+      <option value="" selected disabled hidden>EU</option>
+      <option value="eu">EU</option>
+      <option value="us">USA</option>
+      <option value="cn">China</option>
+      <option value="in">India</option>
+    </select>
+</div>
+  <div class="form-row">
+    <label for="node-config-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
+    <input type="text" id="node-config-input-userId">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-deviceId"><i class="fa fa-tag"></i> Any deviceId</label>
+    <input type="text" id="node-config-input-deviceId">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tuya-cloud">
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('tuya-cloud', {
+    category: 'config',
+    defaults: {
+      region: { value: '' }, //TODO make selection
+      userId: { value: '' },
+      deviceId: { value: '' },
+      name: { value: '' },
+    },
+    credentials: {
+      accessId: { type: 'text', required: true },
+      accessKey: { type: 'password', required: true }
+    },
+    label: function() { return this.name || 'Tuya Cloud' },
+    oneditprepare: function () {
+    }
+  })
+</script>
