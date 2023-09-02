@@ -24,6 +24,7 @@
   "node-red": {
     "nodes": {
       "tuya-cloud": "nodes/tuya_cloud.js",
+      "tuya-project": "nodes/tuya_project.js",
       "tuya-manager": "nodes/tuya_manager.js",
       "tuya-local-device": "nodes/tuya_local_device.js",
       "tuya-device": "nodes/tuya_device.js"

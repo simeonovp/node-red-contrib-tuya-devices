@@ -5,9 +5,16 @@
   <div id="node-config-input-tabs-content">
     <div id="tuya-settings-tab" style="display:none">
       <div class="form-row">
-        <label for="node-config-input-manager"><i class="fa fa-dot-circle-o"></i> Manager</label>
-        <input type="text" id="node-config-config-input-manager">
-        <datalist id="list-avail-devices"></datalist>
+        <label for="node-config-input-project"><i class="fa fa-dot-circle-o"></i> Project</label>
+        <input type="text" id="node-config-input-project">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-id"><i class="fa fa-tag"></i> ID</label>
+        <input type="text" id="node-config-input-id">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-key"><i class="fa fa-tag"></i> Local key</label>
+        <input type="text" id="node-config-input-key">
       </div>
       <div class="form-row">
         <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -49,7 +56,7 @@
     category: 'config',
     defaults: {
       // node specific
-      manager: { type: 'tuya-manager', required: false },
+      project: { type: 'tuya-project', required: false },
       id: { value: '', required: true },
       key: { value: '' },
       name: { value: '' },

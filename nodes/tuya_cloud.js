@@ -14,10 +14,7 @@ module.exports = function (RED) {
       RED.nodes.createNode(this, config)
 
       this.region = this._setRegion(config.region)
-      //sip TODO
-      config.accessId = 'u3rxup7gqvu3kmndajvp' //--
-      config.accessKey = 'b760adbb9610400c92ff39089c4ddb4f' //--
-      Config.init(config.accessId, config.accessKey, this.region, true)
+      Config.init(this.credentials?.accessId, this.credentials?.accessKey, this.region, true)
       this.userId = config.userId || this.getUserId(config.deviceId)
     }
 
@@ -85,6 +82,10 @@ module.exports = function (RED) {
 
     getDeviceList(userId, last_row_key, callback) {
       DeviceClient.getDeviceListByUid(userId, last_row_key, callback)
+    }
+
+    downloadIcon(iconUrl, file, callback) {
+      DeviceClient.getDevicesIcon(iconUrl, file, callback)
     }
   }
 

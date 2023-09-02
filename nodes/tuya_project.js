@@ -14,7 +14,7 @@ function JSONparse(json) {
 module.exports = function (RED) {
   'use strict'
 
-  class Manager {
+  class LocalManager {
     constructor (config) {
       this.config = config
       RED.nodes.createNode(this, config)
@@ -240,5 +240,5 @@ module.exports = function (RED) {
 
   }
 
-  RED.nodes.registerType('tuya-manager', Manager)
+  RED.nodes.registerType('tuya-project', LocalManager)
 }
