@@ -9,40 +9,52 @@
         <input type="text" id="node-config-input-project">
       </div>
       <div class="form-row">
-        <label for="node-config-input-id"><i class="fa fa-tag"></i> ID</label>
-        <input type="text" id="node-config-input-id">
+        <label for="node-config-input-deviceId"><i class="fa fa-tag"></i> ID</label>
+        <input type="text" id="node-config-input-deviceId">
       </div>
       <div class="form-row">
-        <label for="node-config-input-key"><i class="fa fa-tag"></i> Local key</label>
-        <input type="text" id="node-config-input-key">
+        <label for="node-config-input-localKey"><i class="fa fa-tag"></i> Local key</label>
+        <input type="text" id="node-config-input-localKey">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-autoStart"><i class="fa fa-tag"></i> Auto connect</label>
+        <input type="checkbox" id="node-config-input-autoStart">
       </div>
       <div class="form-row">
         <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-config-input-name" placeholder="Name">
       </div>
+      <div class="form-row">
+        <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
+        <input type="text" id="node-config-input-fullTopic" readonly>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> MQTT topic</label>
+        <input type="text" id="node-config-input-fullTopic" readonly>
+      </div>
     </div>
     <div id="tuya-advanced-tab" style="display:none">
       <div class="form-row">
-        <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
-        <a id="node-config-input-ip" href="" target="_blank"></a>
-      </div>
-    </div>
-    <div id="tuya-mqtt-tab" style="display:none">
-      <div class="form-row">
-        <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> Full topic</label>
-        <input type="text" id="node-config-input-fullTopic" placeholder="Full topic (Default: %prefix%/%topic%/)">
+        <label for="node-config-input-tuyaVersion"><i class="fa fa-wrench"></i> Tuya protocol version</label>
+        <input type="text" id="node-config-input-tuyaVersion">
       </div>
       <div class="form-row">
-        <label for="node-config-input-cmndPrefix"><i class="fa fa-comment"></i> cmnd</label>
-        <input type="text" id="node-config-input-cmndPrefix" placeholder="Command topic prefix (Default: cmnd)">
+        <label for="node-config-input-retryTimeout"><i class="fa fa-wrench"></i> Retry timeout (ms)</label>
+        <input type="number" id="node-config-input-retryTimeout">
       </div>
       <div class="form-row">
-        <label for="node-config-input-statPrefix"><i class="fa fa-comment"></i> stat</label>
-        <input type="text" id="node-config-input-statPrefix" placeholder="Stat topic prefix (Default: stat)">
+        <label for="node-config-input-findTimeout"><i class="fa fa-wrench"></i> Find timeout (ms)</label>
+        <input type="number" id="node-config-input-findTimeout">
       </div>
       <div class="form-row">
-        <label for="node-config-input-telePrefix"><i class="fa fa-comment"></i> tele</label>
-        <input type="text" id="node-config-input-telePrefix" placeholder="Telemetry topic prefix (Default: tele)">
+        <label for="node-config-input-eventMode"><i class="fa fa-wrench"></i> Tuya events to listen</label
+        >
+        <select name="node-config-input-eventMode" id="node-config-input-eventMode">
+          <option value="" disabled hidden>Both Events</option>
+          <option value="event-data">Data Event</option>
+          <option value="event-dp-refresh">DP-Refresh Event</option>
+          <option value="event-both">Both Events</option>
+        </select>
       </div>
     </div>
   </div>
@@ -57,16 +69,15 @@
     defaults: {
       // node specific
       project: { type: 'tuya-project', required: false },
-      id: { value: '', required: true },
-      key: { value: '' },
-      name: { value: '' },
-      // Advanced
+      deviceId: { value: '', required: true },
+      localKey: { value: '' },
       ip: { value: '' },
-      // Mqtt
-      fullTopic: { value: '' },
-      cmndPrefix: { value: '' },
-      statPrefix: { value: '' },
-      telePrefix: { value: '' },
+      autoStart: { value: true, required: true },
+      tuyaVersion: { value: '3.1', required: false },
+      retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
+      findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
+      eventMode: { value: 'event-both', required: true },
+      name: { value: '' },
     },
     label: function() { return this.name || 'Tuya Devce' },
     oneditprepare: function () {
@@ -79,7 +90,10 @@
       })
       tabs.addTab({ id: 'tuya-settings-tab', label: 'Settings' })
       tabs.addTab({ id: 'tuya-advanced-tab', label: 'Advanced' })
-      tabs.addTab({ id: 'tuya-mqtt-tab', label: 'MQTT' })
+
+      if (!this.tuyaVersion) $('#node-config-input-tuyaVersion').val(3.1)
+      if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
+      if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
     }
   })
 </script>

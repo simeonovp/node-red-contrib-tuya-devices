@@ -127,7 +127,7 @@
       const dev = context.cloudDevices.find(d => d.id === id)
       if (!dev) return console.error('Device not found id:' + id)
       const name = $(`#node-name-${dev.id}`).val()
-      context.addConfigNode('tuya-local-device', { manager, id, key: dev.local_key, name })
+      context.addConfigNode('tuya-local-device', { manager, deviceId: dev.id, localKey: dev.local_key, name })
       $(`#add-node-${dev.id}`).hide() //.remove()
     },
 
@@ -147,7 +147,7 @@
       const project = this.name
       const resDir = `resources/node-red-contrib-tuya-devices/${project || 'default'}/`
       const deviceNodes = {}
-      RED.nodes.eachConfig(n => { if (n.type === 'tuya-local-device') deviceNodes[n.id] = n })
+      RED.nodes.eachConfig(n => { if (n.type === 'tuya-local-device') deviceNodes[n.deviceId] = n })
 
       const getCloudDevices = () => {
         const resp = resDir && helpers.get(resDir + 'devices.json')
@@ -164,9 +164,9 @@
           ilist.push(`<tr>
               <td><input type="image" src="${shapshotUri}" name="${dev.name}" width="48" height="48" alt="${dev.name}"/></td>
               <td><input type="text" value="${dev.name}" readonly></td>
-              <td><input type="text" id="node-name-${dev.id}" value="${node.name}"${node.id && ' readonly' || ''}></td>
+              <td><input type="text" id="node-name-${dev.id}" value="${node.name}"${node.deviceId && ' readonly' || ''}></td>
               <td>
-                <button type="button" id="add-node-${dev.id}" onclick="context.addTuyaDeviceNode('${dev.id}', '${this.id}') "${node.id && 'hidden' || 'class="red-ui-button"'}>
+                <button type="button" id="add-node-${dev.id}" onclick="context.addTuyaDeviceNode('${dev.id}', '${this.deviceId}') "${node.deviceId && 'hidden' || 'class="red-ui-button"'}>
                   <i class="fa fa-plus"></i>
                 </button>
               </td>

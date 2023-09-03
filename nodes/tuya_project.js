@@ -18,6 +18,8 @@ module.exports = function (RED) {
     constructor (config) {
       this.config = config
       RED.nodes.createNode(this, config)
+
+      const cloudStatusHandler = this.onCloudStatus.bind(this)
       this.cloud = this.config.cloud && RED.nodes.getNode(this.config.cloud)
       if (this.cloud) {
         if (this.cloud.type !== 'tuya-cloud') {
@@ -26,7 +28,7 @@ module.exports = function (RED) {
           this.cloud = null
         }
         else {
-          this.cloud.addListener('status', this._onCloudStatus.bind(this))
+          this.cloud.addListener('status', cloudStatusHandler)
         }
       }
   
@@ -38,7 +40,7 @@ module.exports = function (RED) {
       if (!fs.existsSync(this.devicesPath)) this_updateDevices()
 
       this.on('close', (done) => {
-        this.cloud && this.cloud.removeListener('status', this._onCloudStatus.bind(this))
+        this.cloud && this.cloud.removeListener('status', cloudStatusHandler)
         done()
       })
 
@@ -46,10 +48,10 @@ module.exports = function (RED) {
         if (!msg.topic) return done('Empty topic')
         switch (msg.topic) {
           case 'updateDevices':
-            this._updateDevices(msg, send, done)
+            this.updateDevices(msg, send, done)
             break
           case 'updateDeviceIcons':
-            this._updateDeviceIcons(msg, send, done)
+            this.updateDeviceIcons(msg, send, done)
             break
           default:
             return done('Unknown topic')
@@ -57,31 +59,14 @@ module.exports = function (RED) {
       })
     }
 
-    _onCloudStatus(val) {
+    onCloudStatus(val) {
       if ((val === 'userId') && !this.userId) {
         this.userId = this.cloud.userId
-        this.setNodeStatus()
+        this.emit('cloud-status', this.userId && 'Online' || 'Offline')
       }
     }
 
-    setNodeStatus(fill, text, shape) {
-      if (this.userId) {
-        this.status({
-          fill: fill || 'green',
-          text: text || 'online',
-          shape: shape || 'dot',
-        })
-      } 
-      else {
-        this.status({
-          fill: 'red',
-          text: text || 'offline',
-          shape: 'ring',
-        })
-      }
-    }
-
-    async _updateDevices(msg, send, done) {
+    async updateDevices(msg, send, done) {
       if (!this.cloud) return this.error('Cloud access not configured')
 
       const updateDeviceList = (old_devices, json_data) => {
@@ -214,7 +199,7 @@ module.exports = function (RED) {
       done && done()
     }
 
-    async _updateDeviceIcons(msg, send, done) {
+    async updateDeviceIcons(msg, send, done) {
       if (!this.cloud) return this.error('Cloud access needed for _updateDeviceIcons')
       for (const dev of this.cloudDevices) {
         if (dev.icon) {

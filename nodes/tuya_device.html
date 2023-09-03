@@ -30,17 +30,10 @@
     icon: 'tuya-device.svg',
     paletteLabel: 'Device',
     inputs: 1,
-    outputs: 1,
-    label: function() { return this.name || this.device || 'Tuya Device' },
+    outputs: 2,
+    label: function() { return this.name || (this.device && this.device.name) || 'Tuya Device' },
     oneditprepare: function () {
-      // const device = $('#node-input-device').val()
-      // $('#list-avail-devices').html('')
-      // const rlist = []
-      // if (device) rlist.push(`<option value='${device}'></option>`)
-      // TODO
-      // $('#list-avail-devices').append(rlist.join(''))
-      // $('#node-config-input-device').attr('list', 'list-avail-devices')
-      // $('#node-config-input-device').attr('autocomplete', 'on')
-  }
+      // DPS selection
+    }
   })
 </script>
