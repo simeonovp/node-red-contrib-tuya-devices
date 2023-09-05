@@ -6,8 +6,9 @@
   </div>
   <div class="form-row">
     <label for="node-input-dps"><i class="fa fa-dot-circle-o"></i> Data point</label>
-    <input type="text" id="node-input-dps">
-    <datalist id="list-avail-dps"></datalist>
+    <!-- <input type="text" id="node-input-dps">
+    <datalist id="list-avail-dps"></datalist> -->
+    <select id="node-input-dps" style="width:120px !important"></select>
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -31,9 +32,59 @@
     paletteLabel: 'Device',
     inputs: 1,
     outputs: 2,
-    label: function() { return this.name || (this.device && this.device.name) || 'Tuya Device' },
+    label: function() { return this.name || (RED.nodes.node(this.device)?.name) || 'Tuya Device' },
     oneditprepare: function () {
-      // DPS selection
+      if (!context) return console.error('-- context not available')
+      if (!helpers) return console.error('-- helpers not available')
+      if (!this.device) return console.error('-- device not configured')
+      const device = RED.nodes.node(this.device)
+      if (!device) return console.error('-- device not found')
+      if (!device.project) return console.error('-- device project not configured: ' + device.project)
+      const project = RED.nodes.node(device.project)
+      if (!project) return console.error('-- device project not found: ' + device.project)
+      const resDir = `resources/node-red-contrib-tuya-devices/${project.name || 'default'}/`
+
+      // Use device specifications
+      const fillDeviceFunctions = (deviceId) => {
+        const getCloudDeviceSpecifications = () => {
+          const resp = helpers.get(resDir + 'specifications.json')
+          return resp && (resp[0] === '{') && JSON.parse(resp)
+        }
+        const specifications = getCloudDeviceSpecifications()
+        if (!specifications) return console.error('-- download specifications failed')
+        if (!specifications[deviceId]) return console.error('-- device specification not found, deviceId: ' + deviceId)
+        if (!specifications[deviceId].functions) return console.error('-- device specification has no functions')
+        
+        $el = $('#node-input-dps')
+        $el.empty()
+        $el.append($('<option></option>').attr('value', '').text('all'))
+        //console.log('-- device functions' + JSON.stringify(functions, null, 2))
+        for (const func of specifications[deviceId].functions) {
+          $el.append($('<option></option>').attr('value', func.dp_id).text(func.code))
+        }
+      }
+      // fillDeviceFunctions(device.deviceId)
+
+      // Use device properties
+      const fillDeviceProperties = (deviceId) => {
+        const getCloudDeviceProperties = () => {
+          const resp = helpers.get(resDir + 'properties.json')
+          return resp && (resp[0] === '{') && JSON.parse(resp)
+        }
+        const properties = getCloudDeviceProperties()
+        if (!properties) return console.error('-- download properties failed')
+        if (!properties[deviceId]) return console.error('-- device properties not found, deviceId: ' + deviceId)
+        if (!properties[deviceId].properties) return console.error('-- device properties has no properties')
+
+        $el = $('#node-input-dps')
+        $el.empty()
+        $el.append($('<option></option>').attr('value', '').text('all'))
+        //console.log('-- device properties' + JSON.stringify(properties, null, 2))
+        for (const prop of properties[deviceId].properties) {
+          $el.append($('<option></option>').attr('value', prop.dp_id).text(prop.code))
+        }
+      }
+      fillDeviceProperties(device.deviceId)
     }
   })
 </script>

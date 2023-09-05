@@ -7,18 +7,19 @@ module.exports = function (RED) {
   const Config = tuyacloud.common.Config
   const UserClient = tuyacloud.client.user.UserClient
   const DeviceClient = tuyacloud.client.device.DeviceClient
+  const DeviceControlClient = tuyacloud.client.deviceControl.DeviceControlClient
   const Region = tuyacloud.common.Region
 
   class Cloud {
     constructor (config) {
       RED.nodes.createNode(this, config)
 
-      this.region = this._setRegion(config.region)
+      this.region = this.setRegion(config.region)
       Config.init(this.credentials?.accessId, this.credentials?.accessKey, this.region, true)
       this.userId = config.userId || this.getUserId(config.deviceId)
     }
 
-    _setRegion(region) {
+    setRegion(region) {
       switch (region) {
         case 'cn': return this.region = Region.URL_CN
         case 'us': return this.region = Region.URL_US
@@ -87,6 +88,29 @@ module.exports = function (RED) {
     downloadIcon(iconUrl, file, callback) {
       DeviceClient.getDevicesIcon(iconUrl, file, callback)
     }
+
+    getDeviceFunctions(deviceId, callback) {
+      DeviceClient.getDeviceFunctions(deviceId, callback)
+    }
+
+    getDeviceDataModel(deviceId, callback) {
+      DeviceClient.getDeviceDataModel(deviceId, callback)
+    }
+
+    getDeviceFunctionByCategory(category, callback) {
+      DeviceClient.getDeviceFunctionByCategory(category, callback)
+    }
+
+    getDeviceSpecifications(deviceId, callback) {
+      DeviceControlClient.getDeviceSpecifications(deviceId, callback)
+    }
+
+    getDeviceProperties(deviceId, callback) {
+      DeviceControlClient.getDeviceProperties(deviceId, callback)
+    }
+
+    
+    //postDeviceCommand
   }
 
   RED.nodes.registerType('tuya-cloud', Cloud, {

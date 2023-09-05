@@ -155,7 +155,7 @@
       }
 
       context.cloudDevices = getCloudDevices() || []
-      const fillCodes = (codes) => {
+      const fillDevices = () => {
         $('#device-table > tbody').html('')
         const ilist = []
         for (const dev of context.cloudDevices) {
@@ -174,7 +174,7 @@
         }
         $('#device-table tbody').append(ilist.join(''))
       }
-      fillCodes()
+      fillDevices()
     }
   })
 </script>

@@ -214,7 +214,7 @@ module.exports = function (RED) {
         this.setStatus(CLIENT_STATUS.CONNECTING)
         const connectHandle = this.tuyaDevice.connect()
         connectHandle.catch((e) => {
-          setStatus(CLIENT_STATUS.DISCONNECTED)
+          this.setStatus(CLIENT_STATUS.DISCONNECTED)
           this.log(`connectDevice(): An error had occurred with tuya API on connect method : ${JSON.stringify(e)}`)
           if (this.shouldTryReconnect) {
             this.log('connectDevice(): retrying the connect')
@@ -254,6 +254,10 @@ module.exports = function (RED) {
         this.deviceStatus = status
         this.emit ('tuya-status', status, { context: Object.assign(data, this.context)})
       }
+    }
+
+    updateSchema(msg, send, done) {
+    //{"payload":{"data":{"dps":{"1":true,"2":100,"3":25,"101":25,"103":100,"104":0,"105":false,"106":"OK","108":true,"109":0,"110":"BUSHUI","111":0}},"deviceId":"bfabad1dc51e0d4560r1av","deviceName":"WellWaterLevel"},"_msgid":"900bccf287fe8f73"}
     }
   }
 

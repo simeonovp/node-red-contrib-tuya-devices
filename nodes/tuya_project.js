@@ -38,24 +38,13 @@ module.exports = function (RED) {
       this.devicesPath = path.join(this.resDir, 'devices.json')
       this.cloudDevices = fs.existsSync(this.devicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || []
       if (!fs.existsSync(this.devicesPath)) this_updateDevices()
-
+      this.functionsPath = path.join(this.resDir, 'functions.json')
+      this.functions = fs.existsSync(this.functionsPath) && JSONparse(fs.readFileSync(this.functionsPath, 'utf8')) || {}
+      this.specificationsPath = path.join(this.resDir, 'specifications.json')
+      this.specifications = fs.existsSync(this.specificationsPath) && JSONparse(fs.readFileSync(this.specificationsPath, 'utf8')) || {}
       this.on('close', (done) => {
         this.cloud && this.cloud.removeListener('status', cloudStatusHandler)
         done()
-      })
-
-      this.on('input', (msg, send, done) => {
-        if (!msg.topic) return done('Empty topic')
-        switch (msg.topic) {
-          case 'updateDevices':
-            this.updateDevices(msg, send, done)
-            break
-          case 'updateDeviceIcons':
-            this.updateDeviceIcons(msg, send, done)
-            break
-          default:
-            return done('Unknown topic')
-        }
       })
     }
 
@@ -64,6 +53,13 @@ module.exports = function (RED) {
         this.userId = this.cloud.userId
         this.emit('cloud-status', this.userId && 'Online' || 'Offline')
       }
+    }
+
+    tryCommand(msg, send, done) {
+      if (!msg.topic) return 'Empty topic'
+      if (typeof msg.topic !== 'string') return 'Topic must be a string'
+      if (!this[msg.topic]) return 'Unknown command ' + msg.topic
+      this[msg.topic](msg, send, done)
     }
 
     async updateDevices(msg, send, done) {
@@ -221,6 +217,131 @@ module.exports = function (RED) {
           }
         }
       }
+    }
+
+    async updateDeviceFunctions(msg, send, done) {
+      if (!this.cloud) return done('Cloud access needed for updateDeviceFunctions')
+      let dirty = false
+      for (const dev of this.cloudDevices) {
+        if (this.functions[dev.id]) continue
+        try {
+          const data = await new Promise((resolve, reject) => {
+            this.cloud.getDeviceFunctions(dev.id, (err, data) => {
+              if (err) reject(err)
+              else resolve(data)
+            })
+          })
+          dirty = true
+          this.log(`Downloaded functions for ${dev.name}, id:${dev.id}`)
+          this.functions[dev.id] = data?.result
+        }
+        catch(err) {
+          this.error(`Error downloading functions for ${dev.name} (id:${dev.id}) : ${err}`)
+        }
+      }
+      if (dirty) {
+        const json = JSON.stringify(this.functions, null, 2)
+        fs.createWriteStream(this.functionsPath).write(json)
+        send({ payload: json })
+      }
+      done()
+    }
+
+    async getDeviceFunctionByCategory(msg, send, done) {
+      if (!this.cloud) return done('Cloud access needed for getDeviceFunctionByCategory')
+      let dirty = false
+      for (const dev of this.cloudDevices) {
+        if (this.functions[dev.category]) continue
+        try {
+          const data = await new Promise((resolve, reject) => {
+            this.cloud.getDeviceFunctionByCategory(dev.category, (err, data) => {
+              if (err) reject(err)
+              else resolve(data)
+            })
+          })
+          dirty = true
+          this.log(`Downloaded functions for ${dev.name}, id:${dev.id}`)
+          this.functions[dev.id] = data?.result
+        }
+        catch(err) {
+          this.error(`Error downloading functions for ${dev.name} (id:${dev.id}) : ${err}`)
+        }
+      }
+      if (dirty) {
+        const json = JSON.stringify(this.functions, null, 2)
+        //fs.createWriteStream(this.functionsPath).write(json)
+        send({ payload: json })
+      }
+      done()
+    }
+
+    async updateDeviceSpecifications(msg, send, done) {
+      this.getCloudDeviceData('getDeviceSpecifications', 'specifications', msg, send, done)
+      // if (!this.cloud) return done('Cloud access needed for updateDeviceSpecifications')
+      // let dirty = false
+      // for (const dev of this.cloudDevices) {
+      //   if (this.specifications[dev.id]) continue
+      //   try {
+      //     const data = await new Promise((resolve, reject) => {
+      //       this.cloud.getDeviceSpecifications(dev.id, (err, data) => {
+      //         if (err) reject(err)
+      //         else resolve(data)
+      //       })
+      //     })
+      //     dirty = true
+      //     this.log(`Downloaded specifications for ${dev.name}, id:${dev.id}`)
+      //     this.specifications[dev.id] = data?.result
+      //   }
+      //   catch(err) {
+      //     this.error(`Error downloading specifications for ${dev.name} (id:${dev.id}) : ${err}`)
+      //   }
+      // }
+      // if (dirty) {
+      //   const json = JSON.stringify(this.functions, null, 2)
+      //   fs.createWriteStream(this.specificationsPath).write(json)
+      //   send({ payload: json })
+      // }
+      // done()
+    }
+
+    getDeviceDataModel(msg, send, done) {
+      this.getCloudDeviceData('getDeviceDataModel', 'dataModel', msg, send, done)
+    }
+
+    getDeviceProperties(msg, send, done) {
+      this.getCloudDeviceData('getDeviceProperties', 'properties', msg, send, done)
+    }
+
+    async getCloudDeviceData(command, colName, msg, send, done) {
+      if (!this.cloud) return done('Cloud access needed for ' + command)
+      if (!this.cloud[command]) return done('Cloud command not supported ' + command)
+      const outPath = path.join(this.resDir, colName + '.json')
+      const col = this[colName] || fs.existsSync(outPath) && JSONparse(fs.readFileSync(outPath, 'utf8')) || {}
+      
+      let dirty = false
+      for (const dev of this.cloudDevices) {
+        if (col[dev.id]) continue
+        try {
+          const data = await new Promise((resolve, reject) => {
+            this.cloud[command](dev.id, (err, data) => {
+              if (err) reject(err)
+              else resolve(data)
+            })
+          })
+          dirty = true
+          this.log(`Downloaded ${colName} for ${dev.name}, id:${dev.id}`)
+          col[dev.id] = data?.result
+        }
+        catch(err) {
+          this.error(`Error downloading ${colName} for ${dev.name} (id:${dev.id}) : ${err}`)
+        }
+      }
+      if (dirty) {
+        const json = JSON.stringify(col, null, 2)
+        fs.createWriteStream(outPath).write(json)
+        send({ payload: json })
+      }
+      done()
     }
 
   }
