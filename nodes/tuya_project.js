@@ -35,17 +35,21 @@ module.exports = function (RED) {
       this.userId = config.userId || this.cloud?.userId
       this.resDir = path.resolve(path.join(__dirname, '../resources', config.name || 'default'))
       if (!fs.existsSync(this.resDir)) fs.mkdirSync(this.resDir, { recursive: true })
+      this.db = {}
       this.devicesPath = path.join(this.resDir, 'devices.json')
-      this.cloudDevices = fs.existsSync(this.devicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || []
-      if (!fs.existsSync(this.devicesPath)) this_updateDevices()
-      this.functionsPath = path.join(this.resDir, 'functions.json')
-      this.functions = fs.existsSync(this.functionsPath) && JSONparse(fs.readFileSync(this.functionsPath, 'utf8')) || {}
-      this.specificationsPath = path.join(this.resDir, 'specifications.json')
-      this.specifications = fs.existsSync(this.specificationsPath) && JSONparse(fs.readFileSync(this.specificationsPath, 'utf8')) || {}
+      this.devices = fs.existsSync(this.devicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || []
+      if (!fs.existsSync(this.devicesPath)) this.updateDevices()
+
       this.on('close', (done) => {
         this.cloud && this.cloud.removeListener('status', cloudStatusHandler)
         done()
       })
+    }
+
+    dbLoadTable(table, filename) {
+      filename = filename || (table + '.json')
+      const filepath = path.join(this.resDir, filename)
+      this.db[table] = fs.existsSync(filepath) && JSONparse(fs.readFileSync(filepath, 'utf8')) || {}
     }
 
     onCloudStatus(val) {
@@ -63,13 +67,13 @@ module.exports = function (RED) {
     }
 
     async updateDevices(msg, send, done) {
-      if (!this.cloud) return this.error('Cloud access not configured')
+      if (!this.cloud) return done && done('Cloud access not configured')
+      const changed_devices = []
+      const unchanged_devices = []
 
       const updateDeviceList = (old_devices, json_data) => {
         //TODO
         const devs = json_data.result
-        const changed_devices = []
-        const unchanged_devices = []
   
         // check to see if anything has changed.  if so, re-download factory-infos and DP mapping
         for (const dev of devs) {
@@ -81,7 +85,7 @@ module.exports = function (RED) {
           const old = old_devices.dev_id
           if (old.key !== dev.local_key) {
             // local key changed
-            changed_devices.append( dev )
+            changed_devices.push(dev)
             continue
           }
           if ((!old.icon && dev.icon) || (include_map && !old.mapping)) {
@@ -163,20 +167,31 @@ module.exports = function (RED) {
         return our_result
       }
 
-      const old_devices = {}
-      if (!this.cloudDevices.length && this.userId) {
+      if (!this.devices.length && this.userId) {
         try {
           const data = await getAllUserDevices(this.userId)
-          this.cloudDevices = data.result
-          const json = JSON.stringify(this.cloudDevices, null, 2)
+          this.devices = data.result
+          for (const dev of this.devices) {
+            const properties = await this.getCloudDeviceData(dev, 'properties', 'getDeviceProperties', 'properties')
+            if (properties) Object.assign(dev, properties)
+            const model = await this.getCloudDeviceData(dev, 'model', 'getDeviceDataModel', 'dataModel')
+            if (model) Object.assign(dev, model)
+            await this.updateDeviceIcon(dev)
+          }    
+          const json = JSON.stringify(this.devices, null, 2)
           fs.createWriteStream(this.devicesPath).write(json)
         } catch(err) { this.error(err) }
       }
-      for (const dev of this.cloudDevices) old_devices[dev.id] = dev
+      const old_devices = {}
+      for (const dev of this.devices) {
+        old_devices[dev.id] = dev
+      }
 
       // loop through all devices and build a list of user IDs
       const userIDs = {}
-      for (const dev of this.cloudDevices) if (dev.uid) userIDs[dev.uid] = true
+      for (const dev of this.devices) {
+        if (dev.uid) userIDs[dev.uid] = true
+      }
       const uidList = Object.keys(userIDs)
       if (uidList.length) {
         // we have at least 1 user id, so fetch the device list again to make sure we have the local key
@@ -189,68 +204,49 @@ module.exports = function (RED) {
         }
       }
       if (msg && send) {
-        msg.devices = this.cloudDevices
+        msg.devices = this.devices
+        msg.changed_devices = changed_devices
+        msg.unchanged_devices = unchanged_devices
         send(msg)
       }
       done && done()
     }
 
-    async updateDeviceIcons(msg, send, done) {
-      if (!this.cloud) return this.error('Cloud access needed for _updateDeviceIcons')
-      for (const dev of this.cloudDevices) {
-        if (dev.icon) {
-          const iconPath = path.join(this.resDir, 'icons', dev.icon)
-          if (!fs.existsSync(iconPath)) {
-            const dir = path.dirname(iconPath)
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-            const file = fs.createWriteStream(iconPath)
-            await this.cloud.downloadIcon('/' + dev.icon, file, (err) => {
-              if (err) {
-                fs.unlink(iconPath)
-                console.error(`Error downloading image: ${err.message}`)
-              }
-              else {
-                file.close()
-                console.log(`Image downloaded as ${iconPath}`)
-              }
-            })
-          }
+    async updateDeviceIcon(dev) {
+      if (!dev.icon) return
+      const iconPath = path.join(this.resDir, 'icons', dev.icon)
+      if (fs.existsSync(iconPath)) return
+      const dir = path.dirname(iconPath)
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+      const file = fs.createWriteStream(iconPath)
+      await this.cloud.downloadIcon('/' + dev.icon, file, (err) => {
+        if (err) {
+          fs.unlink(iconPath)
+          this.error(`Error downloading image: ${err.message}`)
         }
-      }
+        else {
+          file.close()
+          this.log(`Image downloaded as ${iconPath}`)
+          return iconPath
+        }
+      })
     }
 
-    async updateDeviceFunctions(msg, send, done) {
-      if (!this.cloud) return done('Cloud access needed for updateDeviceFunctions')
-      let dirty = false
-      for (const dev of this.cloudDevices) {
-        if (this.functions[dev.id]) continue
-        try {
-          const data = await new Promise((resolve, reject) => {
-            this.cloud.getDeviceFunctions(dev.id, (err, data) => {
-              if (err) reject(err)
-              else resolve(data)
-            })
-          })
-          dirty = true
-          this.log(`Downloaded functions for ${dev.name}, id:${dev.id}`)
-          this.functions[dev.id] = data?.result
-        }
-        catch(err) {
-          this.error(`Error downloading functions for ${dev.name} (id:${dev.id}) : ${err}`)
-        }
+    async updateDeviceIcons(msg, send, done) {
+      if (!this.cloud) return done('Cloud access needed for _updateDeviceIcons')
+      msg.payload = {}
+      for (const dev of this.devices) {
+        const iconPath = await updateDeviceIcon(dev)
+        if (iconPath) msg.payload[dev.id] = iconPath
       }
-      if (dirty) {
-        const json = JSON.stringify(this.functions, null, 2)
-        fs.createWriteStream(this.functionsPath).write(json)
-        send({ payload: json })
-      }
+      send(msg)
       done()
     }
 
-    async getDeviceFunctionByCategory(msg, send, done) {
+    async updateDeviceFunctionByCategory(msg, send, done) {
       if (!this.cloud) return done('Cloud access needed for getDeviceFunctionByCategory')
       let dirty = false
-      for (const dev of this.cloudDevices) {
+      for (const dev of this.devices) {
         if (this.functions[dev.category]) continue
         try {
           const data = await new Promise((resolve, reject) => {
@@ -268,82 +264,101 @@ module.exports = function (RED) {
         }
       }
       if (dirty) {
-        const json = JSON.stringify(this.functions, null, 2)
-        //fs.createWriteStream(this.functionsPath).write(json)
-        send({ payload: json })
+        msg.payload = JSON.stringify(this.functions, null, 2)
+        //fs.createWriteStream(this.catFunctionsPath).write(json)
+        send(msg)
       }
       done()
     }
 
-    async updateDeviceSpecifications(msg, send, done) {
-      this.getCloudDeviceData('getDeviceSpecifications', 'specifications', msg, send, done)
-      // if (!this.cloud) return done('Cloud access needed for updateDeviceSpecifications')
-      // let dirty = false
-      // for (const dev of this.cloudDevices) {
-      //   if (this.specifications[dev.id]) continue
-      //   try {
-      //     const data = await new Promise((resolve, reject) => {
-      //       this.cloud.getDeviceSpecifications(dev.id, (err, data) => {
-      //         if (err) reject(err)
-      //         else resolve(data)
-      //       })
-      //     })
-      //     dirty = true
-      //     this.log(`Downloaded specifications for ${dev.name}, id:${dev.id}`)
-      //     this.specifications[dev.id] = data?.result
-      //   }
-      //   catch(err) {
-      //     this.error(`Error downloading specifications for ${dev.name} (id:${dev.id}) : ${err}`)
-      //   }
-      // }
-      // if (dirty) {
-      //   const json = JSON.stringify(this.functions, null, 2)
-      //   fs.createWriteStream(this.specificationsPath).write(json)
-      //   send({ payload: json })
-      // }
-      // done()
+    async getCloudDeviceData(dev, entity, command, table) {
+      // if (!this.cloud) throw new Error('Cloud access needed for ' + command)
+      // if (!this.cloud[command]) throw new Error('Cloud command not supported ' + command)
+      // if (dev[entity]) return dev[entity]
+      const data = await new Promise((resolve, reject) => {
+        this.cloud[command](dev.id, (err, data) => {
+          if (err) reject(err)
+          else resolve(data)
+        })
+      })
+      this.log(`Downloaded ${entity} for ${dev.name}, id:${dev.id}`)
+      const val = data?.result && data.result[entity]
+      if (val) {
+        if (typeof val === 'string') {
+          if (val.includes('\\"')) {
+            const unescape = (v) => { 
+              eval('v = `"${v}"`')
+              return v 
+            }
+            data.result[entity] = unescape(data.result[entity])
+          }
+          else if (val.startsWith('{')) {
+            data.result[entity] = JSONparse(data.result[entity])
+          }
+        }
+        if (table !== entity) {
+          data.result[table] = data.result[entity]
+          delete data.result[entity]
+        }
+      }
+      return data?.result
     }
 
-    getDeviceDataModel(msg, send, done) {
-      this.getCloudDeviceData('getDeviceDataModel', 'dataModel', msg, send, done)
-    }
-
-    getDeviceProperties(msg, send, done) {
-      this.getCloudDeviceData('getDeviceProperties', 'properties', msg, send, done)
-    }
-
-    async getCloudDeviceData(command, colName, msg, send, done) {
+    async updateCloudDevicesData(entity, command, table, msg, send, done) {
+      table = table || entity
       if (!this.cloud) return done('Cloud access needed for ' + command)
       if (!this.cloud[command]) return done('Cloud command not supported ' + command)
-      const outPath = path.join(this.resDir, colName + '.json')
-      const col = this[colName] || fs.existsSync(outPath) && JSONparse(fs.readFileSync(outPath, 'utf8')) || {}
+      if (!this.db[table]) this.dbLoadTable(table)
+      const col = this.db[table] || {}
       
       let dirty = false
-      for (const dev of this.cloudDevices) {
+      let devDirty = false
+      for (const dev of this.devices) {
         if (col[dev.id]) continue
         try {
-          const data = await new Promise((resolve, reject) => {
-            this.cloud[command](dev.id, (err, data) => {
-              if (err) reject(err)
-              else resolve(data)
-            })
-          })
-          dirty = true
-          this.log(`Downloaded ${colName} for ${dev.name}, id:${dev.id}`)
-          col[dev.id] = data?.result
+          const data = await this.getCloudDeviceData(dev, entity, command, table)
+          this.log(`Downloaded ${table} for ${dev.name}, id:${dev.id}`)
+          if (data && data[table]) {
+            col[dev.id] = data
+            if (data[table] && !dev[table]) {
+              Object.assign(dev, data)
+              devDirty = true
+            }
+            dirty = true
+          }
         }
         catch(err) {
-          this.error(`Error downloading ${colName} for ${dev.name} (id:${dev.id}) : ${err}`)
+          this.error(`Error downloading ${table} for ${dev.name} (id:${dev.id}) : ${err}`)
         }
       }
       if (dirty) {
-        const json = JSON.stringify(col, null, 2)
-        fs.createWriteStream(outPath).write(json)
-        send({ payload: json })
+        msg.payload = JSON.stringify(col, null, 2)
+        const outPath = path.join(this.resDir, table + '.json')
+        fs.createWriteStream(outPath).write(msg.payload)
+        send(msg)
+      }
+      if (devDirty) {
+        fs.createWriteStream(this.devicesPath).write(JSON.stringify(this.devices, null, 2))
       }
       done()
     }
 
+    updateDeviceFunctions(msg, send, done) {
+      return this.updateCloudDevicesData('functions', 'getDeviceFunctions', '', msg, send, done)
+    }
+
+    updateDeviceSpecifications(msg, send, done) {
+      return this.updateCloudDevicesData('specifications', 'getDeviceSpecifications', '', msg, send, done)
+    }
+
+    updateDeviceProperties(msg, send, done) {
+      return this.updateCloudDevicesData('properties', 'getDeviceProperties', '', msg, send, done)
+    }
+
+    updateDeviceDataModel(msg, send, done) {
+      return this.updateCloudDevicesData('model', 'getDeviceDataModel', 'dataModel', msg, send, done)
+    }
+    
   }
 
   RED.nodes.registerType('tuya-project', LocalManager)

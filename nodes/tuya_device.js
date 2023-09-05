@@ -8,6 +8,8 @@ module.exports = function (RED) {
       RED.nodes.createNode(this, config)
       this.config = config
       this.device = this.config.device && RED.nodes.getNode(this.config.device)
+      this.dps = //config.dps && config.dps.includes(',') && config.dps.split(',') || 
+        config.dps
 
       const deviceStatusHandler = this.onDeviceStatus.bind(this)
       const deviceDataHandler = this.onDeviceData.bind(this)
@@ -81,6 +83,10 @@ module.exports = function (RED) {
 
     onDeviceData(ev, payload) {
       this.log(`-- onDeviceData [event:${ev}]: ${JSON.stringify(payload?.data)}`)
+      if (this.dps && (typeof this.dps === 'string)')) {
+        if (payload?.data?.dps || !payload.data.dps.hasOwnProperty(this.dps)) return
+        payload = payload.data.dps[this.dps]
+      }
       this.send([ { payload }, null ])
     }
 

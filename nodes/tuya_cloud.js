@@ -93,10 +93,6 @@ module.exports = function (RED) {
       DeviceClient.getDeviceFunctions(deviceId, callback)
     }
 
-    getDeviceDataModel(deviceId, callback) {
-      DeviceClient.getDeviceDataModel(deviceId, callback)
-    }
-
     getDeviceFunctionByCategory(category, callback) {
       DeviceClient.getDeviceFunctionByCategory(category, callback)
     }
@@ -109,6 +105,9 @@ module.exports = function (RED) {
       DeviceControlClient.getDeviceProperties(deviceId, callback)
     }
 
+    getDeviceDataModel(deviceId, callback) {
+      DeviceControlClient.getDeviceDataModel(deviceId, callback)
+    }
     
     //postDeviceCommand
   }
