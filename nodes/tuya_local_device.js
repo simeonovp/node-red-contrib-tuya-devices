@@ -19,14 +19,14 @@ module.exports = function (RED) {
   class LocalDevice {
     constructor (config) {
       RED.nodes.createNode(this, config)
+      this.config = config
+      this.project = config.project && RED.nodes.getNode(config.project)
+      this.cloudData = this.project && this.project.getCloudDevice(config.id) || {}
 
       this.shouldTryReconnect = true
       this.shouldSubscribeData = true
       this.shouldSubscribeRefreshData = true
-      this.deviceName = config.name
-      this.deviceId = config.deviceId
-      this.deviceKey = config.localKey
-      this.deviceIp = config.ip
+      this.deviceIp = config.ip || ''
       this.eventMode = config.eventMode || EVENT_MODES.BOTH
   
       this.retryTimeout = parseInt(config.retryTimeout) || 1000
@@ -39,15 +39,18 @@ module.exports = function (RED) {
       this.findTimeoutHandler = null
       this.retryTimerHandler = null
 
+      this.project && this.project.register(this)
+
       // Deregister from BrokerNode when this node is deleted or restarted
       this.on('close', (done) => {
+        this.project && this.project.unregister(this)
         this.closeComm()
         done()
       })
   
       const connectionParams = {
-        id: this.deviceId,
-        key: this.deviceKey,
+        id: this.config.deviceId,
+        key: this.config.localKey,
         ip: this.deviceIp,
         issueGetOnConnect: false,
         nullPayloadOnJSONError: false,
@@ -56,17 +59,20 @@ module.exports = function (RED) {
       }
       this.log(`${JSON.stringify(connectionParams)}`)
       this.tuyaDevice = new TuyaDevice(connectionParams)
+      this.lastData = null
   
       // Add event listeners
       this.tuyaDevice.on('connected', () => {
         this.deviceIp = this.tuyaDevice.device.ip
-        this.log(`Connected to device! name:${this.deviceName}, ip:${this.deviceIp}`)
+        this.log(`Connected to device! name:${this.config.name}, ip:${this.deviceIp}`)
         this.setStatus(CLIENT_STATUS.CONNECTED)
+        this.tuyaGet()
       })
 
       this.tuyaDevice.on('disconnected', () => {
         this.setStatus(CLIENT_STATUS.DISCONNECTED)
         this.log(`Disconnected from tuyaDevice. shouldTryReconnect=${this.shouldTryReconnect}`)
+        this.lastData = null
         if (this.shouldTryReconnect) this.retryConnection()
       })
 
@@ -74,6 +80,7 @@ module.exports = function (RED) {
         // Anonymize
         this.setStatus(CLIENT_STATUS.ERROR, { message: `Error: ${JSON.stringify(error)}` })
         this.log(`Error from tuyaDevice. shouldTryReconnect=${this.shouldTryReconnect}, error${JSON.stringify(error)}`)
+        this.lastData = null
         if ((typeof error === 'string') && error.startsWith('Timeout waiting for status response')) {
           this.log(`This error can be due to invalid DPS values. Please check the dps values in the payload !!!!`)
         }
@@ -83,14 +90,16 @@ module.exports = function (RED) {
       this.tuyaDevice.on('dp-refresh', (data) => {
         if (this.shouldSubscribeRefreshData) {
           this.setStatus(CLIENT_STATUS.CONNECTED)
-          this.emit ('tuya-data', 'data', { data, deviceId: this.deviceId, deviceName: this.deviceName })
+          this.lastData = data
+          this.emit ('tuya-data', 'data', this.lastDataMsg)
         }
       })
 
       this.tuyaDevice.on('data', (data) => {
         if (this.shouldSubscribeData) {
           this.setStatus(CLIENT_STATUS.CONNECTED)
-          this.emit ('tuya-data', 'dp-refresh', { data, deviceId: this.deviceId, deviceName: this.deviceName })
+          this.lastData = data
+          this.emit ('tuya-data', 'dp-refresh', this.lastDataMsg)
         }
       })
 
@@ -147,13 +156,14 @@ module.exports = function (RED) {
       }
     }
 
+    get lastDataMsg() { return { data: this.lastData, deviceId: this.config.deviceId, deviceName: this.config.name } }
     get isConnected() { return this.tuyaDevice && this.tuyaDevice.isConnected() }
     
     get context() { return {
-      deviceVirtualId: this.deviceId,
+      deviceVirtualId: this.config.deviceId,
       deviceIp: this.deviceIp,
-      deviceKey: this.deviceKey,
-      deviceName: this.deviceName,
+      deviceKey: this.config.localKey,
+      deviceName: this.config.name,
     } }
 
     enableNode() {
@@ -256,6 +266,7 @@ module.exports = function (RED) {
       }
     }
 
+    //---
     updateSchema(msg, send, done) {
     //{"payload":{"data":{"dps":{"1":true,"2":100,"3":25,"101":25,"103":100,"104":0,"105":false,"106":"OK","108":true,"109":0,"110":"BUSHUI","111":0}},"deviceId":"bfabad1dc51e0d4560r1av","deviceName":"WellWaterLevel"},"_msgid":"900bccf287fe8f73"}
     }

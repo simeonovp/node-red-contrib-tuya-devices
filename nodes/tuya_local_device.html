@@ -85,16 +85,33 @@
       // node specific
       project: { type: 'tuya-project', required: true },
       deviceId: { value: '', required: true },
-      localKey: { value: '' },
+      localKey: { value: '', required: true },
       ip: { value: '' },
       autoStart: { value: true, required: true },
       tuyaVersion: { value: '3.1', required: false },
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
       eventMode: { value: 'event-both', required: true },
-      name: { value: '' },
+      name: { value: '', required: true },
     },
-    label: function() { return this.name || 'Tuya Devce' },
+    label: function() { 
+      // use label callback to perform init
+      if (!this.init) {
+        this.getCloudDevice = (() => {
+          if (this._device) return this._device
+          if (!this.project) return console.error('project not configured: ' + this.project)
+          const project = RED.nodes.node(this.project)
+          if (!project) return console.error('project not found: ' + this.project)
+          const devices = project.cloudDevices
+          if (!devices) return console.error('download devices failed')
+          this._device = devices.find(dev => dev.id === this.deviceId)
+          return this._device
+        }).bind(this)
+        this.init = true
+        //console.log('-- tuya-local-device init')
+      }
+      return this.name || 'Tuya Device' 
+    },
     oneditprepare: function () {
       const tabs = RED.tabs.create({
         id: 'node-config-input-tuya-tabs',
@@ -110,31 +127,19 @@
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
 
-      if (!context) return console.error('-- context not available')
-      if (!helpers) return console.error('-- helpers not available')
-      if (!this.project) return console.error('-- project not configured: ' + this.project)
-      const project = RED.nodes.node(this.project)
-      if (!project) return console.error('-- project not found: ' + this.project)
-      const resDir = `resources/node-red-contrib-tuya-devices/${project.name || 'default'}/`
       const fillDeviceProperties = () => {
-        const getDevices = () => {
-          const resp = helpers.get(resDir + 'devices.json')
-          return resp && (resp[0] === '[') && JSON.parse(resp)
-        }
-        const devices = getDevices()
-        if (!devices) return console.error('-- download devices failed')
-        const device = devices.find(dev => dev.id === this.deviceId)
-        if (!device) return console.error('-- device not found')
-        if (!device.dataModel || (typeof device.dataModel !== 'object') || !device.dataModel.services) {
-          console.warn('-- device properties has no data model')
-          if (!device.properties) console.error('-- device properties has no properties')
+        const cloudDevice = this.getCloudDevice()
+        if (!cloudDevice) return console.error('device not found')
+        if (!cloudDevice.dataModel || (typeof cloudDevice.dataModel !== 'object') || !cloudDevice.dataModel.services) {
+          console.warn('device properties has no data model')
+          if (!cloudDevice.properties) console.error('device properties has no properties')
         }
 
         const el = $('#dps-table > tbody')
         el.html('')
         const ilist = []
-        if (device.dataModel) {
-          for (const service of device.dataModel.services) {
+        if (cloudDevice.dataModel) {
+          for (const service of cloudDevice.dataModel.services) {
             if (!service.properties) continue
             for (const prop of service.properties) {
               ilist.push(`<tr>
@@ -148,7 +153,7 @@
           }
         }
         else {
-          for (const prop of device.properties) {
+          for (const prop of cloudDevice.properties) {
             ilist.push(`<tr>
                 <td><input type="text" value="${prop.dp_id}" readonly></td>
                 <td><input type="text" value="${prop.code}" readonly></td>

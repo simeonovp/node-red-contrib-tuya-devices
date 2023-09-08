@@ -40,6 +40,8 @@ module.exports = function (RED) {
       this.devices = fs.existsSync(this.devicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || []
       if (!fs.existsSync(this.devicesPath)) this.updateDevices()
 
+      this.localDevices = {}
+
       this.on('close', (done) => {
         this.cloud && this.cloud.removeListener('status', cloudStatusHandler)
         done()
@@ -57,6 +59,18 @@ module.exports = function (RED) {
         this.userId = this.cloud.userId
         this.emit('cloud-status', this.userId && 'Online' || 'Offline')
       }
+    }
+
+    getCloudDevice(deviceId) {
+      return this.devices.find(dev => dev.id === deviceId)
+    }
+
+    register(device) {
+      this.localDevices[device.id] = device
+    }
+
+    unregister(device) {
+      delete this.localDevices[device.id]
     }
 
     tryCommand(msg, send, done) {

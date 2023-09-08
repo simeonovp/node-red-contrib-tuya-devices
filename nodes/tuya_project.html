@@ -142,24 +142,32 @@
       name: { value: '' },
       network: { value: '' }
     },
-    label: function() { return this.name || 'Tuya Project' },
+    label: function() {
+      // use label callback to perform init
+      if (!this.init) {
+        this.resDir = () => `resources/node-red-contrib-tuya-devices/${this.name || 'default'}/`
+        this.getCloudDevices = () => {
+            const resp = helpers.get(this.resDir() + 'devices.json')
+            this.cloudDevices = resp && (resp[0] === '[') && JSON.parse(resp) || []
+            return this.devices
+        }
+        this.cloudDevices = []
+        this.getCloudDevices()
+        this.init = true
+        //console.log('-- tuya-project init')
+      }
+      return this.name || 'Tuya Project' 
+    },
     oneditprepare: function () {
       const project = this.name
-      const resDir = `resources/node-red-contrib-tuya-devices/${project || 'default'}/`
       const deviceNodes = {}
       RED.nodes.eachConfig(n => { if (n.type === 'tuya-local-device') deviceNodes[n.deviceId] = n })
 
-      const getCloudDevices = () => {
-        const resp = resDir && helpers.get(resDir + 'devices.json')
-        return resp && (resp[0] === '[') && JSON.parse(resp)
-      }
-
-      context.cloudDevices = getCloudDevices() || []
       const fillDevices = () => {
         $('#device-table > tbody').html('')
         const ilist = []
-        for (const dev of context.cloudDevices) {
-          const shapshotUri = `${resDir}icons/${dev.icon}`
+        for (const dev of this.cloudDevices) {
+          const shapshotUri = `${resDir()}icons/${dev.icon}`
           const node = deviceNodes[dev.id] || { name: dev.name }
           ilist.push(`<tr>
               <td><input type="image" src="${shapshotUri}" name="${dev.name}" width="48" height="48" alt="${dev.name}"/></td>

@@ -8,6 +8,12 @@ module.exports = function (RED) {
       RED.nodes.createNode(this, config)
       this.config = config
       this.device = this.config.device && RED.nodes.getNode(this.config.device)
+      if (!this.device || ((this.device.type !== 'tuya-local-device'))) {
+        this.error('Cloud configuration is wrong or missing, please review the node settings')
+        this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
+        this.device = null
+        return
+      }
       this.dps = //config.dps && config.dps.includes(',') && config.dps.split(',') || 
         config.dps
 
@@ -33,7 +39,7 @@ module.exports = function (RED) {
         delete msg.payload.operation
         if (['GET', 'SET', 'REFRESH'].indexOf(operation) != -1) {
           // the device has to be connected.
-          if (!this.device || !this.device.isConnected) {
+          if (!this.device.isConnected) {
             // error device not connected
             const errText = `Device not connected. Can't send the ${operation} commmand`
             this.error(errText)
@@ -44,26 +50,35 @@ module.exports = function (RED) {
         }
         switch (operation) {
           case 'SET':
-            this.device?.tuyaSet(msg.payload)
+            this.device.tuyaSet({ //operation: 'SET'
+              dps: this.dps,
+              set: msg.payload
+            })
             break
           case 'REFRESH':
-            this.device?.tuyaRefresh(msg.payload)
+            this.device.tuyaRefresh(msg.payload)
             break
           case 'GET':
-            this.device?.tuyaGet(msg.payload)
+            this.device.tuyaGet(msg.payload)
             break
           case 'CONTROL':
-            this.device?.tuyaControl(msg.payload.action, msg.payload.value)
+            this.device.tuyaControl(msg.payload.action, msg.payload.value)
+            break
+          case 'getDataModel':
+            msg.payload = this.device.cloudData?.dataModel
+            send(msg)
             break
         }
         done()
       })
-      this.device && this.onDeviceStatus(this.device.deviceStatus)
+
+      this.onDeviceStatus(this.device.deviceStatus)
+      if (this.device.deviceStatus === 'connected') this.onDeviceData('last-data', this.device.lastData)
     }
 
     onDeviceStatus(state, data) {
       // this.log('-- onDeviceStatus ev:' + state)
-      data && this.send([null, { payload: { state, ...data } }])
+      (this.config.outputs > 1) && data && this.send([null, { payload: { state, ...data } }])
       switch (state) {
         case 'connecting':
           this.status({ fill: 'yellow', shape: 'ring', text: state })
@@ -75,19 +90,20 @@ module.exports = function (RED) {
           this.status({ fill: 'red', shape: 'ring', text: state })
           break
         case 'error':
-          const errorShortText = this.device?.isConnected && JSON.stringify(data?.context?.message) || `Can't find device`
+          const errorShortText = this.device.isConnected && JSON.stringify(data?.context?.message) || `Can't find device`
           this.status({ fill: 'red', shape: 'ring', text: `${state}: ${errorShortText}` })
           break
       }
     }
 
     onDeviceData(ev, payload) {
-      this.log(`-- onDeviceData [event:${ev}]: ${JSON.stringify(payload?.data)}`)
-      if (this.dps && (typeof this.dps === 'string)')) {
-        if (payload?.data?.dps || !payload.data.dps.hasOwnProperty(this.dps)) return
+      //this.log(`-- onDeviceData [event:${ev}]: ${JSON.stringify(payload?.data)}, dps:${this.dps}, isArray:${Array.isArray(this.dps)}, type:${typeof this.dps}`)
+      if (this.dps && !Array.isArray(this.dps)) {
+        if (!payload?.data?.dps || (payload.data.dps[this.dps] === undefined)) return
         payload = payload.data.dps[this.dps]
       }
-      this.send([ { payload }, null ])
+
+      this.send({ payload })
     }
 
   }
