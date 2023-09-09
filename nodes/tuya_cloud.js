@@ -1,5 +1,5 @@
 const request = require('request')
-const tuyacloud = require('tuya_cloud_sdk_nodejs')
+const tuyacloud = require('tuya-cloud-sdk-nodejs-ex')
 
 module.exports = function (RED) {
   'use strict'

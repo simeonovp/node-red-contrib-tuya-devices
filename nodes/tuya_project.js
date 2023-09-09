@@ -11,10 +11,16 @@ function JSONparse(json) {
   }
 }
 
+function JSONsave(obj, filePath) {
+  const json = JSON.stringify(obj, null, 2)
+  console.log('-- JSONsave ' + filePath)
+  fs.createWriteStream(filePath).write(json)
+}
+
 module.exports = function (RED) {
   'use strict'
 
-  class LocalManager {
+  class Project {
     constructor (config) {
       this.config = config
       RED.nodes.createNode(this, config)
@@ -35,17 +41,21 @@ module.exports = function (RED) {
       this.userId = config.userId || this.cloud?.userId
       this.resDir = path.resolve(path.join(__dirname, '../resources', config.name || 'default'))
       if (!fs.existsSync(this.resDir)) fs.mkdirSync(this.resDir, { recursive: true })
+      this.localDevices = {}
       this.db = {}
       this.devicesPath = path.join(this.resDir, 'devices.json')
       this.devices = fs.existsSync(this.devicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || []
-      if (!fs.existsSync(this.devicesPath)) this.updateDevices()
-
-      this.localDevices = {}
 
       this.on('close', (done) => {
         this.cloud && this.cloud.removeListener('status', cloudStatusHandler)
         done()
       })
+
+      //FIXME (currently not works)
+      // if (this.cloud && !fs.existsSync(this.devicesPath)) {
+      //   this.log('Try initial load devices')
+      //   this.updateDevices()
+      // }
     }
 
     dbLoadTable(table, filename) {
@@ -191,9 +201,8 @@ module.exports = function (RED) {
             const model = await this.getCloudDeviceData(dev, 'model', 'getDeviceDataModel', 'dataModel')
             if (model) Object.assign(dev, model)
             await this.updateDeviceIcon(dev)
-          }    
-          const json = JSON.stringify(this.devices, null, 2)
-          fs.createWriteStream(this.devicesPath).write(json)
+          }  
+          JSONsave(this.devices, this.devicesPath)
         } catch(err) { this.error(err) }
       }
       const old_devices = {}
@@ -279,7 +288,7 @@ module.exports = function (RED) {
       }
       if (dirty) {
         msg.payload = JSON.stringify(this.functions, null, 2)
-        //fs.createWriteStream(this.catFunctionsPath).write(json)
+        // JSONsave(this.functions, this.catFunctionsPath)
         send(msg)
       }
       done()
@@ -320,8 +329,8 @@ module.exports = function (RED) {
 
     async updateCloudDevicesData(entity, command, table, msg, send, done) {
       table = table || entity
-      if (!this.cloud) return done('Cloud access needed for ' + command)
-      if (!this.cloud[command]) return done('Cloud command not supported ' + command)
+      if (!this.cloud) return done && done('Cloud access needed for ' + command)
+      if (!this.cloud[command]) return done && done('Cloud command not supported ' + command)
       if (!this.db[table]) this.dbLoadTable(table)
       const col = this.db[table] || {}
       
@@ -346,15 +355,14 @@ module.exports = function (RED) {
         }
       }
       if (dirty) {
-        msg.payload = JSON.stringify(col, null, 2)
-        const outPath = path.join(this.resDir, table + '.json')
-        fs.createWriteStream(outPath).write(msg.payload)
-        send(msg)
+        msg.payload = col
+        JSONsave(col, path.join(this.resDir, table + '.json'))
+        send && send(msg)
       }
       if (devDirty) {
-        fs.createWriteStream(this.devicesPath).write(JSON.stringify(this.devices, null, 2))
+        JSONsave(this.devices, this.devicesPath)
       }
-      done()
+      done && done()
     }
 
     updateDeviceFunctions(msg, send, done) {
@@ -375,5 +383,5 @@ module.exports = function (RED) {
     
   }
 
-  RED.nodes.registerType('tuya-project', LocalManager)
+  RED.nodes.registerType('tuya-project', Project)
 }
