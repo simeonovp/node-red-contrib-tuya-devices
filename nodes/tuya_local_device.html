@@ -102,9 +102,9 @@
           if (!this.project) return console.error('project not configured: ' + this.project)
           const project = RED.nodes.node(this.project)
           if (!project) return console.error('project not found: ' + this.project)
-          const devices = project.cloudDevices
-          if (!devices) return console.error('download devices failed')
-          this._device = devices.find(dev => dev.id === this.deviceId)
+          const cloudDevices = project.getCloudDevices && project.getCloudDevices()
+          if (!cloudDevices) return console.error('download devices failed')
+          this._device = cloudDevices.find(dev => dev.id === this.deviceId)
           return this._device
         }).bind(this)
         this.init = true
