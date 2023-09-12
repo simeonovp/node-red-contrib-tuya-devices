@@ -26,26 +26,6 @@
 </script>
 
 <script type="text/javascript">
-  const helpers = {
-    get: (url) => {
-      const Httpreq = new XMLHttpRequest() // a new request
-      Httpreq.open('GET', url, false)
-      Httpreq.send(null)
-      return Httpreq.responseText
-    },
-
-    getTable: (data, table) => { return data && data[table] },
-
-    findTableRaw: (data, table, col, val, ignorecase = false) => {
-      const arr = getTable(data, table)
-      if (ignorecase) {
-        val = val.toUpperCase()
-        return arr && arr.find(row => (row[col].toUpperCase() === val))
-      }
-      return arr && arr.find(row => (row[col] === val))
-    },
-  }
-
   RED.nodes.registerType('tuya-project', {
     category: 'config',
     defaults: {
@@ -59,15 +39,13 @@
       // use label callback to perform init
       if (!this.init) {
         this.resDir = () => `resources/node-red-contrib-tuya-devices/${this.name || 'default'}/`
-        this.getCloudDevices = () => {
+        this.getCloudDevices = (() => {
           if (this._cloudDevices) return this._cloudDevices
-          const resp = helpers.get(this.resDir() + 'devices.json')
-          this._cloudDevices = resp && (resp[0] === '[') && JSON.parse(resp) || []
-          return this._cloudDevices
-        }
+          const url = this.resDir() + 'devices.json'
+          fetch(url).then(r=>r.json().then(d=>this._cloudDevices=d))
+        })
         this.getCloudDevices()
         this.init = true
-        //console.log('-- tuya-project init')
       }
       return this.name || 'Tuya Project' 
     },

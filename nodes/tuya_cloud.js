@@ -1,4 +1,3 @@
-const request = require('request')
 const tuyacloud = require('tuya-cloud-sdk-nodejs-ex')
 
 module.exports = function (RED) {
@@ -37,42 +36,7 @@ module.exports = function (RED) {
           this.error(err)
           return 
         }
-        //---
-        // const device = {
-        //   "result": {
-        //     "active_time": 1692598996,
-        //     "biz_type": 18,
-        //     "category": "cz",
-        //     "create_time": 1692598996,
-        //     "icon": "smart/icon/bay1636603958523RDo8/34049fbbd9f45962e61b7c521063f39c.png",
-        //     "id": "bf466388bb265eb6b2cf8i",
-        //     "ip": "37.167.142.124",
-        //     "lat": "",
-        //     "local_key": "IoA)/Gs_)M]DGSA)",
-        //     "lon": "",
-        //     "model": "ALUSSO DE-CWG01",
-        //     "name": "SmartGateway_01",
-        //     "online": true,
-        //     "owner_id": "159643150",
-        //     "product_id": "vt13cbm0ikyeib7c",
-        //     "product_name": "ALUSSO Smart WiFi Gateway Plug",
-        //     "status": [
-        //       {
-        //         "code": "switch_1",
-        //         "value": true
-        //       }
-        //     ],
-        //     "sub": true,
-        //     "time_zone": "+02:00",
-        //     "uid": "eu1688047290107Ty12z",
-        //     "update_time": 1693522855,
-        //     "uuid": "6b47b9e48c6ff40a"
-        //   },
-        //   "success": true,
-        //   "t": 1693536882261,
-        //   "tid": "e64506ea487211ee9a70760d0d3c40d3"
-        // }
-        //this.log('-- Response getDevice: ' + JSON.stringify(data, null, 2))
+
         this.userId = data?.result?.uid
         this.log('Recognized user ID: ' + this.userId)
         this.emit('status', 'userId')

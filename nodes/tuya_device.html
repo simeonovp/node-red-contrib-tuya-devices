@@ -47,7 +47,6 @@
       const device = RED.nodes.node(this.device)
       if (!device) return console.error('device not found')
 
-      console.log('-- dps:' + this.dps + ', type:' + typeof this.dps)
       const fillDeviceProperties = (deviceId) => {
         const cloudDevice = device.getCloudDevice()
         if (!cloudDevice) return console.error('device not found')
