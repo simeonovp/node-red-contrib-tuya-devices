@@ -82,9 +82,11 @@
         for (const dev of cloudDevices) {
           $(`#add-node-${dev.id}`).click(() => {
             const name = $(`#node-name-${dev.id}`).val()
-            const config = { project: this.project, deviceId: dev.id, localKey: dev.local_key, name }
+            const gateway = deviceNodes[dev.gateway_id] && deviceNodes[dev.gateway_id].id || ''
+            const config = { project: this.project, deviceId: dev.id, localKey: dev.local_key, gateway, name }
             addLocalDevice(config)
             $(`#add-node-${dev.id}`).hide()
+            $(`#node-name-${dev.id}`).attr('readonly','readonly')
           })
         }
       }

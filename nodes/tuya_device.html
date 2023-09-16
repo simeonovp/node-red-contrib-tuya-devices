@@ -43,12 +43,15 @@
       return this.name || nameFromDev(RED.nodes.node(this.device)?.name) || 'Tuya Device' 
     },
     oneditprepare: function () {
-      if (!this.device) return console.error('device not configured')
-      const device = RED.nodes.node(this.device)
-      if (!device) return console.error('device not found')
-
+      let device = this.device && RED.nodes.node(this.device)
+      const onChangeDevice = () => {
+        const deviceId = $('#node-input-device').val()
+        if (deviceId !== this.device) $('#node-input-dps').val('')
+        device = deviceId && RED.nodes.node(deviceId)
+        deviceId && fillDeviceProperties(deviceId)
+      }
       const fillDeviceProperties = (deviceId) => {
-        const cloudDevice = device.getCloudDevice()
+        const cloudDevice = device && device.getCloudDevice()
         if (!cloudDevice) return console.error('device not found')
         if (!cloudDevice.dataModel || (typeof cloudDevice.dataModel !== 'object') || !cloudDevice.dataModel.services) {
           console.warn('device properties has no data model')
@@ -72,8 +75,11 @@
           }
         }
         $el.val(this.dps)
+        $el.change(() => {
+        })
       }
-      fillDeviceProperties(device.deviceId)
+      $('#node-input-device').change(onChangeDevice)
+      device && fillDeviceProperties(device.deviceId)
     }
   })
 </script>

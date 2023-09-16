@@ -266,6 +266,46 @@ module.exports = function (RED) {
       done()
     }
 
+    async translateDeviceModel(dev) {
+      const translate = async (data) => {
+        if (!data) return data
+        return await fetch("https://libretranslate.com/translate", {
+          method: 'POST',
+          body: JSON.stringify({
+            q: data,
+            source: 'auto',
+            target: 'en'
+          }),
+          headers: { "Content-Type": "application/json" }
+        })
+      }
+      if (!dev.dataModel) return
+      this.log('-- translateDeviceModel ' + dev.name)
+      for (const service of services) {
+        this.log('-- translateDeviceModel service name ' + service.name)
+        service.name = await translate(service.name)
+        this.log('-- translateDeviceModel service description ' + service.description)
+        service.description = await translate(service.description)
+        for (const property of properties) {
+          property.name = await translate(property.name)
+          this.log('-- translateDeviceModel service property name ' + property.name)
+          this.log('-- translateDeviceModel service property description ' + property.description)
+          property.description = await translate(property.description)
+        }
+      }
+    }
+
+    async translateDeviceModels(msg, send, done) {
+      if (!this.cloud) return done('Cloud access needed for _updateDeviceIcons')
+      for (const dev of this.devices) {
+        const iconPath = await translateDeviceModel(dev)
+        if (iconPath) msg.payload[dev.id] = iconPath
+      }
+      msg.payload = this.devices
+      send(msg)
+      done()
+    }
+
     async updateDeviceFunctionByCategory(msg, send, done) {
       if (!this.cloud) return done('Cloud access needed for getDeviceFunctionByCategory')
       let dirty = false

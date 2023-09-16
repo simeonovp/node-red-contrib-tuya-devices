@@ -22,6 +22,7 @@ module.exports = function (RED) {
       this.config = config
       this.project = config.project && RED.nodes.getNode(config.project)
       this.cloudData = this.project && this.project.getCloudDevice(config.id) || {}
+      this.gateway = config.gateway && RED.nodes.getNode(config.gateway)
 
       this.shouldTryReconnect = true
       this.shouldSubscribeData = true
@@ -49,12 +50,15 @@ module.exports = function (RED) {
       })
   
       const connectionParams = {
-        id: this.config.deviceId,
-        key: this.config.localKey,
         ip: this.deviceIp,
+        port: this.config.port && parseInt(this.config.port) || 6668,
+        id: this.config.deviceId,
+        gwID: this.gateway?.deviceId || this.config.deviceId,
+        key: this.config.localKey,
+        //productKey,
+        version: this.tuyaVersion,
         issueGetOnConnect: false,
         nullPayloadOnJSONError: false,
-        version: this.tuyaVersion,
         issueRefreshOnConnect: false,
       }
       this.log(`${JSON.stringify(connectionParams)}`)
@@ -264,11 +268,6 @@ module.exports = function (RED) {
         this.deviceStatus = status
         this.emit ('tuya-status', status, { context: Object.assign(data, this.context)})
       }
-    }
-
-    //---
-    updateSchema(msg, send, done) {
-    //{"payload":{"data":{"dps":{"1":true,"2":100,"3":25,"101":25,"103":100,"104":0,"105":false,"106":"OK","108":true,"109":0,"110":"BUSHUI","111":0}},"deviceId":"bfabad1dc51e0d4560r1av","deviceName":"WellWaterLevel"},"_msgid":"900bccf287fe8f73"}
     }
   }
 

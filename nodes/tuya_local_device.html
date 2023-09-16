@@ -17,6 +17,10 @@
         <input type="text" id="node-config-input-localKey">
       </div>
       <div class="form-row">
+        <label for="node-config-input-gateway"><i class="fa fa-tag"></i> Gateway</label>
+        <input type="text" id="node-config-input-gateway">
+      </div>
+      <div class="form-row">
         <label for="node-config-input-autoStart"><i class="fa fa-tag"></i> Auto connect</label>
         <input type="checkbox" id="node-config-input-autoStart">
       </div>
@@ -26,7 +30,11 @@
       </div>
       <div class="form-row">
         <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
-        <input type="text" id="node-config-input-fullTopic" readonly>
+        <input type="text" id="node-config-input-ip" readonly>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-tag"></i> Port</label>
+        <input type="text" id="node-config-input-port" readonly>
       </div>
       <div class="form-row">
         <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> MQTT topic</label>
@@ -86,7 +94,9 @@
       project: { type: 'tuya-project', required: true },
       deviceId: { value: '', required: true },
       localKey: { value: '', required: true },
+      gateway: { type: 'tuya-local-device', required: false },
       ip: { value: '' },
+      port: { value: 6668 },
       autoStart: { value: true, required: true },
       tuyaVersion: { value: '3.1', required: false },
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
