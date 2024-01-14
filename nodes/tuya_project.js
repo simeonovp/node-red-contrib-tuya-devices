@@ -11,7 +11,7 @@ function JSONparse(json) {
   }
 }
 
-function JSONsave(obj, filePath) {
+function JSONsave(filePath, obj) {
   const json = JSON.stringify(obj, null, 2)
   console.log('-- JSONsave ' + filePath)
   fs.createWriteStream(filePath).write(json)
@@ -38,7 +38,8 @@ module.exports = function (RED) {
         }
       }
   
-      this.userId = config.userId || this.cloud?.userId
+      this.userId = config.userId 
+        || this.cloud?.deviceId && this.cloud.getUserId(this.cloud.deviceId, userId => this.userId = userId)
       this.resDir = path.resolve(path.join(__dirname, '../resources', config.name || 'default'))
       if (!fs.existsSync(this.resDir)) fs.mkdirSync(this.resDir, { recursive: true })
       this.localDevices = {}
@@ -202,7 +203,7 @@ module.exports = function (RED) {
             if (model) Object.assign(dev, model)
             await this.updateDeviceIcon(dev)
           }  
-          JSONsave(this.devices, this.devicesPath)
+          JSONsave(this.devicesPath, this.devices)
         } catch(err) { this.error(err) }
       }
       const old_devices = {}
@@ -269,43 +270,117 @@ module.exports = function (RED) {
     async translateDeviceModel(dev) {
       const translate = async (data) => {
         if (!data) return data
-        return await fetch("https://libretranslate.com/translate", {
-          method: 'POST',
-          body: JSON.stringify({
-            q: data,
-            source: 'auto',
-            target: 'en'
-          }),
-          headers: { "Content-Type": "application/json" }
-        })
+        try {
+          const res = await fetch("https://libretranslate.com/translate", {
+            method: 'POST',
+            body: JSON.stringify({
+              q: data,
+              source: 'auto',
+              target: 'en'
+            }),
+            headers: { "Content-Type": "application/json" }
+          })
+          const json = await res.json()
+          //{"error":"Too many request limits violations"}
+          //{"error":"Slowdown: 30 per 1 minute"}
+          this.log('-- res:' + JSON.stringify(json))
+          return json?.translatedText || data
+        }
+        catch(err) {
+          this.error(err)
+          return data
+        }
       }
-      if (!dev.dataModel) return
+      if (!dev.dataModel?.services) return
       this.log('-- translateDeviceModel ' + dev.name)
-      for (const service of services) {
+      for (const service of dev.dataModel.services) {
         this.log('-- translateDeviceModel service name ' + service.name)
         service.name = await translate(service.name)
         this.log('-- translateDeviceModel service description ' + service.description)
         service.description = await translate(service.description)
-        for (const property of properties) {
-          property.name = await translate(property.name)
+        if (!service.properties) continue
+        for (const property of service.properties) {
           this.log('-- translateDeviceModel service property name ' + property.name)
+          property.name = await translate(property.name)
           this.log('-- translateDeviceModel service property description ' + property.description)
           property.description = await translate(property.description)
         }
       }
     }
 
-    async translateDeviceModels(msg, send, done) {
-      if (!this.cloud) return done('Cloud access needed for _updateDeviceIcons')
+    async translateDeviceModels1(msg, send, done) {
       for (const dev of this.devices) {
-        const iconPath = await translateDeviceModel(dev)
-        if (iconPath) msg.payload[dev.id] = iconPath
+        await this.translateDeviceModel(dev)
       }
       msg.payload = this.devices
       send(msg)
       done()
     }
 
+    // Sample name and description fields from device models in a file 'translate.txt' for translation
+    async createTranslateFile(msg, send, done) {
+      const filePath = path.join(this.resDir, 'translate.txt')
+      const createTranslateFile = (devices) => {
+        let data = ''
+        // const logger = fs.createWriteStream(, { flags: 'a' })
+        for (let iDev = 0; iDev < devices.length; iDev++) {
+          const services = devices[iDev].dataModel?.services || []
+          for (let iServ = 0; iServ < services.length; iServ++) {
+            const serv = services[iServ]
+            data += `n_${iDev}_${iServ}:_${serv.name}\n`
+            data += `d_${iDev}_${iServ}:_${serv.description}\n`
+            const properties = services[iServ].properties || []
+            for (let iProp = 0; iProp < properties.length; iProp++) {
+              const prop = properties[iProp]
+              data += `n_${iDev}_${iServ}_${iProp}:_${prop.name}\n`
+              data += `d_${iDev}_${iServ}_${iProp}:_${prop.description}\n`
+            }
+          }
+        }
+        fs.createWriteStream(filePath).write(data)
+        return data
+      }
+      const data = fs.existsSync(filePath) && JSONparse(fs.readFileSync(filePath, 'utf8')) || createTranslateFile(this.devices)
+      msg.payload = data
+      send(msg)
+      done()
+    }
+
+    // use file 'translate_en.txt' if exists to translate name and description fields of the device models
+    async translateDeviceModels(msg, send, done) {
+      const filePath = path.join(this.resDir, 'translate_en.txt')
+      const data = fs.existsSync(filePath) && fs.readFileSync(filePath, 'utf8') || ''
+      if (!data) return done('error on load translate_en.txt')
+
+      let obj = null
+      let el = ''
+      for (const line of data.split(/\r?\n/)) {
+        if (line.startsWith('n_')) {
+          el = 'name_en'
+        }
+        else if (line.startsWith('d_')) {
+          el = 'description_en'
+        }
+        else {
+          if (!obj) return done('No object for consecutive translation line:' + line)
+          obj += ('\n' + line)
+          continue
+        }
+
+        const lsplit = line.split(':_')
+        if (lsplit.length !== 2) this.warn(`lsplit.length:${lsplit.length}, 'line'`)
+        const parts = lsplit[0].split('_')
+        if (parts.length === 3) obj = this.devices[parts[1]].dataModel.services[parts[2]]
+        else if (parts.length === 4) obj = this.devices[parts[1]].dataModel.services[parts[2]].properties[parts[3]]
+        else return done(`parts.length:${parts.length}, line`)
+        obj[el] = lsplit[1]
+      }
+      msg.payload = this.devices
+      JSONsave(this.devicesPath, this.devices)
+      send(msg)
+      done()
+    }
+    
     async updateDeviceFunctionByCategory(msg, send, done) {
       if (!this.cloud) return done('Cloud access needed for getDeviceFunctionByCategory')
       let dirty = false
@@ -328,7 +403,7 @@ module.exports = function (RED) {
       }
       if (dirty) {
         msg.payload = JSON.stringify(this.functions, null, 2)
-        // JSONsave(this.functions, this.catFunctionsPath)
+        // JSONsave(this.catFunctionsPath, this.functions)
         send(msg)
       }
       done()
@@ -396,11 +471,11 @@ module.exports = function (RED) {
       }
       if (dirty) {
         msg.payload = col
-        JSONsave(col, path.join(this.resDir, table + '.json'))
+        JSONsave(path.join(this.resDir, table + '.json'), col)
         send && send(msg)
       }
       if (devDirty) {
-        JSONsave(this.devices, this.devicesPath)
+        JSONsave(this.devicesPath, this.devices)
       }
       done && done()
     }

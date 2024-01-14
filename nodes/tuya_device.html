@@ -19,6 +19,22 @@
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
   </div>
+  <hr>
+  <div style="width:100%">
+    <table id="dps-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+      <thead>
+        <tr id="table-head">
+          <th style="text-align:left;width:10%">Id</th>
+          <th style="text-align:left;width:20%">Code</th>
+          <th style="text-align:left;width:20%">Name</th>
+          <th style="text-align:left;width:10%">Type</th>
+          <th style="text-align:left;width:10%">Mode</th>
+          <th style="text-align:left">Description</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </script>
 
 <script type="text/html" data-help-name="tuya-device">
@@ -58,6 +74,10 @@
           if (!cloudDevice.properties) console.error('device properties has no properties')
         }
 
+        //#1
+        $('#dps-table > tbody').html('')
+        const ilist = []
+        //#2
         $el = $('#node-input-dps')
         $el.empty()
         $el.append($('<option></option>').attr('value', '').text('all'))
@@ -65,18 +85,42 @@
           for (const service of cloudDevice.dataModel.services) {
             if (!service.properties) continue
             for (const prop of service.properties) {
+              //#1
+              ilist.push(`
+                <tr>
+                  <td><input type="text" value="${prop.abilityId}" style="width:100%" class="tuya-readonly"></td>
+                  <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
+                  <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.name_en || prop.name || ''}" style="width:100%" class="tuya-readonly"}></td>
+                  <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" style="width:100%" readonly></td>
+                  <td><input type="text" value="${prop.accessMode}" style="width:100%" readonly></td>
+                  <td><input type="text" value="${prop.description_en || prop.description || ''}" style="width:100%" class="tuya-readonly"></td>
+                </tr>
+              `)
+              //#2
               $el.append($('<option></option>').attr('value', prop.abilityId.toString()).text(`(${prop.abilityId}) ${prop.code}`))
             }
           }
         }
         else {
           for (const prop of cloudDevice.properties) {
+            //#1
+            ilist.push(`<tr>
+                <td><input type="text" value="${prop.dp_id}" readonly></td>
+                <td><input type="text" value="${prop.code}" readonly></td>
+                <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name}"}></td>
+                <td><input type="text" value="" readonly></td>
+              </tr>`)
+            //#2
             $el.append($('<option></option>').attr('value', prop.dp_id.toString()).text(`(${prop.dp_id}) ${prop.code}`))
           }
         }
         $el.val(this.dps)
         $el.change(() => {
         })
+        //#1
+        $('#dps-table tbody').append(ilist.join(''))
+        const readOnlyKeypressHandler =  (event) => event.preventDefault()
+        $('#dps-table').children().find('.tuya-readonly').bind('keypress', readOnlyKeypressHandler)
       }
       $('#node-input-device').change(onChangeDevice)
       device && fillDeviceProperties(device.deviceId)

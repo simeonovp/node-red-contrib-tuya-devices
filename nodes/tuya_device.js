@@ -22,11 +22,13 @@ module.exports = function (RED) {
       if(this.device) {
         this.device.addListener('tuya-status', deviceStatusHandler)
         this.device.addListener('tuya-data', deviceDataHandler)
+        this.device.register(this)
       }
 
       // Deregister from BrokerNode when this node is deleted or restarted
       this.on('close', (done) => {
         if(this.device) {
+          this.device.unregister(this)
           this.device.removeListener('tuya-status', deviceStatusHandler)
           this.device.removeListener('tuya-data', deviceDataHandler)
         }

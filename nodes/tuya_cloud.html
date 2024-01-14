@@ -26,6 +26,10 @@
     <input type="text" id="node-config-input-deviceId">
   </div>
   <div class="form-row">
+    <label for="node-config-input-autoConnect"><i class="fa fa-tag"></i> Auto connect</label>
+    <input type="checkbox" id="node-config-input-autoConnect">
+  </div>
+  <div class="form-row">
     <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-config-input-name" placeholder="Name">
   </div>
@@ -41,6 +45,7 @@
       region: { value: '' },
       userId: { value: '' },
       deviceId: { value: '' },
+      autoConnect: { value: false, required: true },
       name: { value: '' },
     },
     credentials: {

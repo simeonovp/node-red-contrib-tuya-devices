@@ -170,16 +170,6 @@ module.exports = function (RED) {
       deviceName: this.config.name,
     } }
 
-    enableNode() {
-      this.log('enableNode(): enabling the node', this.id)
-      this.startComm()
-    }
-
-    disableNode(){
-      this.log('disableNode(): disabling the node', this.id)
-      this.closeComm()
-    }
-
     startComm() {
       this.log('Auto start probe on connect...')
       // This 1 sec timeout will make sure that the diconnect happens ..
@@ -267,6 +257,29 @@ module.exports = function (RED) {
       if (this.deviceStatus != status) {
         this.deviceStatus = status
         this.emit ('tuya-status', status, { context: Object.assign(data, this.context)})
+      }
+    }
+
+    register(node) {
+      this.log('register node:' + node.name || node.config?.name)
+      if (!this.clients) {
+        this.clients = {}
+        this.clients[node.id] = node
+        this.log('startComm')
+        this.startComm()
+      }
+      else {
+        this.clients[node.id] = node
+      }
+    }
+
+    unregister(node) {
+      this.log('unregister node:' + node.name || node.config?.name)
+      if (!this.clients) return
+      delete this.clients[node.id]
+      if (!Object.keys(this.clients).length) {
+        delete this.clients
+        if (!config.autoStart) this.closeComm()
       }
     }
   }

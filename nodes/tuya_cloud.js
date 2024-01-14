@@ -13,9 +13,12 @@ module.exports = function (RED) {
     constructor (config) {
       RED.nodes.createNode(this, config)
 
+      //this.config = config
+      this.deviceId = config.deviceId
       this.region = this.setRegion(config.region)
       Config.init(this.credentials?.accessId, this.credentials?.accessKey, this.region, true)
-      this.userId = config.userId || this.getUserId(config.deviceId)
+      this.userId = config.userId 
+        || config.autoConnect && this.deviceId && this.getUserId(this.deviceId, userId => this.userId = userId)
     }
 
     setRegion(region) {
@@ -30,18 +33,17 @@ module.exports = function (RED) {
 
     // Get user ID (UID) for deviceid
     getUserId(deviceId, callback) {
-      if (!deviceId) return this.error('_getuid() requires deviceID parameter')
+      if (!deviceId) return this.error('getUserId() requires deviceID parameter')
       DeviceClient.getDevice(deviceId, (err, data) => {
         if (err) {
           this.error(err)
           return 
         }
 
-        this.userId = data?.result?.uid
-        this.log('Recognized user ID: ' + this.userId)
         this.emit('status', 'userId')
         this.emit('response', { command: { name: 'DeviceClient.getDevice', deviceId }, data })
-        callback && callback(data)
+        callback && callback(data?.result?.uid)
+        this.log('Recognized user ID: ' + this.userId)
       })
     }
 
