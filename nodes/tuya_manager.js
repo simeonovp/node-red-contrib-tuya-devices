@@ -37,6 +37,20 @@ module.exports = function (RED) {
         if (!this.project) return done('Project not configured')
         
         switch (msg.topic) {
+          case 'updateDevices':
+            try {
+              this.project.updateDevices(msg, send, () => {
+                this.sendToFrontend(msg)
+                done()
+              })
+            } 
+            catch(err) {
+              this.error(err)
+              msg.error = err
+              this.sendToFrontend(msg)
+              done()
+            }
+            break
           default:
             const err = this.project.tryCommand(msg, send, done)
             if (err) return done(err)
@@ -50,8 +64,32 @@ module.exports = function (RED) {
         case 'Offline': return this.status({ fill: 'red', text: 'offline', shape: 'ring' })
       }
     }
+    
+    sendToFrontend(payload) {
+      this.log(`-- sendToFrontend`)
+      RED.events.emit('runtime-event', { id: this.id, retain: false, payload })
+    }
 
   }
 
   RED.nodes.registerType('tuya-manager', Manager)
+
+  //#.node-red\node_modules\@node-red\nodes\core\common\20-inject.js
+  RED.httpAdmin.post(
+    '/tuyadevices/:id',
+    RED.auth.needsPermission('inject-comm.write'),
+    (req, res) => {
+      const node = RED.nodes.getNode(req.params.id)
+      if (!node) return res.sendStatus(404)
+      console.log(`Frontend bledevices event node:${node.name || node.id}, topic:${req.body?.topic}`)
+      try {
+        if (req.body) node.receive(req.body)
+        res.sendStatus(200)
+      }
+      catch(err) {
+        res.sendStatus(500)
+        node.error(RED._('inject-comm.failed', { error: err.toString() }))
+      }
+    }
+  )
 }

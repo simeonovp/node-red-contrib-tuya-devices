@@ -11,10 +11,16 @@ function JSONparse(json) {
   }
 }
 
-function JSONsave(filePath, obj) {
+function JSONsave(obj, filePath) {
   const json = JSON.stringify(obj, null, 2)
   console.log('-- JSONsave ' + filePath)
   fs.createWriteStream(filePath).write(json)
+}
+
+function sortByKey(obj) {
+  const sorted = {};
+  for (const key of Object.keys(obj).sort()) sorted[key] = obj[key]
+  return sorted
 }
 
 module.exports = function (RED) {
@@ -38,14 +44,48 @@ module.exports = function (RED) {
         }
       }
   
-      this.userId = config.userId 
-        || this.cloud?.deviceId && this.cloud.getUserId(this.cloud.deviceId, userId => this.userId = userId)
+      this.userId = config.userId || this.cloud?.userId
       this.resDir = path.resolve(path.join(__dirname, '../resources', config.name || 'default'))
       if (!fs.existsSync(this.resDir)) fs.mkdirSync(this.resDir, { recursive: true })
       this.localDevices = {}
       this.db = {}
       this.devicesPath = path.join(this.resDir, 'devices.json')
-      this.devices = fs.existsSync(this.devicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || []
+      this.servicesPath = path.join(this.resDir, 'services.json')
+      this.devices = fs.existsSync(this.devicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8'))
+      if (this.devices && Array.isArray(this.devices)) { //convert from 1.0.x
+        try {
+        this.warn(`Begin convert DB. Save DB to ${this.devicesPath + '.old'}`)
+        JSONsave(this.devices, this.devicesPath + '.old')
+        const tuyaDevices = {}
+        this.services = {}
+        for (const dev of this.devices) {
+          this.log(`  convert device ${dev.id}`)
+          if (dev.dataModel?.modelId && dev.dataModel?.services) {
+            this.log(`  convert device ${dev.id}`)
+            const services = this.services[dev.dataModel.modelId]
+            if (services) {
+              //TODO merge dev.dataModel.services into services
+            }
+            else {
+              this.log(`  add model ${dev.dataModel.modelId}`)
+              this.services[dev.dataModel.modelId] = dev.dataModel.services
+            }
+          }
+          const tuyaDevice = {...dev} //deep copy to remove dataMaodel
+          if (dev.dataModel?.modelId) tuyaDevice.dataModel = dev.dataModel.modelId
+          else delete tuyaDevice.dataModel
+          this.log(`  add device ${dev.id}`)
+          tuyaDevices[dev.id] = tuyaDevice
+        }
+        this.devices = tuyaDevices
+        JSONsave(sortByKey(this.devices), this.devicesPath)
+        JSONsave(sortByKey(this.services), this.servicesPath)
+        } catch(err) { this.error(err.callstack || err) }
+      }
+      else {
+        this.devices = JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || {}
+        this.services = fs.existsSync(this.servicesPath) && JSONparse(fs.readFileSync(this.devicesPath, 'utf8')) || {}
+      }
 
       this.on('close', (done) => {
         this.cloud && this.cloud.removeListener('status', cloudStatusHandler)
@@ -73,8 +113,14 @@ module.exports = function (RED) {
     }
 
     getCloudDevice(deviceId) {
-      return this.devices.find(dev => dev.id === deviceId)
+      return this.devices[deviceId]
     }
+
+    getServices(deviceId) {
+      const modelId = this.devices[deviceId]?.modelId || 0
+      return modelId && this.services[modelId] || []
+    }
+
 
     register(device) {
       this.localDevices[device.id] = device
@@ -102,6 +148,8 @@ module.exports = function (RED) {
   
         // check to see if anything has changed.  if so, re-download factory-infos and DP mapping
         for (const dev of devs) {
+          //this.services[].properties[].extensions.iconName
+
           if (!old_devices[dev.id]) {
             // newly-added device
             changed_devices.push(dev)
@@ -195,25 +243,32 @@ module.exports = function (RED) {
       if (!this.devices.length && this.userId) {
         try {
           const data = await getAllUserDevices(this.userId)
-          this.devices = data.result
-          for (const dev of this.devices) {
+          TODO
+          const devices = data.result // TODO save to tuyaDevices
+          this.devices = {}
+          for (const dev of devices) {
+            this.devices[dev.id] = dev
             const properties = await this.getCloudDeviceData(dev, 'properties', 'getDeviceProperties', 'properties')
             if (properties) Object.assign(dev, properties)
             const model = await this.getCloudDeviceData(dev, 'model', 'getDeviceDataModel', 'dataModel')
-            if (model) Object.assign(dev, model)
+            if (model) {
+              dev.dataModel = model.modelId
+              if (!this.services[modelId]) this.services[model.modelId] = model.services
+            }
             await this.updateDeviceIcon(dev)
           }  
-          JSONsave(this.devicesPath, this.devices)
+          JSONsave(sortByKey(this.devices), this.devicesPath)
+          JSONsave(sortByKey(this.services), this.servicesPath) //TODO check if dirty
         } catch(err) { this.error(err) }
       }
       const old_devices = {}
-      for (const dev of this.devices) {
+      for (const dev of Object.values(this.devices)) {
         old_devices[dev.id] = dev
       }
 
       // loop through all devices and build a list of user IDs
       const userIDs = {}
-      for (const dev of this.devices) {
+      for (const dev of Object.values(this.devices)) {
         if (dev.uid) userIDs[dev.uid] = true
       }
       const uidList = Object.keys(userIDs)
@@ -228,7 +283,7 @@ module.exports = function (RED) {
         }
       }
       if (msg && send) {
-        msg.devices = this.devices
+        msg.devices = Object.values(this.devices)
         msg.changed_devices = changed_devices
         msg.unchanged_devices = unchanged_devices
         send(msg)
@@ -259,7 +314,7 @@ module.exports = function (RED) {
     async updateDeviceIcons(msg, send, done) {
       if (!this.cloud) return done('Cloud access needed for _updateDeviceIcons')
       msg.payload = {}
-      for (const dev of this.devices) {
+      for (const dev of Object.values(this.devices)) {
         const iconPath = await updateDeviceIcon(dev)
         if (iconPath) msg.payload[dev.id] = iconPath
       }
@@ -270,121 +325,47 @@ module.exports = function (RED) {
     async translateDeviceModel(dev) {
       const translate = async (data) => {
         if (!data) return data
-        try {
-          const res = await fetch("https://libretranslate.com/translate", {
-            method: 'POST',
-            body: JSON.stringify({
-              q: data,
-              source: 'auto',
-              target: 'en'
-            }),
-            headers: { "Content-Type": "application/json" }
-          })
-          const json = await res.json()
-          //{"error":"Too many request limits violations"}
-          //{"error":"Slowdown: 30 per 1 minute"}
-          this.log('-- res:' + JSON.stringify(json))
-          return json?.translatedText || data
-        }
-        catch(err) {
-          this.error(err)
-          return data
-        }
+        return await fetch("https://libretranslate.com/translate", {
+          method: 'POST',
+          body: JSON.stringify({
+            q: data,
+            source: 'auto',
+            target: 'en'
+          }),
+          headers: { "Content-Type": "application/json" }
+        })
       }
-      if (!dev.dataModel?.services) return
+      if (!dev.dataModel) return
       this.log('-- translateDeviceModel ' + dev.name)
-      for (const service of dev.dataModel.services) {
+      for (const service of services) {
         this.log('-- translateDeviceModel service name ' + service.name)
         service.name = await translate(service.name)
         this.log('-- translateDeviceModel service description ' + service.description)
         service.description = await translate(service.description)
-        if (!service.properties) continue
-        for (const property of service.properties) {
-          this.log('-- translateDeviceModel service property name ' + property.name)
+        for (const property of properties) {
           property.name = await translate(property.name)
+          this.log('-- translateDeviceModel service property name ' + property.name)
           this.log('-- translateDeviceModel service property description ' + property.description)
           property.description = await translate(property.description)
         }
       }
     }
 
-    async translateDeviceModels1(msg, send, done) {
-      for (const dev of this.devices) {
-        await this.translateDeviceModel(dev)
-      }
-      msg.payload = this.devices
-      send(msg)
-      done()
-    }
-
-    // Sample name and description fields from device models in a file 'translate.txt' for translation
-    async createTranslateFile(msg, send, done) {
-      const filePath = path.join(this.resDir, 'translate.txt')
-      const createTranslateFile = (devices) => {
-        let data = ''
-        // const logger = fs.createWriteStream(, { flags: 'a' })
-        for (let iDev = 0; iDev < devices.length; iDev++) {
-          const services = devices[iDev].dataModel?.services || []
-          for (let iServ = 0; iServ < services.length; iServ++) {
-            const serv = services[iServ]
-            data += `n_${iDev}_${iServ}:_${serv.name}\n`
-            data += `d_${iDev}_${iServ}:_${serv.description}\n`
-            const properties = services[iServ].properties || []
-            for (let iProp = 0; iProp < properties.length; iProp++) {
-              const prop = properties[iProp]
-              data += `n_${iDev}_${iServ}_${iProp}:_${prop.name}\n`
-              data += `d_${iDev}_${iServ}_${iProp}:_${prop.description}\n`
-            }
-          }
-        }
-        fs.createWriteStream(filePath).write(data)
-        return data
-      }
-      const data = fs.existsSync(filePath) && JSONparse(fs.readFileSync(filePath, 'utf8')) || createTranslateFile(this.devices)
-      msg.payload = data
-      send(msg)
-      done()
-    }
-
-    // use file 'translate_en.txt' if exists to translate name and description fields of the device models
     async translateDeviceModels(msg, send, done) {
-      const filePath = path.join(this.resDir, 'translate_en.txt')
-      const data = fs.existsSync(filePath) && fs.readFileSync(filePath, 'utf8') || ''
-      if (!data) return done('error on load translate_en.txt')
-
-      let obj = null
-      let el = ''
-      for (const line of data.split(/\r?\n/)) {
-        if (line.startsWith('n_')) {
-          el = 'name_en'
-        }
-        else if (line.startsWith('d_')) {
-          el = 'description_en'
-        }
-        else {
-          if (!obj) return done('No object for consecutive translation line:' + line)
-          obj += ('\n' + line)
-          continue
-        }
-
-        const lsplit = line.split(':_')
-        if (lsplit.length !== 2) this.warn(`lsplit.length:${lsplit.length}, 'line'`)
-        const parts = lsplit[0].split('_')
-        if (parts.length === 3) obj = this.devices[parts[1]].dataModel.services[parts[2]]
-        else if (parts.length === 4) obj = this.devices[parts[1]].dataModel.services[parts[2]].properties[parts[3]]
-        else return done(`parts.length:${parts.length}, line`)
-        obj[el] = lsplit[1]
+      if (!this.cloud) return done('Cloud access needed for _updateDeviceIcons')
+      for (const devId in this.devices) {
+        const iconPath = await translateDeviceModel(this.devices[devId])
+        if (iconPath) msg.payload[devId] = iconPath
       }
-      msg.payload = this.devices
-      JSONsave(this.devicesPath, this.devices)
+      msg.payload = Object.values(this.devices)
       send(msg)
       done()
     }
-    
+
     async updateDeviceFunctionByCategory(msg, send, done) {
       if (!this.cloud) return done('Cloud access needed for getDeviceFunctionByCategory')
       let dirty = false
-      for (const dev of this.devices) {
+      for (const dev of Object.values(this.devices)) {
         if (this.functions[dev.category]) continue
         try {
           const data = await new Promise((resolve, reject) => {
@@ -403,7 +384,7 @@ module.exports = function (RED) {
       }
       if (dirty) {
         msg.payload = JSON.stringify(this.functions, null, 2)
-        // JSONsave(this.catFunctionsPath, this.functions)
+        // JSONsave(this.functions, this.catFunctionsPath)
         send(msg)
       }
       done()
@@ -451,13 +432,14 @@ module.exports = function (RED) {
       
       let dirty = false
       let devDirty = false
-      for (const dev of this.devices) {
-        if (col[dev.id]) continue
+      for (const devId in this.devices) {
+        if (col[devId]) continue
         try {
+          const dev = this.devices[devId]
           const data = await this.getCloudDeviceData(dev, entity, command, table)
-          this.log(`Downloaded ${table} for ${dev.name}, id:${dev.id}`)
+          this.log(`Downloaded ${table} for ${dev.name}, id:${devId}`)
           if (data && data[table]) {
-            col[dev.id] = data
+            col[devId] = data
             if (data[table] && !dev[table]) {
               Object.assign(dev, data)
               devDirty = true
@@ -471,11 +453,11 @@ module.exports = function (RED) {
       }
       if (dirty) {
         msg.payload = col
-        JSONsave(path.join(this.resDir, table + '.json'), col)
+        JSONsave(col, path.join(this.resDir, table + '.json'))
         send && send(msg)
       }
       if (devDirty) {
-        JSONsave(this.devicesPath, this.devices)
+        JSONsave(sortByKey(this.devices), this.devicesPath)
       }
       done && done()
     }

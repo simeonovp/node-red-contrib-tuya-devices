@@ -3,23 +3,16 @@
     <label for="node-config-input-cloud"><i class="fa fa-tag"></i> Cloud access</label>
     <input type="text" id="node-config-input-cloud">
   </div>
-  <!-- <div class="form-row">
-    <label for="node-config-input-dbUri"><i class="fa fa-tag"></i> DB uri</label>
-    <input type="text" id="node-config-input-dbUri">
-  </div> -->
-  <div class="form-row">
-    <label for="node-config-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
-    <input type="text" id="node-config-input-userId">
-  </div>
   <div class="form-row">
     <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-config-input-name" placeholder="Name">
   </div>
-  <!-- <hr>
   <div class="form-row">
-    <label for="node-config-input-network"><i class="fa fa-tag"></i> Network</label>
-    <input type="text" id="node-config-input-network" placeholder="192.168.1.0/24">
-  </div> -->
+    <label for="node-config-input-dbUri"><i class="fa fa-tag"></i> DB url (optional)</label>
+    <input type="text" id="node-config-input-dbUri">
+    <br>
+    URL to project DBs storage. Used for initial project setup without cloud access.
+  </div>
 </script>
 
 <script type="text/html" data-help-name="tuya-project">
@@ -39,12 +32,18 @@
       // use label callback to perform init
       if (!this.init) {
         this.resDir = () => `resources/node-red-contrib-tuya-devices/${this.name || 'default'}/`
-        this.getCloudDevices = (() => {
-          if (this._cloudDevices) return this._cloudDevices
+        this.getCloudDevices = ((callback) => {
+          if (this._cloudDevices) return callback(this._cloudDevices)
           const url = this.resDir() + 'devices.json'
-          fetch(url).then(r=>r.json().then(d=>this._cloudDevices=d))
+          fetch(url).then(r=>r.json().then(callback))
         })
-        this.getCloudDevices()
+        this.getServices = ((callback) => {
+          if (this._services) return callback(this._services)
+          const url = this.resDir() + 'services.json'
+          fetch(url).then(r=>r.json().then(callback))
+        })
+        this.getCloudDevices(cloudDevices=>this._cloudDevices=cloudDevices)
+        this.getServices(services=>this._services=services)
         this.init = true
       }
       return this.name || 'Tuya Project' 

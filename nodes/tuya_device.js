@@ -14,68 +14,76 @@ module.exports = function (RED) {
         this.device = null
         return
       }
-      this.dps = //config.dps && config.dps.includes(',') && config.dps.split(',') || 
-        config.dps
+      this.dps = /*config.dps && config.dps.includes(',') && config.dps.split(',') ||*/ config.dps
 
-      const deviceStatusHandler = this.onDeviceStatus.bind(this)
-      const deviceDataHandler = this.onDeviceData.bind(this)
-      if(this.device) {
-        this.device.addListener('tuya-status', deviceStatusHandler)
-        this.device.addListener('tuya-data', deviceDataHandler)
-        this.device.register(this)
-      }
+      this.deviceStatusHandler = this.onDeviceStatus.bind(this)
+      this.deviceDataHandler = this.onDeviceData.bind(this)
 
       // Deregister from BrokerNode when this node is deleted or restarted
       this.on('close', (done) => {
-        if(this.device) {
-          this.device.unregister(this)
-          this.device.removeListener('tuya-status', deviceStatusHandler)
-          this.device.removeListener('tuya-data', deviceDataHandler)
-        }
+        this.deinit()
         done()
       })
 
-      this.on('input', (msg, send, done) => {
-        this.log(`Recieved input : ${JSON.stringify(msg)}`)
-        let operation = msg.payload.operation || 'SET'
-        delete msg.payload.operation
-        if (['GET', 'SET', 'REFRESH'].indexOf(operation) != -1) {
-          // the device has to be connected.
-          if (!this.device.isConnected) {
-            // error device not connected
-            const errText = `Device not connected. Can't send the ${operation} commmand`
-            this.error(errText)
-            this.status({ fill: 'red', shape: 'ring', text: 'Device not connected!' })
-            done()
-            return
-          }
-        }
-        switch (operation) {
-          case 'SET':
-            this.device.tuyaSet({ //operation: 'SET'
-              dps: this.dps,
-              set: msg.payload
-            })
-            break
-          case 'REFRESH':
-            this.device.tuyaRefresh(msg.payload)
-            break
-          case 'GET':
-            this.device.tuyaGet(msg.payload)
-            break
-          case 'CONTROL':
-            this.device.tuyaControl(msg.payload.action, msg.payload.value)
-            break
-          case 'getDataModel':
-            msg.payload = this.device.cloudData?.dataModel
-            send(msg)
-            break
-        }
-        done()
-      })
+      this.on('input', this.onInput)
 
       this.onDeviceStatus(this.device.deviceStatus)
       if (this.device.deviceStatus === 'connected') this.onDeviceData('last-data', this.device.lastData)
+      
+      process.nextTick(this.init.bind(this))
+    }
+
+    init() {
+      if(!this.device) return
+      this.device.register(this)
+      this.device.addListener('tuya-status', this.deviceStatusHandler)
+      this.device.addListener('tuya-data', this.deviceDataHandler)
+    }
+
+    deinit() {
+      if(!this.device) return
+      this.device.removeListener('tuya-status', this.deviceStatusHandler)
+      this.device.removeListener('tuya-data', this.deviceDataHandler)
+      this.device.unregister(this)
+    }
+
+    onInput(msg, send, done) {
+      this.log(`Recieved input : ${JSON.stringify(msg)}`)
+      let operation = msg.payload.operation || 'SET'
+      delete msg.payload.operation
+      if (['GET', 'SET', 'REFRESH'].indexOf(operation) != -1) {
+        // the device has to be connected.
+        if (!this.device.isConnected) {
+          // error device not connected
+          const errText = `Device not connected. Can't send the ${operation} commmand`
+          this.error(errText)
+          this.status({ fill: 'red', shape: 'ring', text: 'Device not connected!' })
+          done()
+          return
+        }
+      }
+      switch (operation) {
+        case 'SET':
+          this.device.tuyaSet({ //operation: 'SET'
+            dps: this.dps,
+            set: msg.payload
+          })
+          break
+        case 'REFRESH':
+          this.device.tuyaRefresh(msg.payload)
+          break
+        case 'GET':
+          this.device.tuyaGet(msg.payload)
+          break
+        case 'CONTROL':
+          this.device.tuyaControl(msg.payload.action, msg.payload.value)
+          break
+        case 'getDataModel':
+          msg.payload = this.device.getServices()
+          send(msg)
+          break
+      }
+      done()
     }
 
     onDeviceStatus(state, data) {

@@ -40,6 +40,21 @@
         <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> MQTT topic</label>
         <input type="text" id="node-config-input-fullTopic" readonly>
       </div>
+      <hr>
+      <div style="width:100%">
+        <table id="dps-table" class="table table-hover" style="border:1px solid;border-collapse:collapse">
+          <thead>
+            <tr id="table-head">
+              <th style="text-align:left;width:10%">Id</th>
+              <th style="text-align:left;width:30%">Code</th>
+              <th style="text-align:left">Name</th>
+              <th style="width:20%">Type</th>
+              <th style="width:10%">Mode</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
     <div id="tuya-advanced-tab" style="display:none">
       <div class="form-row">
@@ -66,21 +81,6 @@
       </div>
     </div>
   </div>
-  <hr>
-  <div style="width:100%">
-    <table id="dps-table" class="table table-hover" style="border:1px solid;border-collapse:collapse">
-      <thead>
-        <tr id="table-head">
-          <th style="text-align:left;width:10%">Id</th>
-          <th style="text-align:left;width:30%">Code</th>
-          <th style="text-align:left">Name</th>
-          <th style="width:20%">Type</th>
-          <th style="width:10%">Mode</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
 </script>
 
 <script type="text/html" data-help-name="tuya-local-device">
@@ -97,7 +97,7 @@
       gateway: { type: 'tuya-local-device', required: false },
       ip: { value: '' },
       port: { value: 6668 },
-      autoStart: { value: false, required: true },
+      autoStart: { value: true, required: true },
       tuyaVersion: { value: '3.1', required: false },
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
@@ -107,18 +107,29 @@
     label: function() { 
       // use label callback to perform init
       if (!this.init) {
-        this.getCloudDevice = (() => {
-          if (this._device) return this._device
+        this.getCloudDevice = (callback=>{
+          if (this._device) return callback(this._device)
           if (!this.project) return console.error('project not configured: ' + this.project)
           const project = RED.nodes.node(this.project)
           if (!project) return console.error('project not found: ' + this.project)
-          const cloudDevices = project.getCloudDevices && project.getCloudDevices()
-          if (!cloudDevices) return console.error('download devices failed')
-          this._device = cloudDevices.find(dev => dev.id === this.deviceId)
-          return this._device
+          project.getCloudDevices && project.getCloudDevices(cloudDevices=>{
+            if (!cloudDevices) return console.error('download devices failed')
+            this._device = cloudDevices[this.deviceId]
+            callback(this._device)
+          })
         }).bind(this)
+        this.getServices = (callback=>{
+          if (this._services) return callback(this._services)
+          this.getCloudDevice(cloudDevice=>{
+            if (!cloudDevice?.dataModel) return
+            const project = RED.nodes.node(this.project)
+            project.getServices && project.getServices(services=>{
+              this._services = services[cloudDevice.dataModel]
+              callback(this._services)
+            })
+          })
+        })
         this.init = true
-        //console.log('-- tuya-local-device init')
       }
       return this.name || 'Tuya Device' 
     },
@@ -138,42 +149,44 @@
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
 
       const fillDeviceProperties = () => {
-        const cloudDevice = this.getCloudDevice()
-        if (!cloudDevice) return console.error('device not found')
-        if (!cloudDevice.dataModel || (typeof cloudDevice.dataModel !== 'object') || !cloudDevice.dataModel.services) {
-          console.warn('device properties has no data model')
-          if (!cloudDevice.properties) console.error('device properties has no properties')
-        }
-
-        $('#dps-table > tbody').html('')
-        const ilist = []
-        if (cloudDevice.dataModel) {
-          for (const service of cloudDevice.dataModel.services) {
-            if (!service.properties) continue
-            for (const prop of service.properties) {
-              ilist.push(`
-                <tr>
-                  <td><input type="text" value="${prop.abilityId}" readonly></td>
-                  <td><input type="text" value="${prop.code}" readonly></td>
-                  <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name || ''}"}></td>
-                  <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" readonly></td>
-                  <td><input type="text" value="${prop.accessMode}" readonly></td>
-                </tr>
-              `)
+        this.getCloudDevice(cloudDevice=>{
+          if (!cloudDevice) return console.error('[local device] device not found')
+          this.getServices(services=>{
+            if (!services) {
+              console.warn('device properties has no data model')
+              if (!cloudDevice.properties) console.error('device properties has no properties')
             }
-          }
-        }
-        else {
-          for (const prop of cloudDevice.properties) {
-            ilist.push(`<tr>
-                <td><input type="text" value="${prop.dp_id}" readonly></td>
-                <td><input type="text" value="${prop.code}" readonly></td>
-                <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name}"}></td>
-                <td><input type="text" value="" readonly></td>
-              </tr>`)
-          }
-        }
-        $('#dps-table tbody').append(ilist.join(''))
+
+            const el = $('#dps-table > tbody')
+            el.html('')
+            const ilist = []
+            if (services) {
+              for (const service of services) {
+                if (!service.properties) continue
+                for (const prop of service.properties) {
+                  ilist.push(`<tr>
+                      <td><input type="text" value="${prop.abilityId}" readonly></td>
+                      <td><input type="text" value="${prop.code}" readonly></td>
+                      <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name || ''}"}></td>
+                      <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" readonly></td>
+                      <td><input type="text" value="${prop.accessMode}" readonly></td>
+                    </tr>`)
+                }
+              }
+            }
+            else {
+              for (const prop of cloudDevice.properties) {
+                ilist.push(`<tr>
+                    <td><input type="text" value="${prop.dp_id}" readonly></td>
+                    <td><input type="text" value="${prop.code}" readonly></td>
+                    <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name}"}></td>
+                    <td><input type="text" value="" readonly></td>
+                  </tr>`)
+              }
+            }
+            el.append(ilist.join(''))
+          })
+        })
       }
       fillDeviceProperties()
     }

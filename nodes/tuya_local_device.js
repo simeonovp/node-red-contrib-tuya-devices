@@ -43,11 +43,7 @@ module.exports = function (RED) {
       this.project && this.project.register(this)
 
       // Deregister from BrokerNode when this node is deleted or restarted
-      this.on('close', (done) => {
-        this.project && this.project.unregister(this)
-        this.closeComm()
-        done()
-      })
+      this.on('close', this.onClose.bind(this))
   
       const connectionParams = {
         ip: this.deviceIp,
@@ -66,53 +62,94 @@ module.exports = function (RED) {
       this.lastData = null
   
       // Add event listeners
-      this.tuyaDevice.on('connected', () => {
-        this.deviceIp = this.tuyaDevice.device.ip
-        this.log(`Connected to device! name:${this.config.name}, ip:${this.deviceIp}`)
-        this.setStatus(CLIENT_STATUS.CONNECTED)
-        this.tuyaGet()
-      })
-
-      this.tuyaDevice.on('disconnected', () => {
-        this.setStatus(CLIENT_STATUS.DISCONNECTED)
-        this.log(`Disconnected from tuyaDevice. shouldTryReconnect=${this.shouldTryReconnect}`)
-        this.lastData = null
-        if (this.shouldTryReconnect) this.retryConnection()
-      })
-
-      this.tuyaDevice.on('error', (error) => {
-        // Anonymize
-        this.setStatus(CLIENT_STATUS.ERROR, { message: `Error: ${JSON.stringify(error)}` })
-        this.log(`Error from tuyaDevice. shouldTryReconnect=${this.shouldTryReconnect}, error${JSON.stringify(error)}`)
-        this.lastData = null
-        if ((typeof error === 'string') && error.startsWith('Timeout waiting for status response')) {
-          this.log(`This error can be due to invalid DPS values. Please check the dps values in the payload !!!!`)
-        }
-        if (this.shouldTryReconnect) this.retryConnection()
-      })
-
-      this.tuyaDevice.on('dp-refresh', (data) => {
-        if (this.shouldSubscribeRefreshData) {
-          this.setStatus(CLIENT_STATUS.CONNECTED)
-          this.lastData = data
-          this.emit ('tuya-data', 'data', this.lastDataMsg)
-        }
-      })
-
-      this.tuyaDevice.on('data', (data) => {
-        if (this.shouldSubscribeData) {
-          this.setStatus(CLIENT_STATUS.CONNECTED)
-          this.lastData = data
-          this.emit ('tuya-data', 'dp-refresh', this.lastDataMsg)
-        }
-      })
-
+      this.connectedEventHandler = this.onConnected.bind(this)
+      this.disconnectedEventHandler = this.onDisconnected.bind(this)
+      this.errorEventHandler = this.onError.bind(this)
+      this.dpRefreshEventHandler = this.onDpRefresh.bind(this)
+      this.dataEventHandler = this.onData.bind(this)
+   
       // Initial state
-      setTimeout(() => { this.setStatus(CLIENT_STATUS.DISCONNECTED) }, 500)
+      process.nextTick(() => this.setStatus(CLIENT_STATUS.DISCONNECTED))
+    }
 
+    init() {
+      this.log('Init')
+      this.tuyaDevice.on('connected', this.connectedEventHandler)
+      this.tuyaDevice.on('disconnected', this.disconnectedEventHandler)
+      this.tuyaDevice.on('error', this.errorEventHandler)
+      this.tuyaDevice.on('dp-refresh', this.dpRefreshEventHandler)
+      this.tuyaDevice.on('data', this.dataEventHandler)
+      
       // Start probing
-      if (config.autoStart) this.startComm()
+      if (this.config.autoStart) this.startComm()
       else this.log('Auto start probe is disabled')
+    }
+
+    deinit() {
+      this.log('Deinit')
+      this.tuyaDevice.off('connected', this.connectedEventHandler)
+      this.tuyaDevice.off('disconnected', this.disconnectedEventHandler)
+      this.tuyaDevice.off('error', this.errorEventHandler)
+      this.tuyaDevice.off('dp-refresh', this.dpRefreshEventHandler)
+      this.tuyaDevice.off('data', this.dataEventHandler)
+    }
+
+    register(device) {
+      // init on first node attached
+      if (!this.listenerCount('tuya-status')) this.init()
+    }
+
+    unregister(device) {
+      // deinit on last node detached
+      if (!this.listenerCount('tuya-status')) this.deinit()
+    }
+
+    onClose(done) {
+      this.project && this.project.unregister(this)
+      this.closeComm()
+      this.deinit()
+      done()
+    }
+    
+    onConnected() {
+      this.deviceIp = this.tuyaDevice.device.ip
+      this.log(`Connected to device! name:${this.config.name}, ip:${this.deviceIp}`)
+      this.setStatus(CLIENT_STATUS.CONNECTED)
+      this.tuyaGet()
+    }
+
+    onDisconnected() {
+      this.setStatus(CLIENT_STATUS.DISCONNECTED)
+      this.log(`Disconnected from tuyaDevice. shouldTryReconnect=${this.shouldTryReconnect}`)
+      this.lastData = null
+      if (this.shouldTryReconnect) this.retryConnection()
+    }
+  
+    onError(error) {
+      // Anonymize
+      this.setStatus(CLIENT_STATUS.ERROR, { message: `Error: ${JSON.stringify(error)}` })
+      this.log(`Error from tuyaDevice. shouldTryReconnect=${this.shouldTryReconnect}, error${JSON.stringify(error)}`)
+      this.lastData = null
+      if ((typeof error === 'string') && error.startsWith('Timeout waiting for status response')) {
+        this.log(`This error can be due to invalid DPS values. Please check the dps values in the payload !!!!`)
+      }
+      if (this.shouldTryReconnect) this.retryConnection()
+    }
+
+    onDpRefresh(data) {
+      if (this.shouldSubscribeRefreshData) {
+        this.setStatus(CLIENT_STATUS.CONNECTED)
+        this.lastData = data
+        this.emit ('tuya-data', 'data', this.lastDataMsg)
+      }
+    }
+    
+    onData(data) {
+      if (this.shouldSubscribeData) {
+        this.setStatus(CLIENT_STATUS.CONNECTED)
+        this.lastData = data
+        this.emit ('tuya-data', 'dp-refresh', this.lastDataMsg)
+      }
     }
 
     tuyaSet(data) { this.tuyaDevice.set(data) }
@@ -169,6 +206,20 @@ module.exports = function (RED) {
       deviceKey: this.config.localKey,
       deviceName: this.config.name,
     } }
+
+    getServices() {
+      this.project?.getServices(this.cloudData?.id)
+    }
+
+    enableNode() {
+      this.log('enableNode(): enabling the node', this.id)
+      this.startComm()
+    }
+
+    disableNode(){
+      this.log('disableNode(): disabling the node', this.id)
+      this.closeComm()
+    }
 
     startComm() {
       this.log('Auto start probe on connect...')
@@ -257,29 +308,6 @@ module.exports = function (RED) {
       if (this.deviceStatus != status) {
         this.deviceStatus = status
         this.emit ('tuya-status', status, { context: Object.assign(data, this.context)})
-      }
-    }
-
-    register(node) {
-      this.log('register node:' + node.name || node.config?.name)
-      if (!this.clients) {
-        this.clients = {}
-        this.clients[node.id] = node
-        this.log('startComm')
-        this.startComm()
-      }
-      else {
-        this.clients[node.id] = node
-      }
-    }
-
-    unregister(node) {
-      this.log('unregister node:' + node.name || node.config?.name)
-      if (!this.clients) return
-      delete this.clients[node.id]
-      if (!Object.keys(this.clients).length) {
-        delete this.clients
-        if (!config.autoStart) this.closeComm()
       }
     }
   }
