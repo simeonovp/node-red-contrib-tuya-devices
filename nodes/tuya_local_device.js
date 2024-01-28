@@ -72,6 +72,8 @@ module.exports = function (RED) {
       process.nextTick(() => this.setStatus(CLIENT_STATUS.DISCONNECTED))
     }
 
+    get parent() { return this.gateway?.tuyaDevice }
+
     init() {
       this.log('Init')
       this.tuyaDevice.on('connected', this.connectedEventHandler)
@@ -115,7 +117,7 @@ module.exports = function (RED) {
       this.deviceIp = this.tuyaDevice.device.ip
       this.log(`Connected to device! name:${this.config.name}, ip:${this.deviceIp}`)
       this.setStatus(CLIENT_STATUS.CONNECTED)
-      this.tuyaGet()
+      this.tuyaGet({devId: this.id})
     }
 
     onDisconnected() {
@@ -152,9 +154,9 @@ module.exports = function (RED) {
       }
     }
 
-    tuyaSet(data) { this.tuyaDevice.set(data) }
-    tuyaRefresh(data) { this.tuyaDevice.refresh(data) }
-    tuyaGet(data) { this.tuyaDevice.get(data) }
+    tuyaSet(data) { this.tuyaDevice.set({devId: this.id, ...data}) }
+    tuyaRefresh(data) { this.tuyaDevice.refresh({devId: this.id, ...data}) }
+    tuyaGet(data) { this.tuyaDevice.get({devId: this.id, ...data}) }
     tuyaControl(action, value) { 
       switch (action) {
         case 'CONNECT':
@@ -244,7 +246,11 @@ module.exports = function (RED) {
 
     findDevice() {
       this.setStatus(CLIENT_STATUS.CONNECTING)
-      this.log('findDevice(): Initiating the find command')
+      if (this.gateway) {
+        this.connectDevice() //TODO check GW connected
+        return
+      }
+      //this.log('findDevice(): Initiating the find command')
       this.tuyaDevice.find({ timeout: parseInt(this.findTimeout / 1000) })
         .then(() => {
           this.log('findDevice(): Found device, going to connect')
@@ -264,7 +270,8 @@ module.exports = function (RED) {
     }
 
     connectDevice() {
-      clearTimeout(this.findTimeoutHandler)
+      this.findTimeoutHandler && clearTimeout(this.findTimeoutHandler)
+      this.findTimeoutHandler = null
       if (!this.isConnected) {
         this.setStatus(CLIENT_STATUS.CONNECTING)
         const connectHandle = this.tuyaDevice.connect()

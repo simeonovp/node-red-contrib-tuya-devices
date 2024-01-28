@@ -65,7 +65,7 @@ module.exports = function (RED) {
       switch (operation) {
         case 'SET':
           this.device.tuyaSet({ //operation: 'SET'
-            dps: this.dps,
+            dps: msg.dps || this.dps,
             set: msg.payload
           })
           break
@@ -116,6 +116,14 @@ module.exports = function (RED) {
       this.send({ payload })
     }
 
+    // get({gwId = '', devId = '', uid = '', t = '', data, cid, ctype, t}) { // ???
+    //   data = {
+    //     cid: '',
+    //     ctype: 0,
+    //     t: t === 'int' ? Date.now() : Date.now().toString(),
+    //     ...data}
+    //   this.device.tuyaGet({gwId, devId, uid, t})
+    // }
   }
 
   RED.nodes.registerType('tuya-device', TuyaDevice)

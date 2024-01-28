@@ -8,24 +8,44 @@
     <input type="text" id="node-input-name" placeholder="Name">
   </div>
   <hr>
-  <div style="width:100%">
-    <div class="form-row">
-      <label for="refresh-devices"><i class="fa fa-tag"></i> Refresh</label>
-      <button type="button" id="refresh-devices" class="red-ui-button">
-        <i class="fa fa-refresh"></i>
-      </button>
+  <div class="form-row">
+    <ul id="tuya-manager-tabs"></ul>
+  </div>
+  <div id="tuya-manager-tabs-content">
+    <div id="tuya-manager-devices-tab" style="display:none">
+      <div style="width:100%">
+        <div class="form-row">
+          <label for="refresh-devices"><i class="fa fa-tag"></i> Refresh</label>
+          <button type="button" id="refresh-devices" class="red-ui-button">
+            <i class="fa fa-refresh"></i>
+          </button>
+        </div>
+        <table id="device-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+          <thead>
+            <tr id="table-head">
+              <th style="width:10%"><input type="text" value="Icon" style="width:100%" readonly></th>
+              <th style="text-align:left;width:40%"><input type="text" value="Cloud name" style="width:100%" readonly></th>
+              <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
+              <th style="width:10%"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
-    <table id="device-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
-      <thead>
-        <tr id="table-head">
-          <th style="width:10%">Icon</th>
-          <th style="text-align:left;width:40%">Cloud name</th>
-          <th style="text-align:left">Node name</th>
-          <th style="width:10%"></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="tuya-manager-models-tab" style="display:none">
+      <table id="model-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+        <thead>
+          <tr id="table-head">
+            <th style="text-align:left;width:40%"><input type="text" value="Cloud id" style="width:100%" readonly></th>
+            <th style="text-align:left;width:10%"><input type="text" value="Services" style="width:100%" readonly></th>
+            <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+  </div>
   </div>
 </script>
 
@@ -33,18 +53,6 @@
 </script>
 
 <script type="text/javascript">
-  function sendTuyaDevicesMsg(node, msg, cb) {
-    console.log('sendTuyaDevicesMsg ' + msg.topic)
-    $.ajax({
-      url: 'tuyadevices/' + node.id,
-      type: 'POST',
-      data: JSON.stringify(msg),
-      contentType: 'application/json; charset=utf-8',
-      success: cb || ((resp) => console.log('sendTuyaDevicesMsg success')),
-      error: ((jhXHR, textStatus, errorThrown) => console.log('sendTuyaDevicesMsg error')),
-    })
-  }
-
   RED.nodes.registerType('tuya-manager', {
     category: 'tuya',
     color: '#C7E9C0',
@@ -58,67 +66,160 @@
     outputs: 1,
     label: function() { return this.name || 'Tuya Manager' },
     oneditprepare: function() {
-      const fillDevices = () => {
-        if (!this.project) return console.error('project not configured: ' + this.project)
-        const project = RED.nodes.node(this.project)
-        if (!project) return console.error('project not found: ' + this.project)
-            
-        const deviceNodes = {}
-        RED.nodes.eachConfig(n => { if (n.type === 'tuya-local-device') deviceNodes[n.deviceId] = n })
+      const tabs = RED.tabs.create({
+        id: 'tuya-manager-tabs',
+        onchange: function (tab) {
+          $('#tuya-manager-tabs-content').children().hide()
+          $('#' + tab.id).show()
+        }
+      })
+      tabs.addTab({ id: 'tuya-manager-devices-tab', label: 'Devices' })
+      tabs.addTab({ id: 'tuya-manager-models-tab', label: 'Models' })
 
-        project.getCloudDevices && project.getCloudDevices(cloudDevices=>{
-          if (!cloudDevices) return $('#device-table').html('')
-          $('#device-table > tbody').html('')
-          const ilist = []
-          const resDir = project.resDir && project.resDir() || ''
-          for (const devId in cloudDevices) {
-            const dev = cloudDevices[devId]
-            const shapshotUri = `${resDir}icons/${dev.icon}`
-            const node = deviceNodes[devId] || { name: dev.name }
-            ilist.push(`
-              <tr>
-                <td><input type="image" src="${shapshotUri}" name="${dev.name}" width="48" height="48" alt="${dev.name}"/></td>
-                <td><input type="text" value="${dev.name}" style="width:100%" readonly></td>
-                <td><input type="text" id="node-name-${devId}" value="${node.name}" style="width:100%"${node.deviceId && ' readonly' || ''}></td>
-                <td>
-                  <button type="button" id="add-node-${devId}" ${node.deviceId && 'hidden' || 'class="red-ui-button"'}>
-                    <i class="fa fa-plus"></i>
-                  </button>
-                </td>
-              </tr>
-            `)
-          }
-          $('#device-table tbody').append(ilist.join(''))
-          const addLocalDevice =  (obj) => {
-            const type = 'tuya-local-device'
-            const _def = RED.nodes.getType(type)
-            if (!_def) return console.error(`Config node type '${type}' not registered`)
-            const id = RED.nodes.id()
-            let y = { id, _def, type, z: '', users: [] }
-            for (let o in y, _def.defaults) {
-              _def.defaults[o].value && (y[o] = JSON.parse(JSON.stringify(_def.defaults[o].value)))
-            }
-            const e = obj ? {...y, ...obj} : y
-            RED.nodes.add(e)
-          }
-          for (const devId in cloudDevices) {
-            const dev = cloudDevices[devId]
-            $(`#add-node-${devId}`).click(() => {
-              const name = $(`#node-name-${devId}`).val()
-              const gateway = deviceNodes[dev.gateway_id] && deviceNodes[dev.gateway_id].id || ''
-              const config = { project: this.project, deviceId: devId, localKey: dev.local_key, gateway, name }
-              addLocalDevice(config)
-              $(`#add-node-${devId}`).hide()
-              $(`#node-name-${devId}`).attr('readonly','readonly')
-            })
-          }
-        })
+      const addModelNode = (modelId, name) => {
+        if (!modelId) return // invalid parameter, nothink to do
+        const modelNode = RED.nodes.node(tuya_devices.modelNodeId(modelId))
+        if (modelNode) return modelNode // already exist, nothink to do
+        const services = this.models[modelId]
+        if (!services) return // model not exists in the DB
+        $(`#add-node-${modelId}`).hide()
+        $(`#node-name-${modelId}`).attr('readonly','readonly')
+        name = $(`#node-name-${modelId}`).val() || name || ''
+        tuya_devices.addTuyaModel({modelId, services, name})
+        this.modelsDirty = true
       }
-      fillDevices()
+
+      const addDeviceNode = (deviceId) => { // !!! devId is cloud device id, n0t the node id of local device node
+        if (!deviceId) return // invalid parameter, nothink to do
+        const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
+        if (devNode) return devNode // already exist, nothink to do
+        const cloudDevice = this.cloudDevices[deviceId]
+        if (!cloudDevice) return // device not exists in the DB
+
+        $(`#add-node-${deviceId}`).hide()
+        $(`#node-name-${deviceId}`).attr('readonly','readonly')
+        const name = $(`#node-name-${deviceId}`).val() || ''
+        addModelNode(cloudDevice.dataModel, cloudDevice.name)
+        const gwNode = addDeviceNode(cloudDevice.gateway_id)
+        const gateway = gwNode?.id || ''
+        tuya_devices.addLocalDevice({ 
+          project: this.project, 
+          deviceId, 
+          localKey: cloudDevice.local_key, 
+          gateway, 
+          name
+        })
+        this.devicesDirty = true
+      }
+
+      const refreshModels = () => {
+        const models = this.models
+        if (!models) return $('#device-table').html('')
+        const tbody = $('#model-table > tbody')
+        tbody.html('')
+        const ilist = []
+        for (const modelId in models) {
+          const services = models[modelId]
+          const name = '' // (services?.length === 1) && (services[0].label || services[0].name) || modelId
+          const node = RED.nodes.node(tuya_devices.modelNodeId(modelId)) || { name }
+          ilist.push(`
+            <tr>
+              <td><input type="text" value="${modelId}" style="width:100%" readonly></td>
+              <td><input type="text" value="${services?.length || 0}" style="width:100%" readonly></td>
+              <td><input type="text" id="node-name-${modelId}" value="${node.name}" style="width:100%"${node.modelId && ' readonly' || ''}></td>
+              <td>
+                <button type="button" id="add-node-${modelId}" ${node.modelId && 'hidden' || 'class="red-ui-button"'}>
+                  <i class="fa fa-plus"></i>
+                </button>
+              </td>
+            </tr>
+          `)
+        }
+        tbody.append(ilist.join(''))
+        this.modelsDirty = false
+        for (const modelId in models) {
+          $(`#add-node-${modelId}`).click(() => addModelNode(modelId))
+        }
+      }
+
+      const refreshDevices = () => {
+        this.devicesDirty = false
+        if (!this.cloudDevices) return $('#device-table').html('')
+        const tbody = $('#device-table > tbody')
+        tbody.html('')
+        const ilist = []
+        const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
+        for (const deviceId in this.cloudDevices) {
+          const cloudDevice = this.cloudDevices[deviceId]
+          const shapshotUri = `${resDir}icons/${cloudDevice.icon}`
+          const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId)) || { name: cloudDevice.name }
+          ilist.push(`
+            <tr>
+              <td><input type="image" src="${shapshotUri}" name="${cloudDevice.name}" width="48" height="48" alt="${cloudDevice.name}"/></td>
+              <td><input type="text" value="${cloudDevice.name}" style="width:100%" readonly></td>
+              <td><input type="text" id="node-name-${deviceId}" value="${node.name}" style="width:100%"${node.deviceId && ' readonly' || ''}></td>
+              <td>
+                <button type="button" id="add-node-${deviceId}" ${node.deviceId && 'hidden' || 'class="red-ui-button"'}>
+                  <i class="fa fa-plus"></i>
+                </button>
+              </td>
+            </tr>
+          `)
+        }
+        tbody.append(ilist.join(''))
+
+        for (const deviceId in this.cloudDevices) {
+          const cloudDevice = this.cloudDevices[deviceId]
+
+          const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
+          if (devNode) {
+            if (cloudDevice.dataModel) addModelNode(cloudDevice.dataModel, cloudDevice.name)
+            if (cloudDevice.gateway_id) addDeviceNode(cloudDevice.gateway_id)
+          }
+          else $(`#add-node-${deviceId}`).click(() => addDeviceNode(deviceId))
+        }
+      }
+
+      const refresh = () => {
+        if (!this.projectNode) {
+          if (!this.project) return console.error('project not configured: ' + this.project)
+          this.projectNode = RED.nodes.node(this.project)
+          if (!this.projectNode) return console.error('project not found: ' + this.project)
+          if (!this.projectNode.getModels) return console.error('project getModels not found: ' + this.project)
+          if (!this.projectNode.getCloudDevices) return console.error('project getCloudDevices not found: ' + this.project)
+        }
+
+        this.modelsDirty = true
+        this.devicesDirty = true
+
+        if (!this.models) {
+          this.projectNode.getModels(models => {
+            this.models = models
+            refreshModels()
+            refresh()
+          })
+          return
+        }
+
+        if (!this.cloudDevices) {
+          this.projectNode.getCloudDevices(cloudDevices => {
+            this.cloudDevices = cloudDevices
+            refreshDevices()
+            refresh()
+          })
+          return
+        }
+
+        if (this.modelsDirty) refreshModels()
+        if (this.devicesDirty) refreshDevices()
+      }
+
+      refresh()
+
 
       $('#refresh-devices').click(() => {
         // clearDevices()
-        sendTuyaDevicesMsg(this, {topic: 'updateDevices'}, (resp) => {})
+        tuya_devices.sendMsg(this, {topic: 'updateDevices'}, (resp) => {})
       })
 
       const notificationTopic = 'notification/#'
@@ -127,9 +228,14 @@
         console.log(`-- notificationHandler topic:${topic}, payload:${payload}`)
         const parts = topic.split('/')
         if (parts[1] !== this.id) return
-        if (topic === 'updateDevices') fillDevices()
+        if (topic === 'updateDevices') refresh()
       }).bind(this)
       RED.comms.subscribe(notificationTopic, this.notificationHandler)
+    },
+    oneditsave: function() {
+      const notificationTopic = 'notification/#'
+      if (this.notificationHandler) RED.comms.unsubscribe(notificationTopic, this.notificationHandler)
+      this.notificationHandler = null
     }
   })
 </script>

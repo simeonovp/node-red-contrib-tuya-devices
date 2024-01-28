@@ -1,0 +1,183 @@
+<script type="text/html" data-template-name="tuya-model">
+  <div class="form-row">
+    <ul id="tuya-model-tabs"></ul>
+  </div>
+  <div id="tuya-model-tabs-content">
+    <div id="tuya-model-settings-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-modelId"><i class="fa fa-tag"></i> ID</label>
+        <input type="text" id="node-config-input-modelId">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+      </div>
+    </div>
+    <div id="tuya-model-services-tab" style="display:none">
+      <div style="width:100%">
+        <table id="tuya-model-srv-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+          <thead>
+            <tr id="table-head">
+              <th style="text-align:left;width:10%"><input type="text" value="Code" style="width:100%" readonly></th>
+              <th style="text-align:left;width:30%"><input type="text" value="Name" style="width:100%" readonly></th>
+              <th style="text-align:left;width:10%"><input type="text" value="Props" style="width:100%" readonly></th>
+              <th style="text-align:left;width:10%"><input type="text" value="Actions" style="width:100%" readonly></th>
+              <th style="text-align:left;width:10%"><input type="text" value="Events" style="width:100%" readonly></th>
+              <th style="text-align:left"><input type="text" value="Description" style="width:100%" readonly></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tuya-model-properties-tab" style="display:none">
+      <div style="width:100%">
+        <table id="tuya-model-prop-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+          <thead>
+            <tr id="prop-table-head">
+              <th style="text-align:left;width:8%"><input type="text" value="Serv" style="width:100%" readonly></th>
+              <th style="text-align:left;width:12%"><input type="text" value="Id" style="width:100%" readonly></th>
+              <th style="text-align:left;width:30%"><input type="text" value="Code" style="width:100%" readonly></th>
+              <th style="text-align:left"><input type="text" value="Name" style="width:100%" readonly></th>
+              <th style="width:20%"><input type="text" value="Type" style="width:100%" readonly></th>
+              <th style="width:10%"><input type="text" value="Mode" style="width:100%" readonly></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tuya-model-actions-tab" style="display:none">
+      <div style="width:100%">
+        <table id="tuya-model-act-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+          <thead>
+            <tr id="table-head">
+              <th style="text-align:left;width:8%"><input type="text" value="Serv" style="width:100%" readonly></th>
+              <th style="text-align:left;width:12%"><input type="text" value="Id" style="width:100%" readonly></th>
+              <th style="text-align:left;width:30%"><input type="text" value="Code" style="width:100%" readonly></th>
+              <th style="text-align:left"><input type="text" value="Name" style="width:100%" readonly></th>
+              <th style="width:20%"><input type="text" value="Type" style="width:100%" readonly></th>
+              <th style="width:10%"><input type="text" value="Mode" style="width:100%" readonly></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tuya-model-events-tab" style="display:none">
+      <div style="width:100%">
+        <table id="tuya-model-ev-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+          <thead>
+            <tr id="table-head">
+              <th style="text-align:left;width:8%"><input type="text" value="Serv" style="width:100%" readonly></th>
+              <th style="text-align:left;width:12%"><input type="text" value="Id" style="width:100%" readonly></th>
+              <th style="text-align:left;width:30%"><input type="text" value="Code" style="width:100%" readonly></th>
+              <th style="text-align:left"><input type="text" value="Name" style="width:100%" readonly></th>
+              <th style="width:20%"><input type="text" value="Type" style="width:100%" readonly></th>
+              <th style="width:10%"><input type="text" value="Mode" style="width:100%" readonly></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tuya-model">
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('tuya-model', {
+    category: 'config',
+    defaults: {
+      modelId: { value: '', required: true },
+      services: { value: [], required: true },
+      name: { value: '', required: false },
+    },
+    label: function() { 
+      return this.name || 'Tuya Model' 
+    },
+    oneditprepare: function () {
+      const tabs = RED.tabs.create({
+        id: 'tuya-model-tabs',
+        onchange: function (tab) {
+          $('#tuya-model-tabs-content').children().hide()
+          $('#' + tab.id).show()
+        }
+      })
+      tabs.addTab({ id: 'tuya-model-settings-tab', label: 'Settings' })
+      tabs.addTab({ id: 'tuya-model-services-tab', label: 'Services' })
+      tabs.addTab({ id: 'tuya-model-properties-tab', label: 'Properties' })
+      tabs.addTab({ id: 'tuya-model-actions-tab', label: 'Actions' })
+      tabs.addTab({ id: 'tuya-model-events-tab', label: 'Events' })
+
+      const fillServices = () => {
+        const srv_el = $('#tuya-model-srv-table > tbody')
+        srv_el.html('')
+        const prop_el = $('#tuya-model-prop-table > tbody')
+        prop_el.html('')
+        if (this.services) {
+          prop_el.html('')
+          const slist = []
+          const plist = []
+          let sidx = 0
+          for (const service of this.services) {
+            sidx++
+            if (!service.label) service.label = service.name || ''
+            slist.push(`<tr>
+              <td><input type="text" value="${service.code} || ''" style="width:100%" readonly></td>
+              <td><input type="text" id="dps-${this.modelId}-${sidx}" value="${service.label}"}></td>
+              <td><input type="text" value="${service.properties?.length || 0}" style="width:100%" readonly></td>
+              <td><input type="text" value="${service.actions?.length || 0}" style="width:100%" readonly></td>
+              <td><input type="text" value="${service.events?.length || 0}" style="width:100%" readonly></td>
+              <td><input type="text" value="${service.description || ''}" style="width:100%" readonly></td>
+              </tr>`)
+            if (service.properties) {
+              for (const prop of service.properties) {
+                if (!prop.label) prop.label = prop.name || ''
+                plist.push(`<tr>
+                <td><input type="text" value="${sidx}" style="width:100%" readonly></td>
+                <td><input type="text" value="${prop.abilityId}" style="width:100%" readonly></td>
+                <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
+                <td><input type="text" id="dps-${this.modelId}-${sidx}-${prop.dp_id}" value="${prop.label}"}></td>
+                <td><input type="text" value="${prop.typeSpec?.type || ''}" style="width:100%" readonly></td>
+                <td><input type="text" value="${prop.accessMode}" style="width:100%" readonly></td>
+                </tr>`)
+              }
+            }
+            if (service.actions) {
+              for (const action of service.actions) {
+                if (!action.label) action.label = action.name || ''
+                plist.push(`<tr>
+                <td><input type="text" value="${sidx}" style="width:100%" readonly></td>
+                <td><input type="text" value="${action.abilityId}" style="width:100%" readonly></td>
+                <td><input type="text" value="${action.code}" style="width:100%" readonly></td>
+                <td><input type="text" id="dps-${this.modelId}-${sidx}-${action.dp_id}" value="${action.label}"}></td>
+                <td><input type="text" value="${action.typeSpec?.type || ''}" style="width:100%" readonly></td>
+                <td><input type="text" value="${action.accessMode}" style="width:100%" readonly></td>
+                </tr>`)
+              }
+            }
+            if (service.events) {
+              for (const event of service.events) {
+                if (!event.label) event.label = event.name || ''
+                plist.push(`<tr>
+                <td><input type="text" value="${sidx}" style="width:100%" readonly></td>
+                <td><input type="text" value="${event.abilityId}" style="width:100%" readonly></td>
+                <td><input type="text" value="${event.code}" style="width:100%" readonly></td>
+                <td><input type="text" id="dps-${this.modelId}-${sidx}-${event.dp_id}" value="${event.label}"}></td>
+                <td><input type="text" value="${event.typeSpec?.type || ''}" style="width:100%" readonly></td>
+                <td><input type="text" value="${event.accessMode}" style="width:100%" readonly></td>
+                </tr>`)
+              }
+            }
+          }
+          srv_el.append(slist.join(''))
+          prop_el.append(plist.join(''))
+        }
+      }
+      fillServices()
+    }
+  })
+</script>

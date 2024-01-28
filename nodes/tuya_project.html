@@ -13,20 +13,95 @@
     <br>
     URL to project DBs storage. Used for initial project setup without cloud access.
   </div>
+  <div class="form-row">
+    <label for="node-config-input-translate"><i class="fa fa-tag"></i> Auto translate</label>
+    <input type="checkbox" id="node-config-input-translate">
+  </div>
 </script>
 
 <script type="text/html" data-help-name="tuya-project">
 </script>
 
 <script type="text/javascript">
+  const tuya_devices = {
+    deviceNodeId: (deviceId) => ('tyd_' + deviceId),
+    modelNodeId: (modelId) => ('tym_' + modelId),
+    addTuyaModel:  (obj) => {
+      if (!obj.modelId) return
+      const id = tuya_devices.modelNodeId(obj.modelId) //'tym_' + obj.modelId
+      const model = RED.nodes.node(id)
+      if (model) return
+      const type = 'tuya-model'
+      const _def = RED.nodes.getType(type)
+      if (!_def) return console.error(`Config node type '${type}' not registered`)
+      let y = { id, _def, type, z: '', users: [] }
+      for (let o in y, _def.defaults) {
+        _def.defaults[o].value && (y[o] = JSON.parse(JSON.stringify(_def.defaults[o].value)))
+      }
+      const e = obj ? {...y, ...obj} : y
+      RED.nodes.add(e)
+      //TODO set node dirty
+    },
+    addLocalDevice: (obj) => {
+      const id = tuya_devices.deviceNodeId('tyd_' + obj.deviceId)
+      const device = RED.nodes.node(id)
+      if (device) return
+      const type = 'tuya-local-device'
+      const _def = RED.nodes.getType(type)
+      if (!_def) return console.error(`Config node type '${type}' not registered`)
+      let y = { id, _def, type, z: '', users: [] }
+      for (let o in y, _def.defaults) {
+        _def.defaults[o].value && (y[o] = JSON.parse(JSON.stringify(_def.defaults[o].value)))
+      }
+      const e = obj ? {...y, ...obj} : y
+      RED.nodes.add(e)
+      //TODO set node dirty
+    },
+    updateDeviceId: (localDevice) => {
+      if (localDevice.type !== 'tuya-local-device') return
+      const deviceId = localDevice.deviceId
+      if (localDevice._config.deviceId !== `"${deviceId}"`) console.warn(`tuya_devices.updateDeviceId deviceId (${localDevice.deviceId}) differs config (${deviceId})`)
+      const id = tuya_devices.modelNodeId(deviceId) //'tyd_' + deviceId
+      const confId = `"${id}"`
+      for (const user of localDevice.users) {
+        if (user.type === 'tuya-local-device') {
+          if (user._config.gateway !== `"${localDevice.id}"`) console.warn(`tuya_devices.updateDeviceId user device config (${user._config.gateway}) differs id (${localDevice.id})`)
+          if (user.gateway !== localDevice.id) console.warn(`tuya_devices.updateDeviceId user device (${user.gateway}) differs id (${localDevice.id})`)
+          user._config.gateway = confId
+          user.gateway = id
+        }
+        else if (user.type === 'tuya-device') {
+          if (user._config.device !== `"${localDevice.id}"`) console.warn(`tuya_devices.updateDeviceId user device config (${user._config.device}) differs id (${localDevice.id})`)
+          if (user.device !== localDevice.id) console.warn(`tuya_devices.updateDeviceId user device (${user.device}) differs id (${localDevice.id})`)
+          user._config.device = confId
+          user.device = id
+        }
+      }
+      localDevice.id = id
+    },
+    sendMsg: (node, msg, cb) => {
+      console.log('sendTuyaDevicesMsg ' + msg.topic)
+      $.ajax({
+        url: 'tuyadevices/' + node.id,
+        type: 'POST',
+        data: JSON.stringify(msg),
+        contentType: 'application/json; charset=utf-8',
+        success: cb || ((resp) => console.log('sendTuyaDevicesMsg success')),
+        error: ((jhXHR, textStatus, errorThrown) => console.log('sendTuyaDevicesMsg error')),
+      })
+    },
+  }
+
   RED.nodes.registerType('tuya-project', {
     category: 'config',
     defaults: {
       cloud: { type: 'tuya-cloud', required: false },
       dbUri: { value: '' },
-      userId: { value: '' },
       name: { value: '' },
-      network: { value: '' }
+      translate: { value: true },
+      network: { value: '' },
+      version: { value: 1 },
+      language: { value: 'en' }
     },
     label: function() {
       // use label callback to perform init
@@ -37,13 +112,18 @@
           const url = this.resDir() + 'devices.json'
           fetch(url).then(r=>r.json().then(callback))
         })
-        this.getServices = ((callback) => {
-          if (this._services) return callback(this._services)
-          const url = this.resDir() + 'services.json'
+        this.getModels = ((callback) => {
+          if (this._models) return callback(this._models)
+          const url = this.resDir() + 'models.json'
           fetch(url).then(r=>r.json().then(callback))
         })
-        this.getCloudDevices(cloudDevices=>this._cloudDevices=cloudDevices)
-        this.getServices(services=>this._services=services)
+        this.getCloudDevices(cloudDevices => this._cloudDevices = cloudDevices)
+        this.getModels(models => this._models = models)
+        if (this.version !== 1) {
+          for (const user of this.users) tuya_devices.updateDeviceId(user)
+          this._config.version = 1
+          this.version = 1
+        }
         this.init = true
       }
       return this.name || 'Tuya Project' 

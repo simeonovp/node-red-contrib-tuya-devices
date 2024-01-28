@@ -107,7 +107,7 @@
     label: function() { 
       // use label callback to perform init
       if (!this.init) {
-        this.getCloudDevice = (callback=>{
+        this.getCloudDevice = (callback => {
           if (this._device) return callback(this._device)
           if (!this.project) return console.error('project not configured: ' + this.project)
           const project = RED.nodes.node(this.project)
@@ -118,13 +118,13 @@
             callback(this._device)
           })
         }).bind(this)
-        this.getServices = (callback=>{
+        this.getServices = (callback => {
           if (this._services) return callback(this._services)
           this.getCloudDevice(cloudDevice=>{
             if (!cloudDevice?.dataModel) return
             const project = RED.nodes.node(this.project)
-            project.getServices && project.getServices(services=>{
-              this._services = services[cloudDevice.dataModel]
+            project.getModels && project.getModels(models => {
+              this._services = models[cloudDevice.dataModel]
               callback(this._services)
             })
           })
