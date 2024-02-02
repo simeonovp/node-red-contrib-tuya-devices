@@ -10,7 +10,7 @@ module.exports = function (RED) {
     }
   }
 
-  class Manager {
+  class ManagerNode {
     constructor (config) {
       this.config = config
       RED.nodes.createNode(this, config)
@@ -66,13 +66,13 @@ module.exports = function (RED) {
     }
     
     sendToFrontend(payload) {
-      this.log(`-- sendToFrontend`)
+      //this.log(`-- sendToFrontend`)
       RED.events.emit('runtime-event', { id: this.id, retain: false, payload })
     }
 
   }
 
-  RED.nodes.registerType('tuya-manager', Manager)
+  RED.nodes.registerType('tuya-manager', ManagerNode)
 
   //#.node-red\node_modules\@node-red\nodes\core\common\20-inject.js
   RED.httpAdmin.post(

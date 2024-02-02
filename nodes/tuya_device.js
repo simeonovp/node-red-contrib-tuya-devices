@@ -3,7 +3,7 @@ const path = require('path')
 module.exports = function (RED) {
   'use strict'
 
-  class TuyaDevice {
+  class DeviceNode {
     constructor (config) {
       RED.nodes.createNode(this, config)
       this.config = config
@@ -48,8 +48,8 @@ module.exports = function (RED) {
     }
 
     onInput(msg, send, done) {
-      this.log(`Recieved input : ${JSON.stringify(msg)}`)
-      let operation = msg.payload.operation || 'SET'
+      this.log(`Recieved input: ${JSON.stringify(msg)}`)
+      let operation = msg.operation || msg.payload.operation || 'SET'
       delete msg.payload.operation
       if (['GET', 'SET', 'REFRESH'].indexOf(operation) != -1) {
         // the device has to be connected.
@@ -64,7 +64,10 @@ module.exports = function (RED) {
       }
       switch (operation) {
         case 'SET':
-          this.device.tuyaSet({ //operation: 'SET'
+          if (typeof msg.payload === 'object') {
+            this.device.setMultipleDps(msg.payload)
+          }
+          else this.device.tuyaSet(msg.options || { //operation: 'SET'
             dps: msg.dps || this.dps,
             set: msg.payload
           })
@@ -73,7 +76,8 @@ module.exports = function (RED) {
           this.device.tuyaRefresh(msg.payload)
           break
         case 'GET':
-          this.device.tuyaGet(msg.payload)
+          if (typeof msg.payload === 'object') this.device.tuyaGet(msg.payload)
+          else if (typeof msg.payload === 'number') this.device.tuyaGet({ dps: msg.payload })
           break
         case 'CONTROL':
           this.device.tuyaControl(msg.payload.action, msg.payload.value)
@@ -87,7 +91,6 @@ module.exports = function (RED) {
     }
 
     onDeviceStatus(state, data) {
-      // this.log('-- onDeviceStatus ev:' + state)
       (this.config.outputs > 1) && data && this.send([null, { payload: { state, ...data } }])
       switch (state) {
         case 'connecting':
@@ -109,7 +112,8 @@ module.exports = function (RED) {
     onDeviceData(ev, payload) {
       //this.log(`-- onDeviceData [event:${ev}]: ${JSON.stringify(payload?.data)}, dps:${this.dps}, isArray:${Array.isArray(this.dps)}, type:${typeof this.dps}`)
       if (this.dps && !Array.isArray(this.dps)) {
-        if (!payload?.data?.dps || (payload.data.dps[this.dps] === undefined)) return
+        const dps = payload?.data?.dps || payload?.dps
+        if (!dps || (dps[this.dps] === undefined)) return
         payload = payload.data.dps[this.dps]
       }
 
@@ -126,5 +130,5 @@ module.exports = function (RED) {
     // }
   }
 
-  RED.nodes.registerType('tuya-device', TuyaDevice)
+  RED.nodes.registerType('tuya-device', DeviceNode)
 }

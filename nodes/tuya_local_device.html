@@ -21,6 +21,10 @@
         <input type="text" id="node-config-input-gateway">
       </div>
       <div class="form-row">
+        <label for="node-config-input-cid"><i class="fa fa-tag"></i> Node uuid</label>
+        <input type="text" id="node-config-input-cid">
+      </div>
+      <div class="form-row">
         <label for="node-config-input-autoStart"><i class="fa fa-tag"></i> Auto connect</label>
         <input type="checkbox" id="node-config-input-autoStart">
       </div>
@@ -41,15 +45,15 @@
         <input type="text" id="node-config-input-fullTopic" readonly>
       </div>
       <hr>
-      <div style="width:100%">
-        <table id="dps-table" class="table table-hover" style="border:1px solid;border-collapse:collapse">
+      <div class="form-row">
+        <table id="dps-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
           <thead>
             <tr id="table-head">
-              <th style="text-align:left;width:10%">Id</th>
-              <th style="text-align:left;width:30%">Code</th>
-              <th style="text-align:left">Name</th>
-              <th style="width:20%">Type</th>
-              <th style="width:10%">Mode</th>
+              <th style="text-align:left;width:10%"><input type="text" value="Id" style="width:100%" readonly></th>
+              <th style="text-align:left;width:30%"><input type="text" value="Code" style="width:100%" readonly></th>
+              <th style="text-align:left"><input type="text" value="Name" style="width:100%" readonly></th>
+              <th style="width:20%"><input type="text" value="Type" style="width:100%" readonly></th>
+              <th style="width:10%"><input type="text" value="Mode" style="width:100%" readonly></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -95,6 +99,7 @@
       deviceId: { value: '', required: true },
       localKey: { value: '', required: true },
       gateway: { type: 'tuya-local-device', required: false },
+      cid: { value: '' },
       ip: { value: '' },
       port: { value: 6668 },
       autoStart: { value: true, required: true },
@@ -164,23 +169,25 @@
               for (const service of services) {
                 if (!service.properties) continue
                 for (const prop of service.properties) {
-                  ilist.push(`<tr>
-                      <td><input type="text" value="${prop.abilityId}" readonly></td>
-                      <td><input type="text" value="${prop.code}" readonly></td>
-                      <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name || ''}"}></td>
-                      <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" readonly></td>
-                      <td><input type="text" value="${prop.accessMode}" readonly></td>
+                  ilist.push(`
+                    <tr>
+                      <td><input type="text" value="${prop.abilityId}" style="width:100%" readonly></td>
+                      <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
+                      <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" style="width:100%" value="${prop.custom_name || ''}"}></td>
+                      <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" style="width:100%" readonly></td>
+                      <td><input type="text" value="${prop.accessMode}" style="width:100%" readonly></td>
                     </tr>`)
                 }
               }
             }
             else {
               for (const prop of cloudDevice.properties) {
-                ilist.push(`<tr>
-                    <td><input type="text" value="${prop.dp_id}" readonly></td>
-                    <td><input type="text" value="${prop.code}" readonly></td>
-                    <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name}"}></td>
-                    <td><input type="text" value="" readonly></td>
+                ilist.push(`
+                  <tr>
+                    <td><input type="text" value="${prop.dp_id}" style="width:100%" readonly></td>
+                    <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
+                    <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name}" style="width:100%"}></td>
+                    <td><input type="text" value="" style="width:100%" readonly></td>
                   </tr>`)
               }
             }

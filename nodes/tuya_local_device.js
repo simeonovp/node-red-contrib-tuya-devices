@@ -19,12 +19,15 @@ module.exports = function (RED) {
   class LocalDevice {
     constructor (config) {
       RED.nodes.createNode(this, config)
-      this.config = config
+      this.name = config.name
       this.project = config.project && RED.nodes.getNode(config.project)
-      this.cloudData = this.project && this.project.getCloudDevice(config.id) || {}
+      //this.cloudData = this.project && this.project.getCloudDevice(config.deviceId) || {}
+      this.devId = config.deviceId
       this.gateway = config.gateway && RED.nodes.getNode(config.gateway)
+      this.cid = config.cid || config.node_id || ''
+      this.autoStart = config.autoStart && !this.cid
 
-      this.shouldTryReconnect = true
+      this.shouldTryReconnect = !this.cid
       this.shouldSubscribeData = true
       this.shouldSubscribeRefreshData = true
       this.deviceIp = config.ip || ''
@@ -40,25 +43,27 @@ module.exports = function (RED) {
       this.findTimeoutHandler = null
       this.retryTimerHandler = null
 
-      this.project && this.project.register(this)
+      this.project?.register(this)
+      this.propList = null // will be sampled on demand
 
       // Deregister from BrokerNode when this node is deleted or restarted
       this.on('close', this.onClose.bind(this))
   
       const connectionParams = {
         ip: this.deviceIp,
-        port: this.config.port && parseInt(this.config.port) || 6668,
-        id: this.config.deviceId,
-        gwID: this.gateway?.deviceId || this.config.deviceId,
-        key: this.config.localKey,
-        //productKey,
+        port: config.port && parseInt(config.port) || 6668,
+        id: this.devId,
+        gwID: this.gateway?.deviceId || this.devId,
+        key: config.localKey,
+        //productKey: '', //(currently unused)
         version: this.tuyaVersion,
+        //nullPayloadOnJSONError: false,
         issueGetOnConnect: false,
         nullPayloadOnJSONError: false,
         issueRefreshOnConnect: false,
       }
       this.log(`${JSON.stringify(connectionParams)}`)
-      this.tuyaDevice = new TuyaDevice(connectionParams)
+      this.tuyaDevice = this.gateway.tuyaDevice || new TuyaDevice(connectionParams)
       this.lastData = null
   
       // Add event listeners
@@ -72,8 +77,6 @@ module.exports = function (RED) {
       process.nextTick(() => this.setStatus(CLIENT_STATUS.DISCONNECTED))
     }
 
-    get parent() { return this.gateway?.tuyaDevice }
-
     init() {
       this.log('Init')
       this.tuyaDevice.on('connected', this.connectedEventHandler)
@@ -83,7 +86,7 @@ module.exports = function (RED) {
       this.tuyaDevice.on('data', this.dataEventHandler)
       
       // Start probing
-      if (this.config.autoStart) this.startComm()
+      if (this.autoStart) this.startComm()
       else this.log('Auto start probe is disabled')
     }
 
@@ -107,7 +110,7 @@ module.exports = function (RED) {
     }
 
     onClose(done) {
-      this.project && this.project.unregister(this)
+      this.project?.unregister(this)
       this.closeComm()
       this.deinit()
       done()
@@ -115,9 +118,9 @@ module.exports = function (RED) {
     
     onConnected() {
       this.deviceIp = this.tuyaDevice.device.ip
-      this.log(`Connected to device! name:${this.config.name}, ip:${this.deviceIp}`)
+      this.log(`Connected to device! name:${this.name}, ip:${this.deviceIp}`)
       this.setStatus(CLIENT_STATUS.CONNECTED)
-      this.tuyaGet({devId: this.id})
+      if (!this.cid) this.tuyaGet({devId: this.id})
     }
 
     onDisconnected() {
@@ -138,25 +141,92 @@ module.exports = function (RED) {
       if (this.shouldTryReconnect) this.retryConnection()
     }
 
-    onDpRefresh(data) {
+    onDpRefresh(payload, commandByte, sequenceN) {
+      if (this.cid) {
+        if (this.cid !== payload?.cid) return
+      }
+      else {
+        if (payload?.deviceId !== this.devId) return
+      }
+
       if (this.shouldSubscribeRefreshData) {
         this.setStatus(CLIENT_STATUS.CONNECTED)
-        this.lastData = data
-        this.emit ('tuya-data', 'data', this.lastDataMsg)
-      }
-    }
-    
-    onData(data) {
-      if (this.shouldSubscribeData) {
-        this.setStatus(CLIENT_STATUS.CONNECTED)
-        this.lastData = data
+        this.lastData = payload
         this.emit ('tuya-data', 'dp-refresh', this.lastDataMsg)
       }
     }
+    
+    onData(payload, commandByte, sequenceN) {
+      if (!payload) return
+      if (this.cid) {
+        if (this.cid !== payload.cid) return
+      }
+      else {
+        if (payload?.deviceId !== this.devId) return
+      }
 
-    tuyaSet(data) { this.tuyaDevice.set({devId: this.id, ...data}) }
-    tuyaRefresh(data) { this.tuyaDevice.refresh({devId: this.id, ...data}) }
-    tuyaGet(data) { this.tuyaDevice.get({devId: this.id, ...data}) }
+      if (this.shouldSubscribeData) {
+        this.setStatus(CLIENT_STATUS.CONNECTED)
+        this.lastData = payload
+        this.emit ('tuya-data', 'data', this.lastDataMsg)
+      }
+    }
+
+    tuyaSet(options) { 
+      // options = {
+      //   multiple: false,
+      //   data: {}, //{dps1: ..., ...}
+      //   dps: 1,
+      //   set: '', // dps value
+      //   shouldWaitForResponse: false,
+      //   isSetCallToGetData: false,
+      // }
+      options = {
+        devId: this.id,
+        cid: this.cid,
+        ...options
+      }
+      //this.log(`-- tuyaSet(${JSON.stringify(options)})`)
+      this.tuyaDevice.set(options) 
+    }
+
+    tuyaRefresh(data) { 
+      this.tuyaDevice.refresh({
+        devId: this.id,
+        cid: this.cid,
+        ...data //requestedDPS: [], schema: true
+      })
+    }
+
+    tuyaGet(data) { 
+      this.tuyaDevice.get({
+        devId: this.id,
+        cid: this.cid,
+        ...data //dps: 1, schema: true
+      }) 
+    }
+
+    get properties() {
+      if (!this.propList) this.propList = this.project?.getProperties(this.devId)
+      return this.propList
+    }
+
+    setMultipleDps(data) {
+      const dpsIdRegex = /^\d+$/
+      const options = { multiple: true, data: {} }
+      for (const key in data) {
+        if (dpsIdRegex.test(key)) {
+          options.data[key] = data[key]
+        }
+        else {
+          const property = this.properties?.find(p => p.code === key)
+          if (property) options.data[property.abilityId] = data[key]
+          else this.warn(`setMultipleDps code '${key}' not found, data:${JSON.stringify(data)}`)
+        }
+      }
+      if (Object.entries(options.data).length) this.tuyaSet(options)
+    }
+    
     tuyaControl(action, value) { 
       switch (action) {
         case 'CONNECT':
@@ -199,27 +269,20 @@ module.exports = function (RED) {
       }
     }
 
-    get lastDataMsg() { return { data: this.lastData, deviceId: this.config.deviceId, deviceName: this.config.name } }
+    get lastDataMsg() { return { data: this.lastData, deviceId: this.devId, deviceName: this.name } }
     get isConnected() { return this.tuyaDevice && this.tuyaDevice.isConnected() }
     
-    get context() { return {
-      deviceVirtualId: this.config.deviceId,
-      deviceIp: this.deviceIp,
-      deviceKey: this.config.localKey,
-      deviceName: this.config.name,
-    } }
-
     getServices() {
-      this.project?.getServices(this.cloudData?.id)
+      this.project?.getServices(this.devId)
     }
 
     enableNode() {
-      this.log('enableNode(): enabling the node', this.id)
-      this.startComm()
+      this.log('enableNode(): enabling the node ' + this.id)
+      if (this.autoStart) this.startComm()
     }
 
     disableNode(){
-      this.log('disableNode(): disabling the node', this.id)
+      this.log('disableNode(): disabling the node ' + this.id)
       this.closeComm()
     }
 
@@ -240,7 +303,7 @@ module.exports = function (RED) {
       clearTimeout(this.findTimeoutHandler)
       this.shouldTryReconnect = false
       this.log('closeComm(): Disconnecting from Tuya Device')
-      this.tuyaDevice.disconnect()
+      if(!this.gateway) this.tuyaDevice.disconnect()
       this.setStatus(CLIENT_STATUS.DISCONNECTED)
     }
 
@@ -272,24 +335,25 @@ module.exports = function (RED) {
     connectDevice() {
       this.findTimeoutHandler && clearTimeout(this.findTimeoutHandler)
       this.findTimeoutHandler = null
-      if (!this.isConnected) {
-        this.setStatus(CLIENT_STATUS.CONNECTING)
-        const connectHandle = this.tuyaDevice.connect()
-        connectHandle.catch((e) => {
-          this.setStatus(CLIENT_STATUS.DISCONNECTED)
-          this.log(`connectDevice(): An error had occurred with tuya API on connect method : ${JSON.stringify(e)}`)
-          if (this.shouldTryReconnect) {
-            this.log('connectDevice(): retrying the connect')
-            if (this.findTimeoutHandler) clearTimeout(this.findTimeoutHandler)
-            this.findTimeoutHandler = setTimeout(() => this.findDevice(), this.retryTimeout)
-          } 
-          else this.log('connectDevice(): not retrying the find as shouldTryReconnect = false')
-        })
-      } 
-      else {
+      if (this.isConnected) {
         this.log('connectDevice() : already connected. skippig the connect call')
         this.setStatus(CLIENT_STATUS.CONNECTED)
+        return
       }
+
+      this.setStatus(CLIENT_STATUS.CONNECTING)
+
+      const connectHandle = this.tuyaDevice.connect()
+      connectHandle.catch((e) => {
+        this.setStatus(CLIENT_STATUS.DISCONNECTED)
+        this.log(`connectDevice(): An error had occurred with tuya API on connect method : ${JSON.stringify(e)}`)
+        if (this.shouldTryReconnect) {
+          this.log('connectDevice(): retrying the connect')
+          if (this.findTimeoutHandler) clearTimeout(this.findTimeoutHandler)
+          this.findTimeoutHandler = setTimeout(() => this.findDevice(), this.retryTimeout)
+        } 
+        else this.log('connectDevice(): not retrying the find as shouldTryReconnect = false')
+      })
     }
 
     retryConnection() {
@@ -311,10 +375,15 @@ module.exports = function (RED) {
       this.retryTimeout = newTimeout
     }
 
-    setStatus(status, data = {}) {
+    setStatus(status, data = {}) { //??
+      const context = {
+        deviceVirtualId: this.devId,
+        deviceIp: this.deviceIp,
+      }
+  
       if (this.deviceStatus != status) {
         this.deviceStatus = status
-        this.emit ('tuya-status', status, { context: Object.assign(data, this.context)})
+        this.emit ('tuya-status', status, { context: Object.assign(data, context)})
       }
     }
   }

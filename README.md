@@ -10,7 +10,7 @@ Install via npm
 
 ```shell
 $ cd ~/.node-red
-$ npm install node-red-contrib-tasmotas
+$ npm install node-red-contrib-tuya-devices
 ```
 then restart node-red
 
@@ -29,9 +29,21 @@ In the manager config form:
 
 If the cloud configuration is correct and the manager node has received at least once a message with topic 'updateDevices' all mapped devices will be listed in the config. The device capabilities will be cached localy. With the plus button can be added a config node for every local device. This config nodes contains all setting nedded to use the device localy and can be selected in the configuration of the Tuya device nodes. 
 
+## Changelog
+### v1.1.x
+- Make possible to use local devices connected by gateway
+- Refactoring local chache
+- List cloud devices and models in the manager node configuration and create config nodes using '+' button
+- Model elements can be manualy translated by editing of the file "translations.json" in .node-red\projects\node-red-contrib-tuya-devices\resources\{projectname}\
+
+### v1.0.x
+- Initial implementation
+- Supports WLAN Tuya devices
+
 ## TODO
+- add support for devices using gateway
 - flow examples
-- write change log
+- Make possible to translate cloud tokens (service descriptions) to english. Existing cache can be translated using manager command with topic 'translateDeviceModels'. 
   
 
 ## Disclaimer
@@ -41,3 +53,10 @@ The software is provided as-is under the MIT license. The author cannot be held 
 If you like our ideas and want to support further development, you can donate here:  
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/tasmotas)
 [![Donate](https://img.shields.io/badge/donate-buy%20me%20a%20coffee-yellow.svg)](https://www.buymeacoffee.com/smarthomenodes)
+
+## Screenshots
+![manager_flow](./img/manager_flow.jpg) 
+![cloud](./img/cloud.jpg) 
+![project](./img/project.jpg) 
+![manager_devices](./img/manager_devices.jpg) 
+![manager_models](./img/manager_models.jpg) 

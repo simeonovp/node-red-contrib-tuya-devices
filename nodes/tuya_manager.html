@@ -45,7 +45,7 @@
         </thead>
         <tbody></tbody>
       </table>
-  </div>
+    </div>
   </div>
 </script>
 
@@ -93,21 +93,56 @@
         if (!deviceId) return // invalid parameter, nothink to do
         const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
         if (devNode) return devNode // already exist, nothink to do
-        const cloudDevice = this.cloudDevices[deviceId]
-        if (!cloudDevice) return // device not exists in the DB
+        const _cloudDevice = this.cloudDevices[deviceId]
+        if (!_cloudDevice) return // device not exists in the DB
 
         $(`#add-node-${deviceId}`).hide()
         $(`#node-name-${deviceId}`).attr('readonly','readonly')
         const name = $(`#node-name-${deviceId}`).val() || ''
+        const cloudDevice = { 
+          // identification:
+          id: '', //-> deviceId
+          local_key: '', //-> localKey
+          name: '', //-> cname
+          uuid: '',
+          // capabilities:
+          category: '',
+          category_name: '',
+          product_id: '',
+          product_name: '',
+          icon: '',
+          model: '',
+          dataModel: '',
+          // linkage:
+          sub: true,
+          gateway_id: '', //-> gateway.deviceId
+          owner_id: '', //-> project.cloud.userId
+          // location:
+          lat: '',
+          lon: '',
+          time_zone: '', //'+02:00'
+          // dynamic:
+          ip: '', //-> ip
+          active_time: 0,
+          create_time: 0,
+          update_time: 0,
+          online: false,
+          ..._cloudDevice 
+        }
+        delete cloudDevice.properties
+
         addModelNode(cloudDevice.dataModel, cloudDevice.name)
         const gwNode = addDeviceNode(cloudDevice.gateway_id)
         const gateway = gwNode?.id || ''
+        
         tuya_devices.addLocalDevice({ 
           project: this.project, 
           deviceId, 
           localKey: cloudDevice.local_key, 
-          gateway, 
-          name
+          gateway,
+          cid: cloudDevice.cid || cloudDevice.node_id,
+          name,
+          cloudDevice,
         })
         this.devicesDirty = true
       }
@@ -217,25 +252,30 @@
       refresh()
 
 
-      $('#refresh-devices').click(() => {
-        // clearDevices()
-        tuya_devices.sendMsg(this, {topic: 'updateDevices'}, (resp) => {})
-      })
+      $('#refresh-devices').click(() => tuya_devices.sendMsg(this, {topic: 'updateDevices'}, (resp) => {}))
 
       const notificationTopic = 'notification/#'
-      if (this.notificationHandler) RED.comms.unsubscribe(notificationTopic, this.notificationHandler)
-      this.notificationHandler = ((topic, payload) => {
-        console.log(`-- notificationHandler topic:${topic}, payload:${payload}`)
-        const parts = topic.split('/')
-        if (parts[1] !== this.id) return
-        if (topic === 'updateDevices') refresh()
-      }).bind(this)
-      RED.comms.subscribe(notificationTopic, this.notificationHandler)
+      if (!this.unsubscribe) this.unsubscribe = () => {
+        if (this.notificationHandler) RED.comms.unsubscribe(notificationTopic, this.notificationHandler)
+        this.notificationHandler = null
+      }
+      if (!this.subscribe) this.subscribe = () => {
+        this.unsubscribe()
+        this.notificationHandler = ((topic, payload) => {
+          const parts = topic.split('/')
+          if (parts[1] !== this.id) return
+          if (topic === 'updateDevices') refresh()
+        }).bind(this)
+        RED.comms.subscribe(notificationTopic, this.notificationHandler)
+      }
+
+      this.subscribe()
     },
     oneditsave: function() {
-      const notificationTopic = 'notification/#'
-      if (this.notificationHandler) RED.comms.unsubscribe(notificationTopic, this.notificationHandler)
-      this.notificationHandler = null
-    }
+      this.unsubscribe()
+    },
+    oneditcancel: function() {
+      this.unsubscribe()
+    },
   })
 </script>

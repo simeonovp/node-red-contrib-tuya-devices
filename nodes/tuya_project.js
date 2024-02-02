@@ -15,7 +15,6 @@ function JSONparse(json) {
 
 function JSONsave(obj, filePath) {
   const json = JSON.stringify(obj, null, 2)
-  console.log('-- JSONsave ' + filePath)
   fs.createWriteStream(filePath).write(json)
 }
 
@@ -86,9 +85,9 @@ module.exports = function (RED) {
       // }
     }
 
-    get translations() { return this.dbTranslations.data }
-    get devices() { return this.dbDevices.data }
-    get models() { return this.dbModels.data }
+    get translations() { return this.dbTranslations.data || {} }
+    get devices() { return this.dbDevices.data || {} }
+    get models() { return this.dbModels.data || {} }
 
     convertDevices() { //convert from 1.0.x
       const devicesPath = path.join(this.resDir, 'devices.json')
@@ -140,10 +139,23 @@ module.exports = function (RED) {
     }
 
     getServices(deviceId) {
-      const modelId = this.devices[deviceId]?.modelId || 0
+      const modelId = this.devices[deviceId]?.dataModel || 0
       return modelId && this.models[modelId] || []
     }
 
+    getProperties(deviceId) {
+      const propList = []
+      const services = this.getServices(deviceId)
+      if (Array.isArray(services)) {
+        for (const service of services) {
+          if (!Array.isArray(service.properties)) continue
+          for (const property of service.properties) {
+            propList.push(property)
+          }
+        }
+      }
+      return propList
+    }
 
     register(device) {
       this.localDevices[device.id] = device
@@ -368,11 +380,23 @@ module.exports = function (RED) {
       if (!this.translator) {
         //initialize translator on demand
         this.translator = {
+          dirty: false,
           translate: async (data, language, apiKey) => {
+            if (!data) return { data: '' }
             const translated = this.dbTranslations.data[this.language][data]
             if (translated) return { data: translated }
-            else return { error: 'Can not translate ' + data }
-          }
+            else {
+              if (this.dbTranslations.data[this.language][data] === undefined) {
+                this.dbTranslations.data[this.language][data] = ''
+                this.translator.dirty = true
+              }
+              return { error: 'Can not translate ' + data }
+            }
+          },
+          save: () => {
+            this.dbTranslations.save(true, true)
+            this.translator.dirty = false
+          },
         }
       }
       const { error, data } = await this.translator.translate(obj[prop], this.language, this.config.translatorKey)
@@ -383,18 +407,13 @@ module.exports = function (RED) {
 
     async translateDeviceModel(services) {
       if (!services) return 0
-      this.log('-- translateDeviceModel')
       let count = 0
       for (const service of services) {
-        if (service.language === this.language) continue
-        this.log('-- translateDeviceModel service name ' + service.name)
+        if (!force && (service.language === this.language)) continue
         if (await this.translate(service, 'name')) count++
-        this.log('-- translateDeviceModel service description ' + service.description)
         if (await this.translate(service, 'description')) count++
         for (const property of service.properties) {
           if (await this.translate(property, 'name')) count++
-          this.log('-- translateDeviceModel service property name ' + property.name)
-          this.log('-- translateDeviceModel service property description ' + property.description)
           if (await this.translate(property, 'description')) count++
         }
         service.language = this.language
@@ -407,9 +426,9 @@ module.exports = function (RED) {
       let count = 0
       for (const modelId in this.models) {
         count += await this.translateDeviceModel(this.models[modelId])
-        this.log('--   translated ' + count)
       }
       if (count) this.dbModels.save(true, true)
+      if (this.translator?.dirty) this.translator.save()
       msg.payload = this.models
       send(msg)
       done()
