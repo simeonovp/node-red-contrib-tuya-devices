@@ -40,7 +40,7 @@
       }
       const e = obj ? {...y, ...obj} : y
       RED.nodes.add(e)
-      //TODO set node dirty
+      RED.nodes.dirty(true)
     },
     addLocalDevice: (obj) => {
       const id = tuya_devices.deviceNodeId('tyd_' + obj.deviceId)
@@ -55,7 +55,7 @@
       }
       const e = obj ? {...y, ...obj} : y
       RED.nodes.add(e)
-      //TODO set node dirty
+      RED.nodes.dirty(true)
     },
     updateDeviceId: (localDevice) => {
       if (localDevice.type !== 'tuya-local-device') return
