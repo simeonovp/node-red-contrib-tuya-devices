@@ -297,16 +297,16 @@ module.exports = function (RED) {
               this.devices[dev.id] = dev
               this.log('Device changed ' + dev.name)
             }
-            const properties = await this.getCloudDeviceData(dev, 'properties', 'getDeviceProperties', 'properties')
+            const properties = (await this.getCloudDeviceData(dev, 'properties', 'getDeviceProperties', 'properties'))?.properties
             if (properties) this.deviceProperties[dev.id] = properties
-            const model = await this.getCloudDeviceData(dev, 'model', 'getDeviceDataModel', 'dataModel')
+            const model = (await this.getCloudDeviceData(dev, 'model', 'getDeviceDataModel', 'model'))?.model
             if (model) {
               dev.dataModel = model.modelId
-              if (!this.models[modelId]) {
+              if (!this.models[model.modelId]) {
                 modDirty = true
-                this.autoTranslate && this.translateDeviceModel(model.services)
+                //this.autoTranslate && this.translateDeviceModel(model.services)
                 this.models[model.modelId] = model.services
-                this.log('Add data model ' + model.name)
+                this.log(`Add data model ${model.modelId}, services ${model.services?.length}, translated:${this.autoTranslate}`)
               }
             }
             await this.updateDeviceIcon(dev)
