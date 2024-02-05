@@ -114,7 +114,7 @@ module.exports = function (RED) {
       if (this.dps && !Array.isArray(this.dps)) {
         const dps = payload?.data?.dps || payload?.dps
         if (!dps || (dps[this.dps] === undefined)) return
-        payload = payload.data.dps[this.dps]
+        payload = dps[this.dps]
       }
 
       this.send({ payload })

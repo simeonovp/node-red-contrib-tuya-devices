@@ -142,11 +142,13 @@ module.exports = function (RED) {
     }
 
     onDpRefresh(payload, commandByte, sequenceN) {
+      this.log('-- onDpRefresh payload:' + JSON.stringify(payload))
+      if (!payload) return
       if (this.cid) {
         if (this.cid !== payload?.cid) return
       }
       else {
-        if (payload?.deviceId !== this.devId) return
+        if (payload.deviceId && (payload.deviceId !== this.devId)) return
       }
 
       if (this.shouldSubscribeRefreshData) {
@@ -157,12 +159,13 @@ module.exports = function (RED) {
     }
     
     onData(payload, commandByte, sequenceN) {
+      this.log('-- onData payload:' + JSON.stringify(payload) )
       if (!payload) return
       if (this.cid) {
         if (this.cid !== payload.cid) return
       }
       else {
-        if (payload?.deviceId !== this.devId) return
+        if (payload.deviceId && (payload.deviceId !== this.devId)) return
       }
 
       if (this.shouldSubscribeData) {
@@ -182,17 +185,17 @@ module.exports = function (RED) {
       //   isSetCallToGetData: false,
       // }
       options = {
-        devId: this.id,
-        cid: this.cid,
+        devId: this.devId,
+        cid: this.cid || undefined,
         ...options
       }
-      //this.log(`-- tuyaSet(${JSON.stringify(options)})`)
+      this.log(`-- tuyaSet(${JSON.stringify(options)})`)
       this.tuyaDevice.set(options) 
     }
 
     tuyaRefresh(data) { 
       this.tuyaDevice.refresh({
-        devId: this.id,
+        devId: this.devId,
         cid: this.cid,
         ...data //requestedDPS: [], schema: true
       })
@@ -200,7 +203,7 @@ module.exports = function (RED) {
 
     tuyaGet(data) { 
       this.tuyaDevice.get({
-        devId: this.id,
+        devId: this.devId,
         cid: this.cid,
         ...data //dps: 1, schema: true
       }) 

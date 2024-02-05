@@ -252,7 +252,7 @@
       refresh()
 
 
-      $('#refresh-devices').click(() => tuya_devices.sendMsg(this, {topic: 'updateDevices'}, (resp) => {}))
+      $('#refresh-devices').click(() => this.projectNode.updateDevices(this))
 
       const notificationTopic = 'notification/#'
       if (!this.unsubscribe) this.unsubscribe = () => {

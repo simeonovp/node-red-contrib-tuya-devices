@@ -409,7 +409,7 @@ module.exports = function (RED) {
       if (!services) return 0
       let count = 0
       for (const service of services) {
-        if (!force && (service.language === this.language)) continue
+        if (service.language === this.language) continue
         if (await this.translate(service, 'name')) count++
         if (await this.translate(service, 'description')) count++
         for (const property of service.properties) {

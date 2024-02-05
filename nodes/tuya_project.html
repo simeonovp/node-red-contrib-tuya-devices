@@ -43,7 +43,7 @@
       RED.nodes.dirty(true)
     },
     addLocalDevice: (obj) => {
-      const id = tuya_devices.deviceNodeId('tyd_' + obj.deviceId)
+      const id = tuya_devices.deviceNodeId(obj.deviceId)
       const device = RED.nodes.node(id)
       if (device) return
       const type = 'tuya-local-device'
@@ -117,6 +117,11 @@
           const url = this.resDir() + 'models.json'
           fetch(url).then(r=>r.json().then(callback))
         })
+        this.updateDevices = (node) => {
+          this._cloudDevices = null
+          this._models = null
+          tuya_devices.sendMsg(node, {topic: 'updateDevices'}, (resp) => {})
+        }
         this.getCloudDevices(cloudDevices => this._cloudDevices = cloudDevices)
         this.getModels(models => this._models = models)
         if (this.version !== 1) {
