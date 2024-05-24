@@ -38,7 +38,7 @@ module.exports = function (RED) {
       this.device.register(this)
       this.device.addListener('tuya-status', this.deviceStatusHandler)
       this.device.addListener('tuya-data', this.deviceDataHandler)
-    }
+   }
 
     deinit() {
       if(!this.device) return

@@ -16,6 +16,7 @@ module.exports = function (RED) {
       RED.nodes.createNode(this, config)
 
       const cloudStatusHandler = this.onCloudStatus.bind(this)
+      const deviceFindHandler = this.onDeviceEvent.bind(this)
       this.project = this.config.project && RED.nodes.getNode(this.config.project)
       if (this.project) {
         if (this.project.type !== 'tuya-project') {
@@ -25,11 +26,15 @@ module.exports = function (RED) {
         }
         else {
           this.project.addListener('cloud-status', cloudStatusHandler)
+          this.project.addListener('device-find', deviceFindHandler)
         }
       }
   
       this.on('close', (done) => {
-        this.project && this.project.removeListener('cloud-status', cloudStatusHandler)
+        if (this.project) {
+          this.project.removeListener('cloud-status', cloudStatusHandler)
+          this.project.removeListener('device-find', deviceFindHandler)
+        }
         done()
       })
 
@@ -58,13 +63,22 @@ module.exports = function (RED) {
       })
     }
 
-    onCloudStatus(state) {
+    onCloudStatus(userId) {
+      const state = userId && 'Online' || 'Offline'
       switch (state) {
         case 'Online': return this.status({ fill: 'green', text: state, shape: 'dot' })
         case 'Offline': return this.status({ fill: 'red', text: 'offline', shape: 'ring' })
       }
+      if (userId) {
+        this.log(`-- sendToFrontend userId ${userId}`)
+        this.sendToFrontend({topic: 'userId', payload: userId})
+      }
     }
-    
+
+    onDeviceEvent(scannerId, name, data) {
+      this.send({ topic: 'deviceEvent', scannerId, name, data })
+    }
+
     sendToFrontend(payload) {
       //this.log(`-- sendToFrontend`)
       RED.events.emit('runtime-event', { id: this.id, retain: false, payload })

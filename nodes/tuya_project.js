@@ -46,11 +46,13 @@ module.exports = function (RED) {
       }
   
       this.userId = config.userId || this.cloud?.userId
+      this.bind_space_id = "" //TODO
       this.resDir = path.resolve(path.join(__dirname, '../resources', config.name || 'default'))
       if (!fs.existsSync(this.resDir)) fs.mkdirSync(this.resDir, { recursive: true })
       this.localDevices = {}
       this.db = {}
       this.deviceProperties = {}
+      this.tuyaDevices = {}
       this.language = config.language || 'en'
       this.autoTranslate = config.translate
       this.translator = config.translator && translators[config.translator]
@@ -77,6 +79,8 @@ module.exports = function (RED) {
         this.cloud && this.cloud.removeListener('status', cloudStatusHandler)
         done()
       })
+
+      this.findEventHandler = this.onDeviceFound.bind(this)
 
       //FIXME (currently not works)
       // if (this.cloud && !fs.existsSync(this.devicesPath)) {
@@ -129,8 +133,8 @@ module.exports = function (RED) {
 
     onCloudStatus(val) {
       if ((val === 'userId') && !this.userId) {
-        this.userId = this.cloud.userId
-        this.emit('cloud-status', this.userId && 'Online' || 'Offline')
+        this.userId = this.cloud?.userId
+        this.emit('cloud-status', this.userId)
       }
     }
 
@@ -159,10 +163,43 @@ module.exports = function (RED) {
 
     register(device) {
       this.localDevices[device.id] = device
+      device.on('tuya-find', this.findEventHandler)
     }
 
     unregister(device) {
+      device.off('tuya-find', this.findEventHandler)
       delete this.localDevices[device.id]
+    }
+
+    onDeviceFound(scannerId, data) {
+      const gwId = data?.payload?.gwId
+      if (gwId) {
+        if (this.tuyaDevices[gwId]) return;
+        this.tuyaDevices[gwId] = data.payload
+      }
+      const device = this.devices[gwId]
+      // const data1 = {
+      //   payload:{
+      //     ip:"192.168.193.108",
+      //     gwId:"bf9452c0648e5a16bdqy6a",
+      //     active:2,
+      //     ablilty:0,
+      //     encrypt:true,
+      //     productKey:"keyjup78v54myhan",
+      //     version:"3.4",
+      //     token:true,
+      //     wf_cfg:true
+      //   },
+      //   leftover:false,
+      //   commandByte:35,
+      //   sequenceN:0
+      // }
+      //TODO synchronize with DB
+      this.emit('device-find', scannerId, device?.name || '', data)
+    }
+
+    getDeviceAnnouncement(deviceId) {
+      return this.tuyaDevices[deviceId]
     }
 
     tryCommand(msg, send, done) {
@@ -174,6 +211,7 @@ module.exports = function (RED) {
 
     async updateDevices(msg, send, done) {
       if (!this.cloud) return done && done('Cloud access not configured')
+      this.cloud.init()
       const changed_devices = []
       const unchanged_devices = []
 
@@ -376,9 +414,13 @@ module.exports = function (RED) {
       done()
     }
 
-    async translate(obj, prop) {
+    // Try translate the property 'prop' of the object 'obj' and save the result
+    // in the property 'tr_prop' of the same object. if 'tr_prop' not given, the 
+    // 'prop' will be overwritten
+    async translate(obj, prop, tr_prop) {
+      if (!tr_prop) tr_prop = prop
       if (!this.translator) {
-        //initialize translator on demand
+        this.log(`initialize translator, language:${this.language}`) // on demand
         this.translator = {
           dirty: false,
           translate: async (data, language, apiKey) => {
@@ -400,38 +442,92 @@ module.exports = function (RED) {
         }
       }
       const { error, data } = await this.translator.translate(obj[prop], this.language, this.config.translatorKey)
-      if (error) this.error(`on try translate ${prop}: ${error}`)
-      else obj[prop] = data
-      return !error
+      if (error) {
+        this.error(`on try translate ${prop}: ${error}`)
+        return false
+      }
+      if (!data || (obj[tr_prop] === data)) return false
+      this.log(`translated "${prop}":"${obj[prop]}" to "${tr_prop}": "${data}"`)
+      obj[tr_prop] = data
+      return true
     }
 
-    async translateDeviceModel(services) {
+    //TODO translateDevice() property 'product_name'
+
+    async translateDeviceModel(services, skip_lang) {
       if (!services) return 0
       let count = 0
       for (const service of services) {
-        if (service.language === this.language) continue
+        if (!skip_lang && (service.language === this.language)) continue
         if (await this.translate(service, 'name')) count++
         if (await this.translate(service, 'description')) count++
         for (const property of service.properties) {
-          if (await this.translate(property, 'name')) count++
-          if (await this.translate(property, 'description')) count++
+          if (await this.translate(property, 'name', 'custom_name')) count++
+          if (await this.translate(property, 'description', 'custom_description')) count++
         }
         service.language = this.language
       }
       return count
     }
 
-    async translateDeviceModels(msg, send, done) {
-      this.log('Translate device models')
+    async translateAllDeviceModels(skip_lang) {
+      this.log('Translate all device models, skip_lang ' + skip_lang)
       let count = 0
       for (const modelId in this.models) {
-        count += await this.translateDeviceModel(this.models[modelId])
+        count += await this.translateDeviceModel(this.models[modelId], skip_lang)
       }
-      if (count) this.dbModels.save(true, true)
+      this.log('-- returns ' + count)
+      return count
+    }
+
+    async updateDeviceModel(services) {
+      if (!services) return 0
+      let count = 0
+      for (const service of services) {
+        for (const property of service.properties) {
+          //TOOD property?.extensions?.iconName (""), property?.extensions?.attribute (640)
+          switch (property?.typeSpec?.type) {
+            case 'bool': //'typeDefaultValue'
+              break
+            case 'enum': //'typeDefaultValue', 'range'
+              break
+            case 'string': //'typeDefaultValue', 'maxlen'
+              break
+            case 'raw': //'maxlen'
+              break
+            case 'value': //'max', 'min', 'scale', 'step', 'unit'
+              break
+          }
+        }
+      }
+      return count
+    }
+
+    async updateAllDeviceModels() {
+      this.log('Update all device models')
+      let count = 0
+      for (const modelId in this.models) {
+        count += await this.updateDeviceModel(this.models[modelId])
+      }
+      return count
+    }
+
+    async translateDeviceModels(msg, send, done) {
+      this.log('Translate device models')
+      let count = await this.translateAllDeviceModels(true)
       if (this.translator?.dirty) this.translator.save()
+      if (count) {
+        this.log('Save models')
+        this.dbModels.save(true, true)
+      }
       msg.payload = this.models
       send(msg)
       done()
+    }
+
+    async updateDeviceModels(msg, send, done) {
+      this.log('Update device models')
+
     }
 
     async updateDeviceFunctionByCategory(msg, send, done) {

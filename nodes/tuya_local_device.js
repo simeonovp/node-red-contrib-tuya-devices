@@ -1,4 +1,6 @@
 const TuyaDevice = require('tuyapi')
+const {MessageParser, CommandType} = require('tuyapi/lib/message-parser');
+
 
 module.exports = function (RED) {
   'use strict'
@@ -65,6 +67,8 @@ module.exports = function (RED) {
       this.log(`${JSON.stringify(connectionParams)}`)
       this.tuyaDevice = this.gateway.tuyaDevice || new TuyaDevice(connectionParams)
       this.lastData = null
+      this.maxFindRetry = 3
+      this.findRetry = 0
   
       // Add event listeners
       this.connectedEventHandler = this.onConnected.bind(this)
@@ -72,6 +76,7 @@ module.exports = function (RED) {
       this.errorEventHandler = this.onError.bind(this)
       this.dpRefreshEventHandler = this.onDpRefresh.bind(this)
       this.dataEventHandler = this.onData.bind(this)
+      this.findEventHandler = this.onFind.bind(this)
    
       // Initial state
       process.nextTick(() => this.setStatus(CLIENT_STATUS.DISCONNECTED))
@@ -84,6 +89,7 @@ module.exports = function (RED) {
       this.tuyaDevice.on('error', this.errorEventHandler)
       this.tuyaDevice.on('dp-refresh', this.dpRefreshEventHandler)
       this.tuyaDevice.on('data', this.dataEventHandler)
+      this.tuyaDevice.on('find', this.findEventHandler)
       
       // Start probing
       if (this.autoStart) this.startComm()
@@ -97,6 +103,7 @@ module.exports = function (RED) {
       this.tuyaDevice.off('error', this.errorEventHandler)
       this.tuyaDevice.off('dp-refresh', this.dpRefreshEventHandler)
       this.tuyaDevice.off('data', this.dataEventHandler)
+      this.tuyaDevice.off('find', this.findEventHandler)
     }
 
     register(device) {
@@ -142,7 +149,7 @@ module.exports = function (RED) {
     }
 
     onDpRefresh(payload, commandByte, sequenceN) {
-      this.log('-- onDpRefresh payload:' + JSON.stringify(payload))
+      //this.log('-- onDpRefresh payload:' + JSON.stringify(payload))
       if (!payload) return
       if (this.cid) {
         if (this.cid !== payload?.cid) return
@@ -159,7 +166,7 @@ module.exports = function (RED) {
     }
     
     onData(payload, commandByte, sequenceN) {
-      this.log('-- onData payload:' + JSON.stringify(payload) )
+      //this.log('-- onData payload:' + JSON.stringify(payload) )
       if (!payload) return
       if (this.cid) {
         if (this.cid !== payload.cid) return
@@ -173,6 +180,11 @@ module.exports = function (RED) {
         this.lastData = payload
         this.emit ('tuya-data', 'data', this.lastDataMsg)
       }
+    }
+    
+    onFind(payload) {
+      //this.log(`-- onFind (retry ${this.findRetry}): ${JSON.stringify(payload)}`)
+      this.emit ('tuya-find', this.id, payload)
     }
 
     tuyaSet(options) { 
@@ -284,12 +296,55 @@ module.exports = function (RED) {
       if (this.autoStart) this.startComm()
     }
 
-    disableNode(){
+    disableNode() {
       this.log('disableNode(): disabling the node ' + this.id)
       this.closeComm()
     }
 
+    updateTuyaDevice(announcement) {
+      if (!announcement) return
+      // this.tuyaDevice
+      const thisID = announcement.gwId
+      const thisIP = announcement.ip
+
+      // Try auto determine power data - DP 19 on some 3.1/3.3 devices, DP 5 for some 3.1 devices
+      const thisDPS = announcement.dps
+      if (thisDPS && typeof thisDPS[19] === 'undefined') {
+        this.tuyaDevice._dpRefreshIds = [4, 5, 6]
+      } 
+      else {
+        this.tuyaDevice._dpRefreshIds = [18, 19, 20]
+      }
+
+      // Add to array if it doesn't exist
+      if (!this.tuyaDevice.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
+        this.tuyaDevice.foundDevices.push({id: thisID, ip: thisIP})
+      }
+
+      if (!this.all &&
+        ((this.tuyaDevice.device.id === thisID) || (this.tuyaDevice.device.ip === thisIP))) {
+        this.tuyaDevice.device.ip = announcement.ip
+        this.tuyaDevice.device.id = announcement.gwId
+        this.tuyaDevice.device.gwID = announcement.gwId
+        this.tuyaDevice.device.productKey = announcement.productKey
+        if (this.tuyaDevice.device.version !== announcement.version) {
+          this.tuyaDevice.device.version = announcement.version
+          this.tuyaDevice.device.parser = new MessageParser({
+            key: this.tuyaDevice.device.key,
+            version: this.tuyaDevice.device.version
+          })
+        }
+      }
+    }
+
     startComm() {
+      const announcement = this.project?.getDeviceAnnouncement(this.devId)
+      if (announcement) {
+        this.log('startComm using registered device')
+        this.updateTuyaDevice(announcement)
+        return
+      }
+
       this.log('Auto start probe on connect...')
       // This 1 sec timeout will make sure that the diconnect happens ..
       // otherwise connect will not hanppen as the state is not changed
@@ -316,10 +371,12 @@ module.exports = function (RED) {
         this.connectDevice() //TODO check GW connected
         return
       }
+      if (this.maxFindRetry < this.findRetry) return
       //this.log('findDevice(): Initiating the find command')
       this.tuyaDevice.find({ timeout: parseInt(this.findTimeout / 1000) })
         .then(() => {
           this.log('findDevice(): Found device, going to connect')
+          this.findRetry = 0
           // Connect to device
           this.connectDevice()
         })
@@ -327,6 +384,7 @@ module.exports = function (RED) {
           // We need to retry
           this.setStatus(CLIENT_STATUS.ERROR, { message: e.message })
           this.setStatus(CLIENT_STATUS.DISCONNECTED)
+          this.findRetry++
           if (this.shouldTryReconnect) {
             this.log('findDevice(): Cannot find the device, re-trying...')
             this.findTimeoutHandler = setTimeout(() => this.findDevice(), this.retryTimeout)

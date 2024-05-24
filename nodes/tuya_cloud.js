@@ -14,8 +14,18 @@ module.exports = function (RED) {
       RED.nodes.createNode(this, config)
 
       this.region = this.setRegion(config.region)
+      this.userId = config.userId
+      this.isInit = false
+      this.deviceId = config.deviceId
+      //init()
+    }
+
+    init() {
+      if (this.isInit) return
+      this.log('init')
       Config.init(this.credentials?.accessId, this.credentials?.accessKey, this.region, true)
-      this.userId = config.userId || this.getUserId(config.deviceId)
+      this.userId = this.userId || this.getUserId(this.deviceId)
+      this.isInit = true
     }
 
     setRegion(region) {
@@ -46,30 +56,37 @@ module.exports = function (RED) {
     }
 
     getDeviceList(userId, last_row_key, callback) {
+      init()
       DeviceClient.getDeviceListByUid(userId, last_row_key, callback)
     }
 
     downloadIcon(iconUrl, file, callback) {
+      init()
       DeviceClient.getDevicesIcon(iconUrl, file, callback)
     }
 
     getDeviceFunctions(deviceId, callback) {
+      init()
       DeviceClient.getDeviceFunctions(deviceId, callback)
     }
 
     getDeviceFunctionByCategory(category, callback) {
+      init()
       DeviceClient.getDeviceFunctionByCategory(category, callback)
     }
 
     getDeviceSpecifications(deviceId, callback) {
+      init()
       DeviceControlClient.getDeviceSpecifications(deviceId, callback)
     }
 
     getDeviceProperties(deviceId, callback) {
+      init()
       DeviceControlClient.getDeviceProperties(deviceId, callback)
     }
 
     getDeviceDataModel(deviceId, callback) {
+      init()
       DeviceControlClient.getDeviceDataModel(deviceId, callback)
     }
     

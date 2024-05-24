@@ -265,6 +265,16 @@
           const parts = topic.split('/')
           if (parts[1] !== this.id) return
           if (topic === 'updateDevices') refresh()
+          else if (topic === 'userId') { //???
+            console.log(`-- receive userId ${payload}`)
+            if (this.projectNode?.cloud) {
+              const cloud = RED.nodes.node(this.projectNode?.cloud)
+              if (cloud && !cloud.userId) {
+                cloud.userId = payload
+                cloud.dirty(true)
+              }
+            }
+          }
         }).bind(this)
         RED.comms.subscribe(notificationTopic, this.notificationHandler)
       }
