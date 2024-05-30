@@ -46,7 +46,7 @@ module.exports = function (RED) {
       }
   
       this.userId = config.userId || this.cloud?.userId
-      this.bind_space_id = "" //TODO
+      this.bind_space_id = config.bind_space_id || ''
       this.resDir = path.resolve(path.join(__dirname, '../resources', config.name || 'default'))
       if (!fs.existsSync(this.resDir)) fs.mkdirSync(this.resDir, { recursive: true })
       this.localDevices = {}
@@ -211,176 +211,177 @@ module.exports = function (RED) {
 
     async updateDevices(msg, send, done) {
       if (!this.cloud) return done && done('Cloud access not configured')
-      this.cloud.init()
-      const changed_devices = []
-      const unchanged_devices = []
+      this.cloud.init(async () => {
+        const changed_devices = []
+        const unchanged_devices = []
 
-      const updateDeviceList = (old_devices, json_data) => {
-        //TODO
-        const devs = json_data.result
-  
-        // check to see if anything has changed.  if so, re-download factory-infos and DP mapping
-        for (const dev of devs) {
-          //this.services[].properties[].extensions.iconName
-
-          if (!old_devices[dev.id]) {
-            // newly-added device
-            changed_devices.push(dev)
-            continue
-          }
-          const old = old_devices.dev_id
-          if (old.key !== dev.local_key) {
-            // local key changed
-            changed_devices.push(dev)
-            continue
-          }
-          if ((!old.icon && dev.icon) || (include_map && !old.mapping)) {
-            // icon or mapping added
-            changed_devices.push(dev)
-            continue
-          }
-          let is_same = true
-          for (const k of DEVICEFILE_SAVE_VALUES) {
-            if (dev[k] && (k !== 'icon') && (k != 'last_ip') && (!old[k] || (old[k] !== dev[k]))) {
-              is_same = false
-              break
-            }
-          }
-          if (!is_same) {
-            changed_devices.push(dev)
-            continue
-          }
-          unchanged_devices.push(old)
-        }
-  
-        // if (include_map) {
-        //   mappings = await this.getmappings(changed_devices)
-        //   for (const productid in mappings) {
-        //     for (const dev of changed_devices) {
-        //       if (dev.product_id === productid) dev['mapping'] = mappings[productid]
-        //     }
-        //     // also set unchanged devices just in case the mapping changed
-        //     for (const dev of unchanged_devices) {
-        //       if (dev.product_id === productid) dev['mapping'] = mappings[productid]
-        //     }
-        //   }
-        // }
-  
-        this.log('changed: ' + changed_devices.length)
-        this.log('unchanged: ' + unchanged_devices.length)
-  
-        // Filter to only Name, ID and Key
-        //return this.filter_devices(changed_devices).concat(unchanged_devices)
-      }
-  
-      const getUserDevices = (uid, last_row_key) => {
-        return new Promise((resolve, reject) => {
-          this.cloud.getDeviceList(uid, last_row_key, (err, data) => {
-            if (err) reject(err)
-            else resolve(data)
-          })
-        })
-      }
-      
-      const getAllUserDevices = async (uid) => {
-        let fetches = 0
-        let has_more = true
-        let total = 0
-        const our_result = { 'result': [] }
-        let last_row_key
-        
-        while (has_more) {
-          let data = await getUserDevices(uid, last_row_key)
-          fetches += 1
-          has_more = false
-          if (typeof data !== 'object') throw (new Error('Cloud response not object, data: ' + data))
-          for(const i in data) {
-            if (i === 'result') {
-              // by-user-id has the result in 'list' while all-devices has it in 'devices'
-              if (data.result?.list && !data.result?.devices) our_result.result = our_result.result.concat(data.result.list)
-              else if (data.result?.devices) our_result.result = our_result.result.concat(data.result.devices)
-              else console.debug('no devices in response')
+        const updateDeviceList = (old_devices, json_data) => {
+          //TODO
+          const devs = json_data.result
     
-              if (data.result?.total) total = data.result.total
-              if (data.result?.last_row_key) last_row_key = data.result.last_row_key
-              has_more = data.result?.has_more || false
-            }
-            else our_result[i] = data[i]
-          }
-        }
-        our_result['fetches'] = fetches
-        our_result['total'] = total
-        return our_result
-      }
+          // check to see if anything has changed.  if so, re-download factory-infos and DP mapping
+          for (const dev of devs) {
+            //this.services[].properties[].extensions.iconName
 
-      const checkChanged = (dev) => {
-        const ref = this.devices[dev.id]
-        if (!ref) return true
-        for (const prop in dev) {
-          if (prop.endsWith('_time')) continue
-          if (dev[prop] !== fer[prop]) return true
-        }
-        return false
-      }
-      if (!this.devices.length && this.userId) {
-        try {
-          const data = await getAllUserDevices(this.userId)
-          const devices = data.result // TODO save to tuyaDevices
-          this.dbDevices.clear() //TODO look for existing and merge
-          let devDirty = false
-          let modDirty = false
-          for (const dev of devices) {
-            if (checkChanged(dev)) {
-              devDirty = true
-              this.devices[dev.id] = dev
-              this.log('Device changed ' + dev.name)
+            if (!old_devices[dev.id]) {
+              // newly-added device
+              changed_devices.push(dev)
+              continue
             }
-            const properties = (await this.getCloudDeviceData(dev, 'properties', 'getDeviceProperties', 'properties'))?.properties
-            if (properties) this.deviceProperties[dev.id] = properties
-            const model = (await this.getCloudDeviceData(dev, 'model', 'getDeviceDataModel', 'model'))?.model
-            if (model) {
-              dev.dataModel = model.modelId
-              if (!this.models[model.modelId]) {
-                modDirty = true
-                //this.autoTranslate && this.translateDeviceModel(model.services)
-                this.models[model.modelId] = model.services
-                this.log(`Add data model ${model.modelId}, services ${model.services?.length}, translated:${this.autoTranslate}`)
+            const old = old_devices.dev_id
+            if (old.key !== dev.local_key) {
+              // local key changed
+              changed_devices.push(dev)
+              continue
+            }
+            if ((!old.icon && dev.icon) || (include_map && !old.mapping)) {
+              // icon or mapping added
+              changed_devices.push(dev)
+              continue
+            }
+            let is_same = true
+            for (const k of DEVICEFILE_SAVE_VALUES) {
+              if (dev[k] && (k !== 'icon') && (k != 'last_ip') && (!old[k] || (old[k] !== dev[k]))) {
+                is_same = false
+                break
               }
             }
-            await this.updateDeviceIcon(dev)
-          }  
-          devDirty && this.dbDevices.save(true, true)
-          modDirty && this.dbModels.save(true, true)
-        } catch(err) { this.error(err) }
-      }
-      const old_devices = {}
-      for (const dev of Object.values(this.devices)) {
-        old_devices[dev.id] = dev
-      }
+            if (!is_same) {
+              changed_devices.push(dev)
+              continue
+            }
+            unchanged_devices.push(old)
+          }
+    
+          // if (include_map) {
+          //   mappings = await this.getmappings(changed_devices)
+          //   for (const productid in mappings) {
+          //     for (const dev of changed_devices) {
+          //       if (dev.product_id === productid) dev['mapping'] = mappings[productid]
+          //     }
+          //     // also set unchanged devices just in case the mapping changed
+          //     for (const dev of unchanged_devices) {
+          //       if (dev.product_id === productid) dev['mapping'] = mappings[productid]
+          //     }
+          //   }
+          // }
+    
+          this.log('changed: ' + changed_devices.length)
+          this.log('unchanged: ' + unchanged_devices.length)
+    
+          // Filter to only Name, ID and Key
+          //return this.filter_devices(changed_devices).concat(unchanged_devices)
+        }
+    
+        const getUserDevices = (uid, last_row_key) => {
+          return new Promise((resolve, reject) => {
+            this.cloud.getDeviceList(uid, last_row_key, (err, data) => {
+              if (err) reject(err)
+              else resolve(data)
+            })
+          })
+        }
+        
+        const getAllUserDevices = async (uid) => {
+          let fetches = 0
+          let has_more = true
+          let total = 0
+          const our_result = { 'result': [] }
+          let last_row_key
+          
+          while (has_more) {
+            let data = await getUserDevices(uid, last_row_key)
+            fetches += 1
+            has_more = false
+            if (typeof data !== 'object') throw (new Error('Cloud response not object, data: ' + data))
+            for(const i in data) {
+              if (i === 'result') {
+                // by-user-id has the result in 'list' while all-devices has it in 'devices'
+                if (data.result?.list && !data.result?.devices) our_result.result = our_result.result.concat(data.result.list)
+                else if (data.result?.devices) our_result.result = our_result.result.concat(data.result.devices)
+                else console.debug('no devices in response')
+      
+                if (data.result?.total) total = data.result.total
+                if (data.result?.last_row_key) last_row_key = data.result.last_row_key
+                has_more = data.result?.has_more || false
+              }
+              else our_result[i] = data[i]
+            }
+          }
+          our_result['fetches'] = fetches
+          our_result['total'] = total
+          return our_result
+        }
 
-      // loop through all devices and build a list of user IDs
-      const userIDs = {}
-      for (const dev of Object.values(this.devices)) {
-        if (dev.uid) userIDs[dev.uid] = true
-      }
-      const uidList = Object.keys(userIDs)
-      if (uidList.length) {
-        // we have at least 1 user id, so fetch the device list again to make sure we have the local key
-        // this also gets us the gateway_id for child devices
-        for (const uid of uidList) {
+        const checkChanged = (dev) => {
+          const ref = this.devices[dev.id]
+          if (!ref) return true
+          for (const prop in dev) {
+            if (prop.endsWith('_time')) continue
+            if (dev[prop] !== fer[prop]) return true
+          }
+          return false
+        }
+        if (!this.devices.length && this.userId) {
           try {
-            const data = await getAllUserDevices(uid)
-            updateDeviceList(old_devices, data)
+            const data = await getAllUserDevices(this.userId)
+            const devices = data.result // TODO save to tuyaDevices
+            this.dbDevices.clear() //TODO look for existing and merge
+            let devDirty = false
+            let modDirty = false
+            for (const dev of devices) {
+              if (checkChanged(dev)) {
+                devDirty = true
+                this.devices[dev.id] = dev
+                this.log('Device changed ' + dev.name)
+              }
+              const properties = (await this.getCloudDeviceData(dev, 'properties', 'getDeviceProperties', 'properties'))?.properties
+              if (properties) this.deviceProperties[dev.id] = properties
+              const model = (await this.getCloudDeviceData(dev, 'model', 'getDeviceDataModel', 'model'))?.model
+              if (model) {
+                dev.dataModel = model.modelId
+                if (!this.models[model.modelId]) {
+                  modDirty = true
+                  //this.autoTranslate && this.translateDeviceModel(model.services)
+                  this.models[model.modelId] = model.services
+                  this.log(`Add data model ${model.modelId}, services ${model.services?.length}, translated:${this.autoTranslate}`)
+                }
+              }
+              await this.updateDeviceIcon(dev)
+            }  
+            devDirty && this.dbDevices.save(true, true)
+            modDirty && this.dbModels.save(true, true)
           } catch(err) { this.error(err) }
         }
-      }
-      if (msg && send) {
-        msg.devices = Object.values(this.devices)
-        msg.changed_devices = changed_devices
-        msg.unchanged_devices = unchanged_devices
-        send(msg)
-      }
-      done && done()
+        const old_devices = {}
+        for (const dev of Object.values(this.devices)) {
+          old_devices[dev.id] = dev
+        }
+
+        // loop through all devices and build a list of user IDs
+        const userIDs = {}
+        for (const dev of Object.values(this.devices)) {
+          if (dev.uid) userIDs[dev.uid] = true
+        }
+        const uidList = Object.keys(userIDs)
+        if (uidList.length) {
+          // we have at least 1 user id, so fetch the device list again to make sure we have the local key
+          // this also gets us the gateway_id for child devices
+          for (const uid of uidList) {
+            try {
+              const data = await getAllUserDevices(uid)
+              updateDeviceList(old_devices, data)
+            } catch(err) { this.error(err) }
+          }
+        }
+        if (msg && send) {
+          msg.devices = Object.values(this.devices)
+          msg.changed_devices = changed_devices
+          msg.unchanged_devices = unchanged_devices
+          send(msg)
+        }
+        done && done()
+      })
     }
 
     async updateDeviceIcon(dev) {

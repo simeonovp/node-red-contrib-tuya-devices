@@ -17,15 +17,25 @@ module.exports = function (RED) {
       this.userId = config.userId
       this.isInit = false
       this.deviceId = config.deviceId
-      //init()
+      //this.init()
     }
 
-    init() {
-      if (this.isInit) return
+    init(callback) {
+      if (this.isInit) return callback && callback()
       this.log('init')
       Config.init(this.credentials?.accessId, this.credentials?.accessKey, this.region, true)
-      this.userId = this.userId || this.getUserId(this.deviceId)
-      this.isInit = true
+      this.log('-- init 1')
+      if (this.userId) {
+        this.isInit = true
+        return
+      }
+      this.getUserId(this.deviceId, (userId) => {
+        this.isInit = !!userId
+        if (!this.isInit) return this.error('init failed')
+        this.log('init success')
+        callback && callback()
+      })
+      this.log('-- init 2')
     }
 
     setRegion(region) {
@@ -56,38 +66,31 @@ module.exports = function (RED) {
     }
 
     getDeviceList(userId, last_row_key, callback) {
-      init()
-      DeviceClient.getDeviceListByUid(userId, last_row_key, callback)
+      this.init(() => { DeviceClient.getDeviceListByUid(userId, last_row_key, callback) })
     }
 
     downloadIcon(iconUrl, file, callback) {
-      init()
-      DeviceClient.getDevicesIcon(iconUrl, file, callback)
+      this.init(() => { DeviceClient.getDevicesIcon(iconUrl, file, callback) })  
     }
 
     getDeviceFunctions(deviceId, callback) {
-      init()
-      DeviceClient.getDeviceFunctions(deviceId, callback)
+      this.init(() => { DeviceClient.getDeviceFunctions(deviceId, callback) })
     }
 
     getDeviceFunctionByCategory(category, callback) {
-      init()
-      DeviceClient.getDeviceFunctionByCategory(category, callback)
+      this.init(() => { DeviceClient.getDeviceFunctionByCategory(category, callback) })
     }
 
     getDeviceSpecifications(deviceId, callback) {
-      init()
-      DeviceControlClient.getDeviceSpecifications(deviceId, callback)
+      this.init(() => { DeviceControlClient.getDeviceSpecifications(deviceId, callback) })
     }
 
     getDeviceProperties(deviceId, callback) {
-      init()
-      DeviceControlClient.getDeviceProperties(deviceId, callback)
+      this.init(() => { DeviceControlClient.getDeviceProperties(deviceId, callback) })
     }
 
     getDeviceDataModel(deviceId, callback) {
-      init()
-      DeviceControlClient.getDeviceDataModel(deviceId, callback)
+      this.init(() => { DeviceControlClient.getDeviceDataModel(deviceId, callback) })
     }
     
     //postDeviceCommand

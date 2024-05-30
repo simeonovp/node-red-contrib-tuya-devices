@@ -27,6 +27,7 @@ module.exports = function (RED) {
       this.devId = config.deviceId
       this.gateway = config.gateway && RED.nodes.getNode(config.gateway)
       this.cid = config.cid || config.node_id || ''
+      this.bind_space_id = config.bind_space_id || ''
       this.autoStart = config.autoStart && !this.cid
 
       this.shouldTryReconnect = !this.cid

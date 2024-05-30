@@ -24,8 +24,9 @@
           <thead>
             <tr id="table-head">
               <th style="width:10%"><input type="text" value="Icon" style="width:100%" readonly></th>
-              <th style="text-align:left;width:40%"><input type="text" value="Cloud name" style="width:100%" readonly></th>
+              <th style="text-align:left;width:30%"><input type="text" value="Cloud name" style="width:100%" readonly></th>
               <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
+              <th style="text-align:left;width:20%"><input type="text" value="Space" style="width:100%" readonly></th>
               <th style="width:10%"></th>
             </tr>
           </thead>
@@ -193,6 +194,7 @@
               <td><input type="image" src="${shapshotUri}" name="${cloudDevice.name}" width="48" height="48" alt="${cloudDevice.name}"/></td>
               <td><input type="text" value="${cloudDevice.name}" style="width:100%" readonly></td>
               <td><input type="text" id="node-name-${deviceId}" value="${node.name}" style="width:100%"${node.deviceId && ' readonly' || ''}></td>
+              <td><input type="text" value="${cloudDevice.bind_space_id || ''}" style="width:100%" readonly></td>
               <td>
                 <button type="button" id="add-node-${deviceId}" ${node.deviceId && 'hidden' || 'class="red-ui-button"'}>
                   <i class="fa fa-plus"></i>

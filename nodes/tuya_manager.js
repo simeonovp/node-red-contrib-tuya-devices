@@ -50,7 +50,7 @@ module.exports = function (RED) {
               })
             } 
             catch(err) {
-              this.error(err)
+              this.error(`on input ${msg.topic} error:` + err)
               msg.error = err
               this.sendToFrontend(msg)
               done()

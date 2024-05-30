@@ -98,6 +98,7 @@
       project: { type: 'tuya-project', required: true },
       deviceId: { value: '', required: true },
       localKey: { value: '', required: true },
+      bind_space_id: { value: '' },
       gateway: { type: 'tuya-local-device', required: false },
       cid: { value: '' },
       ip: { value: '' },
@@ -117,6 +118,7 @@
           if (!this.project) return console.error('project not configured: ' + this.project)
           const project = RED.nodes.node(this.project)
           if (!project) return console.error('project not found: ' + this.project)
+          if (this.bind_space_id === undefined) this.bind_space_id = project.bind_space_id || ''
           project.getCloudDevices && project.getCloudDevices(cloudDevices=>{
             if (!cloudDevices) return console.error('download devices failed')
             this._device = cloudDevices[this.deviceId]
@@ -196,6 +198,10 @@
         })
       }
       fillDeviceProperties()
+    },
+    oneditsave: function() {
+      const project = RED.nodes.node(this.project)
+      if (this.bind_space_id === undefined) this.bind_space_id = project?.bind_space_id || ''
     }
   })
 </script>
