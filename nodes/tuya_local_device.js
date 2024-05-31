@@ -28,6 +28,7 @@ module.exports = function (RED) {
       this.gateway = config.gateway && RED.nodes.getNode(config.gateway)
       this.cid = config.cid || config.node_id || ''
       this.bind_space_id = config.bind_space_id || ''
+      //https://developer.tuya.com/en/docs/cloud/5a2fe10caa?id=Kawfjg9hodgdw
       this.autoStart = config.autoStart && !this.cid
 
       this.shouldTryReconnect = !this.cid
