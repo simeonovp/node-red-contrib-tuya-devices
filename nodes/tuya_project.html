@@ -14,8 +14,17 @@
     URL to project DBs storage. Used for initial project setup without cloud access.
   </div>
   <div class="form-row">
-    <label for="node-config-input-bind_space_id"><i class="fa fa-tag"></i> Space ID</label>
-    <input type="text" id="node-config-input-bind_space_id">
+    <label for="project-home"><i class="fa fa-dot-circle-o"></i> Home</label>
+    <select id="project-home" style="width:120px !important"></select>
+    <!-- <label for="node-config-input-home"><i class="fa fa-tag"></i> Home</label>
+    <input type="text" id="node-config-input-home"> -->
+    <br>
+  </div>
+  <div class="form-row">
+    <label for="project-room"><i class="fa fa-dot-circle-o"></i> Room</label>
+    <select id="project-room" style="width:120px !important"></select>
+    <!-- <label for="node-config-input-room"><i class="fa fa-tag"></i> Room</label>
+    <input type="text" id="node-config-input-room"> -->
     <br>
   </div>
   <div class="form-row">
@@ -102,7 +111,8 @@
     defaults: {
       cloud: { type: 'tuya-cloud', required: false },
       dbUri: { value: '' },
-      bind_space_id: { value: '' },
+      home: { value: '' },
+      room: { value: '' },
       name: { value: '' },
       translate: { value: true },
       network: { value: '' },
@@ -123,6 +133,11 @@
           const url = this.resDir() + 'models.json'
           fetch(url).then(r=>r.json().then(callback))
         })
+        this.getHomes = ((callback) => {
+          if (this._homes) return callback(this._homes)
+          const url = this.resDir() + 'homes.json'
+          fetch(url).then(r=>r.json().then(callback))
+        })
         this.updateDevices = (node) => {
           this._cloudDevices = null
           this._models = null
@@ -139,8 +154,40 @@
       }
       return this.name || 'Tuya Project' 
     },
+    oneditprepare: function () {
+      //
+      const refreshHomes = (homes) => {
+        //this.homes = homes
+        $elHome = $('#project-home')
+        $elHome.empty()
+        $elHome.append($('<option></option>').attr('value', '').text('all'))
+        $elRoom = $('#project-room')
+        $elRoom.empty()
+        $elRoom.append($('<option></option>').attr('value', '').text('all'))
+        if(homes) {
+          for (const home in homes) {
+            $elHome.append($('<option></option>').attr('value', home).text(homes[home].name))
+            if(homes[home].rooms) {
+              for (const room in homes[home].rooms) {
+                $elRoom.append($('<option></option>').attr('value', room).text(homes[home].rooms[room].name))
+              }
+            }
+          }
+        }
+        $elHome.val(this.home)
+        $elHome.change(() => {
+          this.home = $('#project-home').val()
+        })
+        $elRoom.val(this.room)
+        $elRoom.change(() => {
+          this.room = $('#project-room').val()
+        })
+      }
+      this.getHomes(homes => refreshHomes(homes))
+    },
     oneditsave: function() {
-      if (this.bind_space_id === undefined) this.bind_space_id = ''
+      if (this.home === undefined) this.home = ''
+      if (this.room === undefined) this.room = ''
     },
   })
 </script>

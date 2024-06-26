@@ -46,7 +46,8 @@ module.exports = function (RED) {
       }
   
       this.userId = config.userId || this.cloud?.userId
-      this.bind_space_id = config.bind_space_id || ''
+      this.homeId = config.home
+      this.roomId = config.room
       this.resDir = path.resolve(path.join(__dirname, '../resources', config.name || 'default'))
       if (!fs.existsSync(this.resDir)) fs.mkdirSync(this.resDir, { recursive: true })
       this.localDevices = {}

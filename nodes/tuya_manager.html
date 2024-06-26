@@ -181,11 +181,26 @@
       const refreshDevices = () => {
         this.devicesDirty = false
         if (!this.cloudDevices) return $('#device-table').html('')
+        const projectRoom = this.projectNode?.room
+        const getRoom = (deviceId) => {
+          if(this.homes) {
+            for (const home of Object.values(this.homes)) {
+              if(home.rooms) {
+                for (const room of Object.values(home.rooms)) {
+                  if (room.devices?.hasOwnProperty(deviceId)) return room
+                }
+              }
+            }
+          }
+        }
+        
         const tbody = $('#device-table > tbody')
         tbody.html('')
         const ilist = []
         const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
         for (const deviceId in this.cloudDevices) {
+          const room = getRoom(deviceId)
+          if (projectRoom && (projectRoom != room?.room_id)) continue
           const cloudDevice = this.cloudDevices[deviceId]
           const shapshotUri = `${resDir}icons/${cloudDevice.icon}`
           const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId)) || { name: cloudDevice.name }
@@ -194,7 +209,7 @@
               <td><input type="image" src="${shapshotUri}" name="${cloudDevice.name}" width="48" height="48" alt="${cloudDevice.name}"/></td>
               <td><input type="text" value="${cloudDevice.name}" style="width:100%" readonly></td>
               <td><input type="text" id="node-name-${deviceId}" value="${node.name}" style="width:100%"${node.deviceId && ' readonly' || ''}></td>
-              <td><input type="text" value="${cloudDevice.bind_space_id || ''}" style="width:100%" readonly></td>
+              <td><input type="text" value="${room?.name || ''}" style="width:100%" readonly></td>
               <td>
                 <button type="button" id="add-node-${deviceId}" ${node.deviceId && 'hidden' || 'class="red-ui-button"'}>
                   <i class="fa fa-plus"></i>
@@ -246,13 +261,18 @@
           })
           return
         }
+        if (!this.homes) {
+          this.projectNode.getHomes(homes => {
+            this.homes = homes
+            refreshDevices()
+          })
+        }
 
         if (this.modelsDirty) refreshModels()
         if (this.devicesDirty) refreshDevices()
       }
 
       refresh()
-
 
       $('#refresh-devices').click(() => this.projectNode.updateDevices(this))
 
@@ -268,7 +288,6 @@
           if (parts[1] !== this.id) return
           if (topic === 'updateDevices') refresh()
           else if (topic === 'userId') { //???
-            console.log(`-- receive userId ${payload}`)
             if (this.projectNode?.cloud) {
               const cloud = RED.nodes.node(this.projectNode?.cloud)
               if (cloud && !cloud.userId) {

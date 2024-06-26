@@ -27,7 +27,8 @@ module.exports = function (RED) {
       this.devId = config.deviceId
       this.gateway = config.gateway && RED.nodes.getNode(config.gateway)
       this.cid = config.cid || config.node_id || ''
-      this.bind_space_id = config.bind_space_id || ''
+      this.homeId = config.home
+      this.roomId = config.room
       //https://developer.tuya.com/en/docs/cloud/5a2fe10caa?id=Kawfjg9hodgdw
       this.autoStart = config.autoStart && !this.cid
 
@@ -67,7 +68,7 @@ module.exports = function (RED) {
         issueRefreshOnConnect: false,
       }
       this.log(`${JSON.stringify(connectionParams)}`)
-      this.tuyaDevice = this.gateway.tuyaDevice || new TuyaDevice(connectionParams)
+      this.tuyaDevice = this.gateway?.tuyaDevice || new TuyaDevice(connectionParams)
       this.lastData = null
       this.maxFindRetry = 3
       this.findRetry = 0
