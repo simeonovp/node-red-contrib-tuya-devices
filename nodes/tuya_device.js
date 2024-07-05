@@ -9,7 +9,7 @@ module.exports = function (RED) {
       this.config = config
       this.device = this.config.device && RED.nodes.getNode(this.config.device)
       if (!this.device || ((this.device.type !== 'tuya-local-device'))) {
-        this.error('Cloud configuration is wrong or missing, please review the node settings')
+        this.error('Device configuration is wrong or missing, please review the node settings, type:' + typeof this.device?.type)
         this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
         this.device = null
         return
@@ -68,7 +68,7 @@ module.exports = function (RED) {
             this.device.setMultipleDps(msg.payload)
           }
           else this.device.tuyaSet(msg.options || { //operation: 'SET'
-            dps: msg.dps || this.dps,
+            dps: msg.dps || msg.topic || this.dps,
             set: msg.payload
           })
           break

@@ -71,6 +71,12 @@
       RED.nodes.add(e)
       RED.nodes.dirty(true)
     },
+    checkLocalDevice: (deviceId) => {
+      const id = tuya_devices.deviceNodeId(obj.deviceId)
+      const device = RED.nodes.node(id)
+      if (device) return
+      //TODO
+    },
     updateDeviceId: (localDevice) => {
       if (localDevice.type !== 'tuya-local-device') return
       const deviceId = localDevice.deviceId
@@ -121,7 +127,7 @@
     },
     label: function() {
       // use label callback to perform init
-      if (!this.init) {
+      const init = () => {
         this.resDir = () => `resources/node-red-contrib-tuya-devices/${this.name || 'default'}/`
         this.getCloudDevices = ((callback) => {
           if (this._cloudDevices) return callback(this._cloudDevices)
@@ -152,6 +158,7 @@
         }
         this.init = true
       }
+      if (!this.init) init()
       return this.name || 'Tuya Project' 
     },
     oneditprepare: function () {
@@ -184,6 +191,26 @@
         })
       }
       this.getHomes(homes => refreshHomes(homes))
+
+      // check local keys
+      this.getCloudDevices(cloudDevices => {
+        console.log(`Check local keys:`)
+        for (const deviceId in this._cloudDevices) {
+          const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
+          if (!node) {
+            console.log(`- device ${deviceId} not used`)
+            continue
+          }
+          const cloudDevice = this._cloudDevices[deviceId]
+          if (node.localKey === cloudDevice.local_key)
+            console.log(`- device ${deviceId} "${node.name}" localKey up to date`)
+          else {
+            console.warn(`- device ${deviceId} "${node.name}" localKey changed, old:"${node.localKey}", new:"${cloudDevice.local_key}"`)
+            node.localKey = cloudDevice.local_key
+            RED.nodes.dirty(true)
+          }
+        }
+      })
     },
     oneditsave: function() {
       if (this.home === undefined) this.home = ''
