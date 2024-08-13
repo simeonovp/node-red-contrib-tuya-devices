@@ -30,6 +30,9 @@ In the manager config form:
 If the cloud configuration is correct and the manager node has received at least once a message with topic 'updateDevices' all mapped devices will be listed in the config. The device capabilities will be cached localy. With the plus button can be added a config node for every local device. This config nodes contains all setting nedded to use the device localy and can be selected in the configuration of the Tuya device nodes. 
 
 ## Changelog
+### v1.2.x
+- Refactoring to use 'tuya-devices' library
+
 ### v1.1.x
 - Make possible to use local devices connected by gateway
 - Refactoring local chache
@@ -41,7 +44,11 @@ If the cloud configuration is correct and the manager node has received at least
 - Supports WLAN Tuya devices
 
 ## TODO
-- add support for devices using gateway
+- filter models by selected room in manager view
+- hide space column in manager view devices tab if room selected
+- add room selection control in the manager view devices tab
+- link the device settings view to the device row in manager view
+- make possible to disable device in the admin page
 - flow examples
 - Make possible to translate cloud tokens (service descriptions) to english. Existing cache can be translated using manager command with topic 'translateDeviceModels'. 
   

@@ -6,11 +6,9 @@ module.exports = function (RED) {
   class Model {
     constructor (config) {
       RED.nodes.createNode(this, config)
-      this.on('close', this.onClose.bind(this))
-    }
-
-    onClose(done) {
-      done()
+      this.on('close', (done) => {
+        done()
+      })
     }
   }
 

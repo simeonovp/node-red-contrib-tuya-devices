@@ -7,13 +7,15 @@ module.exports = function (RED) {
     constructor (config) {
       RED.nodes.createNode(this, config)
       this.config = config
-      this.device = this.config.device && RED.nodes.getNode(this.config.device)
-      if (!this.device || ((this.device.type !== 'tuya-local-device'))) {
-        this.error('Device configuration is wrong or missing, please review the node settings, type:' + typeof this.device?.type)
+      this.deviceNode = this.config.device && RED.nodes.getNode(this.config.device)
+      if (!this.deviceNode || ((this.deviceNode.type !== 'tuya-local-device'))) {
+        this.error('Device configuration is wrong or missing, please review the node settings, type:' + typeof this.deviceNode?.type)
         this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
         this.device = null
         return
       }
+
+      this.device = this.deviceNode?.device
       this.dps = /*config.dps && config.dps.includes(',') && config.dps.split(',') ||*/ config.dps
 
       this.deviceStatusHandler = this.onDeviceStatus.bind(this)
@@ -93,14 +95,20 @@ module.exports = function (RED) {
     onDeviceStatus(state, data) {
       (this.config.outputs > 1) && data && this.send([null, { payload: { state, ...data } }])
       switch (state) {
-        case 'connecting':
+        case 'disabled':
+          this.status({ fill: 'gray', shape: 'ring', text: state })
+          break
+        case 'search':
           this.status({ fill: 'yellow', shape: 'ring', text: state })
           break
+        case 'connecting':
+          this.status({ fill: 'yellow', shape: 'fill', text: state })
+          break
         case 'connected':
-          this.status({ fill: 'green', shape: 'ring', text: state })
+          this.status({ fill: 'green', shape: 'fill', text: state })
           break
         case 'disconnected':
-          this.status({ fill: 'red', shape: 'ring', text: state })
+          this.status({ fill: 'gray', shape: 'fill', text: state })
           break
         case 'error':
           const errorShortText = this.device.isConnected && JSON.stringify(data?.context?.message) || `Can't find device`

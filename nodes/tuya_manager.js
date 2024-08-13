@@ -1,15 +1,6 @@
 module.exports = function (RED) {
   'use strict'
 
-  function JSONparse(json) {
-    try {
-      return JSON.parse(json)
-    }
-    catch(err) {
-      console.error(`Error JSON.parse(${json}):${err}`)
-    }
-  }
-
   class ManagerNode {
     constructor (config) {
       this.config = config
@@ -17,14 +8,16 @@ module.exports = function (RED) {
 
       const cloudStatusHandler = this.onCloudStatus.bind(this)
       const deviceFindHandler = this.onDeviceEvent.bind(this)
-      this.project = this.config.project && RED.nodes.getNode(this.config.project)
-      if (this.project) {
-        if (this.project.type !== 'tuya-project') {
+      this.projectNode = this.config.project && RED.nodes.getNode(this.config.project)
+      
+      if (this.projectNode) {
+        if (this.projectNode.type !== 'tuya-project') {
           this.warn('Project configuration is wrong or missing, please review the node settings')
           this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
           this.project = null
         }
         else {
+          this.project = this.projectNode.project
           this.project.addListener('cloud-status', cloudStatusHandler)
           this.project.addListener('device-find', deviceFindHandler)
         }
@@ -44,10 +37,12 @@ module.exports = function (RED) {
         switch (msg.topic) {
           case 'updateDevices':
             try {
-              this.project.updateDevices(msg, send, () => {
-                this.sendToFrontend(msg)
+              (async ()=> {
+                await this.project.updateCache()
+                //++ msg = TODO
+                //++ this.sendToFrontend(msg) // notify frontend to refresh resources
                 done()
-              })
+              })()
             } 
             catch(err) {
               this.error(`on input ${msg.topic} error:` + err)
@@ -95,7 +90,7 @@ module.exports = function (RED) {
     (req, res) => {
       const node = RED.nodes.getNode(req.params.id)
       if (!node) return res.sendStatus(404)
-      console.log(`Frontend bledevices event node:${node.name || node.id}, topic:${req.body?.topic}`)
+      console.log(`Frontend tuya-devices event node:${node.name || node.id}, topic:${req.body?.topic}`)
       try {
         if (req.body) node.receive(req.body)
         res.sendStatus(200)
