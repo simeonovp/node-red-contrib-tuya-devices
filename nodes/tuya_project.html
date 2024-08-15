@@ -129,6 +129,16 @@
       // use label callback to perform init
       const init = () => {
         this.resDir = () => `resources/node-red-contrib-tuya-devices/${this.name || 'default'}/`
+        this.getUsers = ((callback) => {
+          if (this._users) return callback(this._users)
+          const url = this.resDir() + 'users.json'
+          fetch(url).then(r=>r.json().then(callback))
+        })
+        this.getHomes = ((callback) => {
+          if (this._homes) return callback(this._homes)
+          const url = this.resDir() + 'homes.json'
+          fetch(url).then(r=>r.json().then(callback))
+        })
         this.getCloudDevices = ((callback) => {
           if (this._cloudDevices) return callback(this._cloudDevices)
           const url = this.resDir() + 'devices.json'
@@ -137,11 +147,6 @@
         this.getModels = ((callback) => {
           if (this._models) return callback(this._models)
           const url = this.resDir() + 'models.json'
-          fetch(url).then(r=>r.json().then(callback))
-        })
-        this.getHomes = ((callback) => {
-          if (this._homes) return callback(this._homes)
-          const url = this.resDir() + 'homes.json'
           fetch(url).then(r=>r.json().then(callback))
         })
         this.updateDevices = (node) => {

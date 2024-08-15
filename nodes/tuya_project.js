@@ -1,8 +1,18 @@
 const { Project } = require('tuya-devices')
 const path = require('path')
+const express = require('express')
 
 module.exports = function (RED) {
   'use strict'
+
+  const staticPath = path.join(__dirname, '..', 'resources')
+  if (!RED.httpAdmin.tuyaDevicesRouteRegistered) {
+    RED.httpAdmin.use('/tuya-devices', express.static(staticPath))
+    RED.httpAdmin.tuyaDevicesRouteRegistered = true
+    console.log('================================================================')
+    console.log('Registered static WEB path ' + staticPath)
+    console.log('================================================================')
+  }
 
   class ProjectNode {
     constructor (config) {

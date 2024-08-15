@@ -39,7 +39,7 @@
         <thead>
           <tr id="table-head">
             <th style="text-align:left;width:40%"><input type="text" value="Cloud id" style="width:100%" readonly></th>
-            <th style="text-align:left;width:10%"><input type="text" value="Services" style="width:100%" readonly></th>
+            <th style="text-align:left;width:10%"><input type="text" value="Properties" style="width:100%" readonly></th>
             <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
             <th style="width:10%"></th>
           </tr>
@@ -150,7 +150,7 @@
 
       const refreshModels = () => {
         const models = this.models
-        if (!models) return $('#device-table').html('')
+        if (!models) return $('#model-table').html('')
         const tbody = $('#model-table > tbody')
         tbody.html('')
         const ilist = []
@@ -158,10 +158,15 @@
           const services = models[modelId]
           const name = '' // (services?.length === 1) && (services[0].label || services[0].name) || modelId
           const node = RED.nodes.node(tuya_devices.modelNodeId(modelId)) || { name }
+          const serviceCount = services?.length || 0
+          let propCount = 0
+          if (serviceCount) services.forEach(service => {
+            propCount += (service.properties?.length || 0)
+          });
           ilist.push(`
             <tr>
               <td><input type="text" value="${modelId}" style="width:100%" readonly></td>
-              <td><input type="text" value="${services?.length || 0}" style="width:100%" readonly></td>
+              <td><input type="text" value="${propCount}" style="width:100%" readonly></td>
               <td><input type="text" id="node-name-${modelId}" value="${node.name}" style="width:100%"${node.modelId && ' readonly' || ''}></td>
               <td>
                 <button type="button" id="add-node-${modelId}" ${node.modelId && 'hidden' || 'class="red-ui-button"'}>
@@ -176,6 +181,39 @@
         for (const modelId in models) {
           $(`#add-node-${modelId}`).click(() => addModelNode(modelId))
         }
+      }
+
+      const refreshDevicesHeaders = () => {
+        $('#device-table thead th').remove() // remove all headers
+        const $headers = $('#device-table thead th')
+        const headers = [
+          { text: "Icon", width: "10%" },
+          { text: "Cloud name", width: "30%", textAlign: "left" },
+          { text: "Node name", textAlign: "left" },
+          { text: "Space", width: "20%", textAlign: "left" },
+          { text: "", width: "10%" }
+        ]
+
+        const tr = document.createElement('tr')
+        // headers.forEach(header => {
+        const addHeader = (header) => {
+          const th = document.createElement('th')
+
+          if (header.width) th.style.width = header.width
+          if (header.textAlign) th.style.textAlign = header.textAlign
+
+          const input = document.createElement('input')
+          input.type = 'text'
+          input.value = header.text
+          input.style.width = '100%'
+          input.readOnly = true
+
+          th.appendChild(input)
+          tr.appendChild(th)
+        }
+        headers.forEach(header => addHeader(header))
+
+        $headers.appendChild(tr)
       }
 
       const refreshDevices = () => {

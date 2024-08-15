@@ -102,13 +102,13 @@ module.exports = function (RED) {
           this.status({ fill: 'yellow', shape: 'ring', text: state })
           break
         case 'connecting':
-          this.status({ fill: 'yellow', shape: 'fill', text: state })
+          this.status({ fill: 'yellow', shape: 'dot', text: state })
           break
         case 'connected':
-          this.status({ fill: 'green', shape: 'fill', text: state })
+          this.status({ fill: 'green', shape: 'dot', text: state })
           break
         case 'disconnected':
-          this.status({ fill: 'gray', shape: 'fill', text: state })
+          this.status({ fill: 'gray', shape: 'dot', text: state })
           break
         case 'error':
           const errorShortText = this.device.isConnected && JSON.stringify(data?.context?.message) || `Can't find device`
