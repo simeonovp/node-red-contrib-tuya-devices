@@ -36,6 +36,13 @@ async function loadHeadContent(callback) {
   dataTablesLink.href = './css/dataTables.bootstrap.min.css'
   document.head.appendChild(dataTablesLink)
 
+  // Create and append DataTables CSS
+  const iconsLink = document.createElement('link')
+  iconsLink.rel = 'stylesheet'
+  iconsLink.type = 'text/css'
+  iconsLink.href = './css/bootstrap-icons.css'
+  document.head.appendChild(iconsLink)
+
   // Add custom styles
   const style = document.createElement('style')
   style.innerHTML = `
@@ -86,10 +93,8 @@ function loadBodyContent(tables) {
   for (const key of Object.keys(tables)) {
     const table_name = key.toLowerCase()
     const content_id = `tuya-${table_name}-content`
-    nav_tabs.appendChild(createTabNavigationElement(
-      key, table_name, content_id, active))
-    content_container.appendChild(
-      createTabContentElement(table_name, content_id, active))
+    nav_tabs.appendChild(createTabNavigationElement(key, table_name, content_id, active))
+    content_container.appendChild(createTabContentElement(table_name, content_id, active))
     active = false
   }
 
@@ -122,24 +127,19 @@ function createTabContentElement(table_name, content_id, active)
   tab_pane.id = content_id
   tab_pane.role = 'tabpanel'
   tab_pane.setAttribute('aria-labelledby', `tuya-${table_name}-tab`)
+  tab_pane.appendChild(createTable(table_name))
+  return tab_pane
+}
 
+function createTable(id) {
   const table = document.createElement('table')
-  table.id = table_name
+  table.id = id
   table.className = 'table table-striped table-bordered'
   table.style.width = '100%'
-
-  const thead = document.createElement('thead')
-  table.appendChild(thead)
-
-  const tbody = document.createElement('tbody')
-  table.appendChild(tbody)
-
-  const tfoot = document.createElement('tfoot')
-  table.appendChild(tfoot)
-
-  tab_pane.appendChild(table)
-  
-  return(tab_pane)
+  table.appendChild(document.createElement('thead'))
+  table.appendChild(document.createElement('tbody'))
+  table.appendChild(document.createElement('tfoot'))
+  return table
 }
 
 function loadFooterContent() {
@@ -170,23 +170,25 @@ async function fillTables(tables) {
   for (const table_name in tables_data) {
     table_data = tables_data[table_name]
     if (!table_data) return console.error(`Fill table ${table_name} failed, data is ${table_data}`)
-    const data = Array.isArray(table_data) ? table_data : Object.values(table_data)
-    const columns = getColumnsFromTable(data)
     const table = document.getElementById(table_name)
-    addColumns(table, columns)
-    const tableBody = table.getElementsByTagName('tbody')[0]
-    addRows(tableBody, data, columns)
-  }
-
-  for (const table_name in tables_data) {
-    // Add event listeners for filter inputs after tables are initialized
-    setupFilterInputs(table_name)
+    fillTable(table, table_data)
   }
 }
 
-function getColumnsFromTable(ar) {
+function fillTable(table, table_data) {
+  const data = Array.isArray(table_data) ? table_data : Object.values(table_data)
+  const initColumns = Array.isArray(table_data) ? [] : ['id']
+  const columns = getColumnsFromTable(data, initColumns)
+  addColumns(table, columns)
+  const tableBody = table.getElementsByTagName('tbody')[0]
+  addRows(tableBody, table_data, columns)
+  // Add event listeners for filter inputs after tables are initialized
+  setupFilterInputs(table)
+}
+
+function getColumnsFromTable(ar, columns) {
   return ar && [...new Set(ar.reduce((acc, obj) => acc.concat(
-    Array.isArray(obj) && obj.length ? Object.keys(obj[0]) : Object.keys(obj)), ['id']))] || []
+    Array.isArray(obj) && obj.length ? Object.keys(obj[0]) : Object.keys(obj)), columns))] || []
 }
 
 function addColumns(table, columns) {
@@ -210,36 +212,163 @@ function addColumns(table, columns) {
   }
 }
 
-function addRows(tableBody, data, columns, nested) {
-  data.forEach(item => {
-    if (Array.isArray(item)) addRows(tableBody, item, columns, true)
-    else addRow(tableBody, item, columns, nested)
-  })
+function addRows(tableBody, table_data, columns, id) {
+  //const data = Array.isArray(table_data) ? table_data : Object.values(table_data)
+  if (Array.isArray(table_data)) {
+    table_data.forEach(item => {
+      if (Array.isArray(item)) addRows(tableBody, item, columns, id)
+      else addRow(tableBody, item, columns, id)
+    })
+  }
+  else {
+    for (const [id, item] of Object.entries(table_data)) {
+      if (Array.isArray(item)) addRows(tableBody, item, columns, id)
+        else addRow(tableBody, item, columns, id)
+    }
+  }
 }
 
-function addRow(tableBody, item, columns, nested) {
+function addRow(tableBody, item, columns, id) {
+  if (id && !item.hasOwnProperty('id')) item.id = id
   const row = document.createElement('tr')
   columns.forEach(propertyName => {
+    const value = item[propertyName]
     const cell = document.createElement('td')
-    cell.textContent = !item.hasOwnProperty(propertyName) || (item[propertyName] === null) && (item[propertyName] === undefined) ? '' : 
-      (typeof item[propertyName] !== 'object') ? item[propertyName] :
-        Array.isArray(item[propertyName]) ? '(array)' : '(object)'
+    if (!item.hasOwnProperty(propertyName) || (value === null) || (value === undefined)) {
+      cell.textContent = ''
+    }
+    else if (typeof value !== 'object') {
+      cell.textContent = value
+      //TODO translate if propertyName is "name" or "description"
+    }
+    else if (Array.isArray(value)) {
+      if (value.length) {
+        cell.textContent = `(array [${value.length}]) `
+        const button = document.createElement('button')
+        button.id = 'openModalButton'
+        button.className = 'btn btn-primary'
+        button.innerHTML = '<i class="bi bi-pencil"></i>'
+        button.addEventListener('click', () => {
+          showModalForm('dynamicModal', value, 'Model properties') // TODO generate unique id and title
+        })
+        cell.appendChild(button)
+      }
+    }
+    else {
+      cell.textContent = '(object)'
+      console.warn(`value of property ${propertyName} is Object`)
+    }
       
     row.appendChild(cell)
   })
   tableBody.appendChild(row)
 }
 
-function setupFilterInputs(table_name) {
-  $(`#${table_name} tfoot th`).each(function () {
-    const title = $(this).text()
-    const title_id = title.replace('.', '_')
-    $(this).html('<input type="text" id="filter-input-' + title_id + '" class="form-control filter-input" placeholder="Filter ' + title + '" style="width:100%"/>')
+function showModalForm(id, table_data, title) {
+  // Create new modal elements
+  const modal = document.createElement('div')
+  modal.className = 'modal fade'
+  modal.id = id
+  modal.tabIndex = -1
+  modal.role = 'dialog'
+  modal.setAttribute('aria-labelledby', 'modalLabel')
+  modal.setAttribute('aria-hidden', 'true')
+  
+  // Style adjustments for the modal
+  modal.style.position = 'fixed' // Ensure the modal is positioned over everything else
+  modal.style.top = '0' // Align with the top of the viewport
+  modal.style.left = '0' // Align with the left of the viewport
+  modal.style.width = '100vw' // Full viewport width
+  modal.style.height = '100vh' // Full viewport height
+  modal.style.display = 'flex' // Flex display to center the dialog
+  modal.style.alignItems = 'center' // Center vertically
+  modal.style.justifyContent = 'center' // Center horizontally
+  
+  const modalDialog = document.createElement('div')
+  modalDialog.className = 'modal-dialog modal-lg'
+  modalDialog.role = 'document'
+  modalDialog.style.maxWidth = '90%'
+  modalDialog.style.width = '90%' // Ensure dialog width is also adjusted
+  modalDialog.style.margin = '0' // Remove default margin
+
+  const modalContent = document.createElement('div')
+  modalContent.className = 'modal-content'
+  modalContent.style.maxHeight = '80vh'
+  modalContent.style.overflowY = 'auto'
+
+  const modalHeader = document.createElement('div')
+  modalHeader.className = 'modal-header'
+  const modalTitle = document.createElement('h5')
+  modalTitle.className = 'modal-title'
+  modalTitle.id = 'modalLabel'
+  if (title) modalTitle.textContent = title
+  const closeButton = document.createElement('button')
+  closeButton.type = 'button'
+  closeButton.className = 'close'
+  closeButton.setAttribute('data-dismiss', 'modal')
+  closeButton.setAttribute('aria-label', 'Close')
+  closeButton.innerHTML = '<span aria-hidden="true">&times</span>'
+  modalHeader.appendChild(modalTitle)
+  modalHeader.appendChild(closeButton)
+
+  const modalBody = document.createElement('div')
+  modalBody.className = 'modal-body'
+  const table_id = id + '_table'
+  const table = createTable(table_id)
+  modalBody.appendChild(table)
+  fillTable(table, table_data)
+
+  const modalFooter = document.createElement('div')
+  modalFooter.className = 'modal-footer'
+  const cancelButton = document.createElement('button')
+  cancelButton.type = 'button'
+  cancelButton.className = 'btn btn-secondary'
+  cancelButton.setAttribute('data-dismiss', 'modal')
+  cancelButton.textContent = 'Cancel'
+  modalFooter.appendChild(cancelButton)
+
+  // const saveButton = document.createElement('button')
+  // saveButton.type = 'button'
+  // saveButton.className = 'btn btn-primary'
+  // saveButton.textContent = 'Save changes'
+  // modalFooter.appendChild(saveButton)
+
+  modalContent.appendChild(modalHeader)
+  modalContent.appendChild(modalBody)
+  modalContent.appendChild(modalFooter)
+
+  modalDialog.appendChild(modalContent)
+  modal.appendChild(modalDialog)
+
+  document.body.appendChild(modal)
+
+  $('#dynamicModal').modal('show')
+
+  // Remove the modal after it is hidden
+  $('#dynamicModal').on('hidden.bs.modal', () => modal.remove())
+}
+
+function setupFilterInputs(table) {
+  const tfoot = table.querySelector('tfoot')
+  const ths = tfoot.getElementsByTagName('th')
+  Array.from(ths).forEach(function(th) {
+    const title = th.textContent.trim()
+    const title_id = title.replace(/\./g, '_')
+
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.id = 'filter-input-' + title_id
+    input.className = 'form-control filter-input'
+    input.placeholder = 'Filter ' + title
+    input.style.width = '100%'
+    
+    th.innerHTML = ''
+    th.appendChild(input)
   })
 
-  const table = $('#' + table_name).DataTable()
+  const dataTable = $('#' + table.id).DataTable()
 
-  table.columns().every(function () {
+  dataTable.columns().every(function () {
     const that = this
 
     $('input', this.footer()).on('keyup change clear', function () {
