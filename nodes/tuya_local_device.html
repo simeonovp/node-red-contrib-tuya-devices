@@ -182,7 +182,7 @@
                     <tr>
                       <td><input type="text" value="${prop.abilityId}" style="width:100%" readonly></td>
                       <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
-                      <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name || prop.name || ''}" title="${prop.custom_description || prop.description || ''}" style="width:100%"></td>
+                      <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop._custom_name || prop.name || ''}" title="${prop._custom_description || prop.description || ''}" style="width:100%"></td>
                       <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" title='${prop.typeSpec && JSON.stringify(prop.typeSpec, null, 2) || ''}' style="width:100%" readonly></td>
                       <td><input type="text" value="${prop.accessMode}" style="width:100%" readonly></td>
                     </tr>`)
@@ -195,7 +195,7 @@
                   <tr>
                     <td><input type="text" value="${prop.dp_id}" style="width:100%" readonly></td>
                     <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
-                    <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop.custom_name}" style="width:100%"></td>
+                    <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop._custom_name || prop.name || ''}" style="width:100%"></td>
                     <td><input type="text" value="" style="width:100%" readonly></td>
                   </tr>`)
               }

@@ -187,8 +187,16 @@ function fillTable(table, table_data) {
 }
 
 function getColumnsFromTable(ar, columns) {
-  return ar && [...new Set(ar.reduce((acc, obj) => acc.concat(
-    Array.isArray(obj) && obj.length ? Object.keys(obj[0]) : Object.keys(obj)), columns))] || []
+  columns = (ar && [...new Set(ar.reduce((acc, obj) => acc.concat(
+    Array.isArray(obj) && obj.length ? Object.keys(obj[0]) : Object.keys(obj)),
+    columns))] || []).filter(item => !item.startsWith('_custom_'))
+
+  const descriptionIndex = columns.indexOf('description')
+  if (descriptionIndex > -1) {
+    const [description] = columns.splice(descriptionIndex, 1)
+    columns.push(description)
+  }
+  return columns
 }
 
 function addColumns(table, columns) {
@@ -228,40 +236,75 @@ function addRows(tableBody, table_data, columns, id) {
   }
 }
 
+function appendCell(row, text, iconName, onClick) {
+  const cell = document.createElement('td')
+    
+  if (iconName) {
+    const containerDiv = document.createElement('div')
+    containerDiv.style.display = 'flex'
+    containerDiv.style.justifyContent = 'space-between'
+    containerDiv.style.alignItems = 'center'
+    cell.appendChild(containerDiv)
+
+    const textDiv = document.createElement('div')
+    textDiv.textContent = text
+    textDiv.style.flexGrow = '1'
+    containerDiv.appendChild(textDiv)
+
+    const button = document.createElement('button')
+    button.id = iconName + 'Button'
+    button.className = 'btn style="font-size: 10px;"'
+    button.style.backgroundColor = 'transparent'
+    button.style.border = 'none'
+    if (onClick) button.addEventListener('click', onClick)
+    containerDiv.appendChild(button)
+
+    const icon = document.createElement('i')
+    icon.className = 'bi bi-' + iconName
+    icon.style.fontSize = '10px'
+    button.appendChild(icon)
+  }
+  else cell.textContent = text
+
+  row.appendChild(cell)
+}
+
+const translateActive = true //++
 function addRow(tableBody, item, columns, id) {
   if (id && !item.hasOwnProperty('id')) item.id = id
+
   const row = document.createElement('tr')
+  tableBody.appendChild(row)
+
   columns.forEach(propertyName => {
+    if (propertyName.startsWith('_custom_')) return
     const value = item[propertyName]
-    const cell = document.createElement('td')
     if (!item.hasOwnProperty(propertyName) || (value === null) || (value === undefined)) {
-      cell.textContent = ''
+      appendCell(row, '')
     }
     else if (typeof value !== 'object') {
-      cell.textContent = value
-      //TODO translate if propertyName is "name" or "description"
+      if (((propertyName === 'name') || (propertyName === 'description')
+          && translateActive)) {
+        // translate if propertyName is "name" or "description"
+        const customPropName = '_custom_' + propertyName
+        if (item.hasOwnProperty(customPropName)) return appendCell(row, item[customPropName], 'translate')
+        appendCell(row, value)
+      }
+      else appendCell(row, value)
     }
     else if (Array.isArray(value)) {
       if (value.length) {
-        cell.textContent = `(array [${value.length}]) `
-        const button = document.createElement('button')
-        button.id = 'openModalButton'
-        button.className = 'btn btn-primary'
-        button.innerHTML = '<i class="bi bi-pencil"></i>'
-        button.addEventListener('click', () => {
+        appendCell(row, `(array [${value.length}])`, 'pencil', () => {
           showModalForm('dynamicModal', value, 'Model properties') // TODO generate unique id and title
         })
-        cell.appendChild(button)
       }
+      else appendCell(row, '')
     }
     else {
-      cell.textContent = '(object)'
       console.warn(`value of property ${propertyName} is Object`)
+      appendCell(row, '(object)')
     }
-      
-    row.appendChild(cell)
   })
-  tableBody.appendChild(row)
 }
 
 function showModalForm(id, table_data, title) {

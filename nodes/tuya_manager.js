@@ -51,11 +51,34 @@ module.exports = function (RED) {
               done()
             }
             break
+          case 'updateDeviceDataModel':
+            msg.topic = 'updateAllModels'
+            return this.tryProjectCommand(msg, send, done)
+          case 'translateDeviceModels':
+            msg.topic = 'translateModels'
+            return this.tryProjectCommand(msg, send, done)
           default:
-            const err = this.project.tryCommand(msg, send, done)
-            if (err) return done(err)
+            this.tryProjectCommand(msg, send, done)
         }
       })
+    }
+
+    // pass through project commands
+    async tryProjectCommand(msg, send, done) {
+      try {
+        if (!msg.topic) throw new Error('Empty topic')
+        if (typeof msg.topic !== 'string') throw new Error('Topic must be a string')
+        if (!this.project[msg.topic]) throw new Error('Unknown command ' + msg.topic)
+        
+        this.log('Command ' + msg.topic)
+        await this.project[msg.topic](msg)
+        send && send(msg)
+        done()
+      }
+      catch(err) {
+        this.error(err)
+        done(err)
+      }
     }
 
     onCloudStatus(userId) {
