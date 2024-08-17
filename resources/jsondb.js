@@ -22,26 +22,12 @@ async function initTabs(tables) {
 }
 
 async function loadHeadContent(callback) {
-  // Create and append Bootstrap CSS
-  const bootstrapLink = document.createElement('link')
-  bootstrapLink.rel = 'stylesheet'
-  bootstrapLink.type = 'text/css'
-  bootstrapLink.href = './css/bootstrap.min.css'
-  document.head.appendChild(bootstrapLink)
-
-  // Create and append DataTables CSS
-  const dataTablesLink = document.createElement('link')
-  dataTablesLink.rel = 'stylesheet'
-  dataTablesLink.type = 'text/css'
-  dataTablesLink.href = './css/dataTables.bootstrap.min.css'
-  document.head.appendChild(dataTablesLink)
-
-  // Create and append DataTables CSS
-  const iconsLink = document.createElement('link')
-  iconsLink.rel = 'stylesheet'
-  iconsLink.type = 'text/css'
-  iconsLink.href = './css/bootstrap-icons.css'
-  document.head.appendChild(iconsLink)
+  const bootstrap5 = false
+  for(const url of [
+    bootstrap5 ? './css/bootstrap-5.3.0.min.css' : './css/bootstrap.min.css',
+    './css/dataTables.bootstrap.min.css',
+    './css/bootstrap-icons.css',
+  ]) addStyleSheet(url)
 
   // Add custom styles
   const style = document.createElement('style')
@@ -52,20 +38,25 @@ async function loadHeadContent(callback) {
   `
   document.head.appendChild(style)
 
-  // Add script tags
-  try {
-    for(const url of [
-      './script/jquery-1.11.2.min.js',
-      './script/jquery-3.5.1.slim.min.js',
-      './script/bootstrap.min.js',
-      './script/datatables.min.js',
-      './script/dataTables.bootstrap.min.js'
-    ]) await addScript(url)
-  } catch(err) { console.error(err) }
-
+  for(const url of [
+    './script/jquery-1.11.2.min.js',
+    './script/jquery-3.5.1.slim.min.js',
+    bootstrap5 ? './script/bootstrap-5.3.0.bundle.min.js' : './script/bootstrap.min.js',
+    './script/popper.min.js',
+    './script/datatables.min.js',
+    './script/dataTables.bootstrap.min.js'
+  ]) await addScript(url)
 }
 
-function addScript(url, callback) {
+function addStyleSheet(url) {
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.type = 'text/css'
+  link.href = url
+  document.head.appendChild(link)
+}
+
+function addScript(url) {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script')
     script.type = 'text/javascript'
@@ -181,7 +172,7 @@ function fillTable(table, table_data) {
   const columns = getColumnsFromTable(data, initColumns)
   addColumns(table, columns)
   const tableBody = table.getElementsByTagName('tbody')[0]
-  addRows(tableBody, table_data, columns)
+  addRows(table.id, tableBody, table_data, columns)
   // Add event listeners for filter inputs after tables are initialized
   setupFilterInputs(table)
 }
@@ -220,23 +211,23 @@ function addColumns(table, columns) {
   }
 }
 
-function addRows(tableBody, table_data, columns, id) {
+function addRows(tableId, tableBody, table_data, columns, id) {
   //const data = Array.isArray(table_data) ? table_data : Object.values(table_data)
   if (Array.isArray(table_data)) {
     table_data.forEach(item => {
-      if (Array.isArray(item)) addRows(tableBody, item, columns, id)
-      else addRow(tableBody, item, columns, id)
+      if (Array.isArray(item)) addRows(tableId, tableBody, item, columns, id)
+      else addRow(tableId, tableBody, item, columns, id)
     })
   }
   else {
     for (const [id, item] of Object.entries(table_data)) {
-      if (Array.isArray(item)) addRows(tableBody, item, columns, id)
-        else addRow(tableBody, item, columns, id)
+      if (Array.isArray(item)) addRows(tableId, tableBody, item, columns, id)
+        else addRow(tableId, tableBody, item, columns, id)
     }
   }
 }
 
-function appendCell(row, text, iconName, onClick) {
+function appendCell(row, text, iconName, tooltipText, onClick) {
   const cell = document.createElement('td')
     
   if (iconName) {
@@ -252,10 +243,14 @@ function appendCell(row, text, iconName, onClick) {
     containerDiv.appendChild(textDiv)
 
     const button = document.createElement('button')
-    button.id = iconName + 'Button'
+    button.id = iconName + '-button'
     button.className = 'btn style="font-size: 10px;"'
     button.style.backgroundColor = 'transparent'
     button.style.border = 'none'
+    if (tooltipText) {
+      button.setAttribute('data-toggle', 'tooltip')
+      button.setAttribute('title', tooltipText)
+    }
     if (onClick) button.addEventListener('click', onClick)
     containerDiv.appendChild(button)
 
@@ -270,7 +265,7 @@ function appendCell(row, text, iconName, onClick) {
 }
 
 const translateActive = true //++
-function addRow(tableBody, item, columns, id) {
+function addRow(tableId, tableBody, item, columns, id) {
   if (id && !item.hasOwnProperty('id')) item.id = id
 
   const row = document.createElement('tr')
@@ -287,15 +282,15 @@ function addRow(tableBody, item, columns, id) {
           && translateActive)) {
         // translate if propertyName is "name" or "description"
         const customPropName = '_custom_' + propertyName
-        if (item.hasOwnProperty(customPropName)) return appendCell(row, item[customPropName], 'translate')
+        if (item.hasOwnProperty(customPropName)) return appendCell(row, item[customPropName], 'translate', value)
         appendCell(row, value)
       }
       else appendCell(row, value)
     }
     else if (Array.isArray(value)) {
       if (value.length) {
-        appendCell(row, `(array [${value.length}])`, 'pencil', () => {
-          showModalForm('dynamicModal', value, 'Model properties') // TODO generate unique id and title
+        appendCell(row, `(array [${value.length}])`, 'pencil', '', () => {
+          showModalForm(`${tableId}-${propertyName}`, value, 'Model properties')
         })
       }
       else appendCell(row, '')
@@ -316,8 +311,6 @@ function showModalForm(id, table_data, title) {
   modal.role = 'dialog'
   modal.setAttribute('aria-labelledby', 'modalLabel')
   modal.setAttribute('aria-hidden', 'true')
-  
-  // Style adjustments for the modal
   modal.style.position = 'fixed' // Ensure the modal is positioned over everything else
   modal.style.top = '0' // Align with the top of the viewport
   modal.style.left = '0' // Align with the left of the viewport
@@ -326,32 +319,39 @@ function showModalForm(id, table_data, title) {
   modal.style.display = 'flex' // Flex display to center the dialog
   modal.style.alignItems = 'center' // Center vertically
   modal.style.justifyContent = 'center' // Center horizontally
-  
+  modal.addEventListener('hidden.bs.modal', () => modal.remove())
+  document.body.appendChild(modal)
+
   const modalDialog = document.createElement('div')
   modalDialog.className = 'modal-dialog modal-lg'
   modalDialog.role = 'document'
   modalDialog.style.maxWidth = '90%'
   modalDialog.style.width = '90%' // Ensure dialog width is also adjusted
   modalDialog.style.margin = '0' // Remove default margin
+  modal.appendChild(modalDialog)
 
   const modalContent = document.createElement('div')
   modalContent.className = 'modal-content'
   modalContent.style.maxHeight = '80vh'
   modalContent.style.overflowY = 'auto'
+  modalDialog.appendChild(modalContent)
 
   const modalHeader = document.createElement('div')
   modalHeader.className = 'modal-header'
+  modalContent.appendChild(modalHeader)
+
   const modalTitle = document.createElement('h5')
   modalTitle.className = 'modal-title'
-  modalTitle.id = 'modalLabel'
+  modalTitle.id = id + '_label'
   if (title) modalTitle.textContent = title
+  modalHeader.appendChild(modalTitle)
+
   const closeButton = document.createElement('button')
   closeButton.type = 'button'
   closeButton.className = 'close'
   closeButton.setAttribute('data-dismiss', 'modal')
   closeButton.setAttribute('aria-label', 'Close')
   closeButton.innerHTML = '<span aria-hidden="true">&times</span>'
-  modalHeader.appendChild(modalTitle)
   modalHeader.appendChild(closeButton)
 
   const modalBody = document.createElement('div')
@@ -360,9 +360,12 @@ function showModalForm(id, table_data, title) {
   const table = createTable(table_id)
   modalBody.appendChild(table)
   fillTable(table, table_data)
+  modalContent.appendChild(modalBody)
 
   const modalFooter = document.createElement('div')
   modalFooter.className = 'modal-footer'
+  modalContent.appendChild(modalFooter)
+
   const cancelButton = document.createElement('button')
   cancelButton.type = 'button'
   cancelButton.className = 'btn btn-secondary'
@@ -376,19 +379,9 @@ function showModalForm(id, table_data, title) {
   // saveButton.textContent = 'Save changes'
   // modalFooter.appendChild(saveButton)
 
-  modalContent.appendChild(modalHeader)
-  modalContent.appendChild(modalBody)
-  modalContent.appendChild(modalFooter)
-
-  modalDialog.appendChild(modalContent)
-  modal.appendChild(modalDialog)
-
-  document.body.appendChild(modal)
-
-  $('#dynamicModal').modal('show')
-
-  // Remove the modal after it is hidden
-  $('#dynamicModal').on('hidden.bs.modal', () => modal.remove())
+  $('#' + id).modal('show')
+  // const bootstrapModal = new bootstrap.Modal(modal)
+  // bootstrapModal.show()
 }
 
 function setupFilterInputs(table) {
