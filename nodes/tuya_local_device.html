@@ -33,6 +33,14 @@
         <input type="checkbox" id="node-config-input-cacheAnnouncement">
       </div>
       <div class="form-row">
+        <label for="node-config-input-tuyaVersion"><i class="fa fa-tag"></i> Tuya version</label>
+        <input type="text" id="node-config-input-tuyaVersion">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-deviceMac"><i class="fa fa-tag"></i> MAC address</label>
+        <input type="text" id="node-config-input-deviceMac">
+      </div>
+      <div class="form-row">
         <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
         <input type="text" id="node-config-input-ip">
       </div>
@@ -108,6 +116,8 @@
       cid: { value: '' },
       ip: { value: '' },
       port: { value: 6668 },
+      tuyaVersion: { value: '' },
+      deviceMac: { value: '' },
       autoStart: { value: true, required: true },
       cacheAnnouncement: { value: true, required: true },
       tuyaVersion: { value: '3.1', required: false },
@@ -168,11 +178,15 @@
           $('#node-config-input-cacheAnnouncement').parent().hide()
           $('#node-config-input-ip').parent().hide()
           $('#node-config-input-port').parent().hide()
+          $('#node-config-input-tuyaVersion').parent().hide()
+          $('#node-config-input-deviceMac').parent().hide()
         }
         else {
           $('#node-config-input-cacheAnnouncement').parent().show()
           $('#node-config-input-ip').parent().show()
           $('#node-config-input-port').parent().show()
+          $('#node-config-input-tuyaVersion').parent().show()
+          $('#node-config-input-deviceMac').parent().show()
         }
       }
       $('#node-config-input-gateway').on('change', refreshGateway)
@@ -222,6 +236,14 @@
 
       //refreshGateway()
       fillDeviceProperties()
+      const project = RED.nodes.node(this.project)
+      this.deviceMac && this.tuyaVersion || project?.getAnnouncements(announcements => {
+        const announcement = announcements?.[this.deviceId]
+        this.deviceMac = this.deviceMac || announcement?.mac || ''
+        this.tuyaVersion = announcement?.version || this.tuyaVersion|| ''
+        $('#node-config-input-deviceMac').val(this.deviceMac)
+        $('#node-config-input-tuyaVersion').val(this.tuyaVersion)
+      })
     },
     oneditsave: function() {
       const project = RED.nodes.node(this.project)
@@ -229,6 +251,13 @@
       if (this.home === undefined) this.home = project?.home || ''
       if (this.room === undefined) this.room = project?.room || ''
       if (this.cacheAnnouncement === undefined) this.cacheAnnouncement = true
+      if (this.tuyaVersion === undefined) this.tuyaVersion = ''
+      if (this.deviceMac === undefined) this.deviceMac = ''
+      this.deviceMac && this.tuyaVersion || project?.getAnnouncements(announcements => {
+        const announcement = announcements?.[this.deviceId]
+        this.deviceMac = this.deviceMac || announcement?.mac || ''
+        this.tuyaVersion = announcement?.version || this.tuyaVersion || ''
+      })
     }
   })
 </script>

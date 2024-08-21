@@ -149,6 +149,11 @@
           const url = this.resDir() + 'models.json'
           fetch(url).then(r=>r.json().then(callback))
         })
+        this.getAnnouncements = ((callback) => {
+          if (this._announcements) return callback(this._announcements)
+          const url = this.resDir() + 'announcements.json'
+          fetch(url).then(r=>r.json().then(callback))
+        })
         this.updateDevices = (node) => {
           this._cloudDevices = null
           this._models = null

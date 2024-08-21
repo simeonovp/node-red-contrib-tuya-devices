@@ -135,6 +135,7 @@
         addModelNode(cloudDevice.dataModel, cloudDevice.name)
         const gwNode = addDeviceNode(cloudDevice.gateway_id)
         const gateway = gwNode?.id || ''
+        const deviceMac = this.announcements?.[deviceId]?.mac || ''
         
         tuya_devices.addLocalDevice({ 
           project: this.project, 
@@ -144,6 +145,7 @@
           cid: cloudDevice.cid || cloudDevice.node_id,
           name,
           cloudDevice,
+          deviceMac, 
         })
         this.devicesDirty = true
       }
@@ -303,6 +305,11 @@
           this.projectNode.getHomes(homes => {
             this.homes = homes
             refreshDevices()
+          })
+        }
+        if (!this.announcements) {
+          this.projectNode.getAnnouncements(announcements => {
+            this.announcements = announcements
           })
         }
 
