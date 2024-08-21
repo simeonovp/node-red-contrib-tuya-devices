@@ -69,10 +69,18 @@ module.exports = function (RED) {
           if (typeof msg.payload === 'object') {
             this.device.setMultipleDps(msg.payload)
           }
-          else this.device.tuyaSet(msg.options || { //operation: 'SET'
-            dps: msg.dps || msg.topic || this.dps,
-            set: msg.payload
-          })
+          else {
+            this.device.tuyaSet(msg.options || { //operation: 'SET'
+              dps: msg.dps || msg.topic || this.dps,
+              set: msg.payload
+            })
+            .then(() => {
+              //++ send(msg)
+              done()
+            })
+            .catch(err => done(err))
+            return
+          }
           break
         case 'REFRESH':
           this.device.tuyaRefresh(msg.payload)

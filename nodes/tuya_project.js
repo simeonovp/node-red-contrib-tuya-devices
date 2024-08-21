@@ -5,15 +5,6 @@ const express = require('express')
 module.exports = function (RED) {
   'use strict'
 
-  const staticPath = path.join(__dirname, '..', 'resources')
-  if (!RED.httpAdmin.tuyaDevicesRouteRegistered) {
-    RED.httpAdmin.use('/tuya-devices', express.static(staticPath))
-    RED.httpAdmin.tuyaDevicesRouteRegistered = true
-    console.log('================================================================')
-    console.log('Registered static WEB path ' + staticPath)
-    console.log('================================================================')
-  }
-
   class ProjectNode {
     constructor (config) {
       RED.nodes.createNode(this, config)
@@ -42,4 +33,13 @@ module.exports = function (RED) {
   }
 
   RED.nodes.registerType('tuya-project', ProjectNode)
+
+  // const staticPath = path.join(__dirname, '..', 'resources')
+  // if (!RED.httpAdmin.tuyaDevicesRouteRegistered) {
+  //   RED.httpAdmin.use('/tuya-devices', express.static(staticPath))
+  //   RED.httpAdmin.tuyaDevicesRouteRegistered = true
+  //   console.log('================================================================')
+  //   console.log('Registered static WEB path ' + staticPath)
+  //   console.log('================================================================')
+  // }
 }

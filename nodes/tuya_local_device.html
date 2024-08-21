@@ -33,16 +33,16 @@
         <input type="checkbox" id="node-config-input-cacheAnnouncement">
       </div>
       <div class="form-row">
-        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-config-input-name" placeholder="Name">
-      </div>
-      <div class="form-row">
         <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
         <input type="text" id="node-config-input-ip">
       </div>
       <div class="form-row">
         <label for="node-config-input-port"><i class="fa fa-tag"></i> Port</label>
         <input type="text" id="node-config-input-port">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
       </div>
       <!-- <div class="form-row">
         <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> MQTT topic</label>
@@ -162,6 +162,21 @@
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
 
+      const refreshGateway = () => {
+        const gateway = $('#node-config-input-gateway').val()
+        if (gateway && (gateway !== '_ADD_')) {
+          $('#node-config-input-cacheAnnouncement').parent().hide()
+          $('#node-config-input-ip').parent().hide()
+          $('#node-config-input-port').parent().hide()
+        }
+        else {
+          $('#node-config-input-cacheAnnouncement').parent().show()
+          $('#node-config-input-ip').parent().show()
+          $('#node-config-input-port').parent().show()
+        }
+      }
+      $('#node-config-input-gateway').on('change', refreshGateway)
+
       const fillDeviceProperties = () => {
         this.getCloudDevice(cloudDevice=>{
           if (!cloudDevice) return console.error('[local device] device not found')
@@ -204,6 +219,8 @@
           })
         })
       }
+
+      //refreshGateway()
       fillDeviceProperties()
     },
     oneditsave: function() {
