@@ -33,10 +33,6 @@
         <input type="checkbox" id="node-config-input-cacheAnnouncement">
       </div>
       <div class="form-row">
-        <label for="node-config-input-tuyaVersion"><i class="fa fa-tag"></i> Tuya version</label>
-        <input type="text" id="node-config-input-tuyaVersion">
-      </div>
-      <div class="form-row">
         <label for="node-config-input-deviceMac"><i class="fa fa-tag"></i> MAC address</label>
         <input type="text" id="node-config-input-deviceMac">
       </div>
@@ -73,6 +69,10 @@
       </div>
     </div>
     <div id="tuya-advanced-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-deviceCategory"><i class="fa fa-wrench"></i> Device category</label>
+        <input type="text" id="node-config-input-deviceCategory">
+      </div>
       <div class="form-row">
         <label for="node-config-input-tuyaVersion"><i class="fa fa-wrench"></i> Tuya protocol version</label>
         <input type="text" id="node-config-input-tuyaVersion">
@@ -116,11 +116,11 @@
       cid: { value: '' },
       ip: { value: '' },
       port: { value: 6668 },
+      deviceCategory: { value: '' },
       tuyaVersion: { value: '' },
       deviceMac: { value: '' },
       autoStart: { value: true, required: true },
       cacheAnnouncement: { value: true, required: true },
-      tuyaVersion: { value: '3.1', required: false },
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
       eventMode: { value: 'event-both', required: true },
@@ -168,7 +168,7 @@
       tabs.addTab({ id: 'tuya-settings-tab', label: 'Settings' })
       tabs.addTab({ id: 'tuya-advanced-tab', label: 'Advanced' })
 
-      if (!this.tuyaVersion) $('#node-config-input-tuyaVersion').val(3.1)
+      //-- if (!this.tuyaVersion) $('#node-config-input-tuyaVersion').val(3.1)
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
 
@@ -194,6 +194,10 @@
       const fillDeviceProperties = () => {
         this.getCloudDevice(cloudDevice=>{
           if (!cloudDevice) return console.error('[local device] device not found')
+          if (!this.deviceCategory) {
+            this.deviceCategory = cloudDevice.category
+            $('#node-config-input-deviceCategory').val(this.deviceCategory)
+          }
           this.getServices(services=>{
             if (!services) {
               console.warn('device properties has no data model')
@@ -256,7 +260,7 @@
       this.deviceMac && this.tuyaVersion || project?.getAnnouncements(announcements => {
         const announcement = announcements?.[this.deviceId]
         this.deviceMac = this.deviceMac || announcement?.mac || ''
-        this.tuyaVersion = announcement?.version || this.tuyaVersion || ''
+        this.deviceCategory = this.deviceCategory || ''
       })
     }
   })

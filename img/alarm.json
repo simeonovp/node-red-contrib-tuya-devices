@@ -1,0 +1,1239 @@
+[
+    {
+        "id": "864fb8936408d478",
+        "type": "tab",
+        "label": "Alarm",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "5a0d436f290d5143",
+        "type": "tuya-device",
+        "z": "864fb8936408d478",
+        "device": "tyd_bf7e42af1c428123e1vazc",
+        "dps": "",
+        "multiDps": true,
+        "name": "Alarm",
+        "outputs": 1,
+        "x": 810,
+        "y": 260,
+        "wires": [
+            [
+                "93a84f99de830915",
+                "3961aab114980e9b"
+            ]
+        ]
+    },
+    {
+        "id": "93a84f99de830915",
+        "type": "debug",
+        "z": "864fb8936408d478",
+        "name": "AlarmRecv",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 790,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "30fa68bf21c5d29a",
+        "type": "tuya-device",
+        "z": "864fb8936408d478",
+        "device": "tyd_bf7e42af1c428123e1vazc",
+        "dps": "38",
+        "name": "sub_admin",
+        "outputs": 1,
+        "x": 770,
+        "y": 660,
+        "wires": [
+            [
+                "586fe6a7c5b20370",
+                "fb12e517c2cd7fe3"
+            ]
+        ]
+    },
+    {
+        "id": "6cd42c3786911696",
+        "type": "inject",
+        "z": "864fb8936408d478",
+        "name": "dispatchCommands",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "dispatchCommands",
+        "x": 610,
+        "y": 340,
+        "wires": [
+            [
+                "5a0d436f290d5143"
+            ]
+        ]
+    },
+    {
+        "id": "586fe6a7c5b20370",
+        "type": "debug",
+        "z": "864fb8936408d478",
+        "name": "AlarmSubRecv",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 780,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "4a24a5187e7407fe",
+        "type": "inject",
+        "z": "864fb8936408d478",
+        "name": "addPart",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "addPart",
+        "x": 110,
+        "y": 840,
+        "wires": [
+            [
+                "c43e894751651a39"
+            ]
+        ]
+    },
+    {
+        "id": "987d32207cbd01df",
+        "type": "inject",
+        "z": "864fb8936408d478",
+        "name": "getParts",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "getParts",
+        "x": 520,
+        "y": 720,
+        "wires": [
+            [
+                "30fa68bf21c5d29a"
+            ]
+        ]
+    },
+    {
+        "id": "983cd885e656fa60",
+        "type": "inject",
+        "z": "864fb8936408d478",
+        "name": "deletePart",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "deletePart",
+        "x": 120,
+        "y": 880,
+        "wires": [
+            [
+                "1aee69392f05c081"
+            ]
+        ]
+    },
+    {
+        "id": "6f8508d4997f7838",
+        "type": "inject",
+        "z": "864fb8936408d478",
+        "name": "modifyPart",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "modifyPart",
+        "x": 120,
+        "y": 920,
+        "wires": [
+            [
+                "13b83f6d1e5d60fb"
+            ]
+        ]
+    },
+    {
+        "id": "991c405eb850dcc3",
+        "type": "inject",
+        "z": "864fb8936408d478",
+        "name": "getSelection",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "getPartSelection",
+        "x": 530,
+        "y": 760,
+        "wires": [
+            [
+                "30fa68bf21c5d29a"
+            ]
+        ]
+    },
+    {
+        "id": "9df88a2f13e51e8e",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "partCategory",
+        "label": "Category",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "5bcc01d50842950c",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "partCategory",
+        "topicType": "str",
+        "className": "",
+        "x": 290,
+        "y": 540,
+        "wires": [
+            [
+                "3b56a3055b5c8e7b"
+            ]
+        ]
+    },
+    {
+        "id": "fb12e517c2cd7fe3",
+        "type": "switch",
+        "z": "864fb8936408d478",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "partCategory",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "partNumber",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "partType",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "partZone",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "partLinking",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "partStatus",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "partBattery",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 7,
+        "x": 110,
+        "y": 660,
+        "wires": [
+            [
+                "9df88a2f13e51e8e"
+            ],
+            [
+                "fccde0fc4bc62058"
+            ],
+            [
+                "d8dca22bf691342b"
+            ],
+            [
+                "364843ec8642667c"
+            ],
+            [
+                "9d94b6a7809b4b10"
+            ],
+            [
+                "9b9327c01e841106"
+            ],
+            [
+                "36d0702304732099"
+            ]
+        ]
+    },
+    {
+        "id": "fccde0fc4bc62058",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "partNumber",
+        "label": "PartNr",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "5bcc01d50842950c",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "partNumber",
+        "topicType": "str",
+        "className": "",
+        "x": 290,
+        "y": 580,
+        "wires": [
+            [
+                "3b56a3055b5c8e7b"
+            ]
+        ]
+    },
+    {
+        "id": "d8dca22bf691342b",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "partType",
+        "label": "Type",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "5bcc01d50842950c",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "partType",
+        "topicType": "str",
+        "className": "",
+        "x": 280,
+        "y": 620,
+        "wires": [
+            [
+                "3b56a3055b5c8e7b"
+            ]
+        ]
+    },
+    {
+        "id": "364843ec8642667c",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "partZone",
+        "label": "Zone",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "5bcc01d50842950c",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "partZone",
+        "topicType": "str",
+        "className": "",
+        "x": 280,
+        "y": 660,
+        "wires": [
+            [
+                "3b56a3055b5c8e7b"
+            ]
+        ]
+    },
+    {
+        "id": "9d94b6a7809b4b10",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "partLinking",
+        "label": "Linking",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "5bcc01d50842950c",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "partLinking",
+        "topicType": "str",
+        "className": "",
+        "x": 290,
+        "y": 700,
+        "wires": [
+            [
+                "3b56a3055b5c8e7b"
+            ]
+        ]
+    },
+    {
+        "id": "9b9327c01e841106",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "partStatus",
+        "label": "Status",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "5bcc01d50842950c",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "partStatus",
+        "topicType": "str",
+        "className": "",
+        "x": 290,
+        "y": 740,
+        "wires": [
+            [
+                "3b56a3055b5c8e7b"
+            ]
+        ]
+    },
+    {
+        "id": "36d0702304732099",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "partBattery",
+        "label": "Battery",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "5bcc01d50842950c",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "partBattery",
+        "topicType": "str",
+        "className": "",
+        "x": 290,
+        "y": 780,
+        "wires": [
+            [
+                "3b56a3055b5c8e7b"
+            ]
+        ]
+    },
+    {
+        "id": "3b56a3055b5c8e7b",
+        "type": "function",
+        "z": "864fb8936408d478",
+        "name": "part request",
+        "func": "\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 660,
+        "wires": [
+            [
+                "30fa68bf21c5d29a",
+                "cb6c105ead0c0cd1"
+            ]
+        ]
+    },
+    {
+        "id": "cb6c105ead0c0cd1",
+        "type": "debug",
+        "z": "864fb8936408d478",
+        "name": "AlarmSubSend",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "3961aab114980e9b",
+        "type": "switch",
+        "z": "864fb8936408d478",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "master_mode",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "delay_set",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "alarm_time",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "switch_alarm_sound",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "switch_alarm_light",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "switch_mode_sound",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "switch_kb_sound",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "switch_kb_light",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "switch_alarm_propel",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "alarm_delay_time",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "PowerEvent",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 11,
+        "x": 110,
+        "y": 260,
+        "wires": [
+            [
+                "8b5ce42f5a6b1eaf"
+            ],
+            [
+                "9223ff2297b9732e"
+            ],
+            [
+                "cec2b01959786ce2"
+            ],
+            [
+                "deb0275c14028e68"
+            ],
+            [
+                "16cef58d0444c9df"
+            ],
+            [
+                "1344b747496d1703"
+            ],
+            [
+                "297b6c581f5977e5"
+            ],
+            [
+                "beb8a63179add8a2"
+            ],
+            [
+                "996c84de4b829fa4"
+            ],
+            [
+                "1e8dd2fb37f46dbc"
+            ],
+            [
+                "87d4e13e32900147"
+            ]
+        ]
+    },
+    {
+        "id": "8b5ce42f5a6b1eaf",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "master_mode",
+        "label": "Master mode",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "6f06ed931a72a75f",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "master_mode",
+        "topicType": "str",
+        "className": "",
+        "x": 300,
+        "y": 60,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "9223ff2297b9732e",
+        "type": "ui_numeric",
+        "z": "864fb8936408d478",
+        "name": "delay_set",
+        "label": "Delay set",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "wrap": false,
+        "passthru": false,
+        "topic": "delay_set",
+        "topicType": "str",
+        "format": "{{value}} s",
+        "min": 0,
+        "max": "999",
+        "step": 1,
+        "className": "",
+        "x": 280,
+        "y": 100,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "cec2b01959786ce2",
+        "type": "ui_numeric",
+        "z": "864fb8936408d478",
+        "name": "alarm_time",
+        "label": "Alarm time",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "wrap": false,
+        "passthru": false,
+        "topic": "alarm_time",
+        "topicType": "str",
+        "format": "{{value}} s",
+        "min": 0,
+        "max": "999",
+        "step": 1,
+        "className": "",
+        "x": 290,
+        "y": 140,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "deb0275c14028e68",
+        "type": "ui_switch",
+        "z": "864fb8936408d478",
+        "name": "switch_alarm_sound",
+        "label": "Alarm sound",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "switch_alarm_sound",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 320,
+        "y": 180,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "16cef58d0444c9df",
+        "type": "ui_switch",
+        "z": "864fb8936408d478",
+        "name": "switch_alarm_light",
+        "label": "Alarm light",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "switch_alarm_light",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 310,
+        "y": 220,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "1344b747496d1703",
+        "type": "ui_switch",
+        "z": "864fb8936408d478",
+        "name": "switch_mode_sound",
+        "label": "Mode sound",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "switch_mode_sound",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 320,
+        "y": 260,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "297b6c581f5977e5",
+        "type": "ui_switch",
+        "z": "864fb8936408d478",
+        "name": "switch_kb_sound",
+        "label": "Keyboard sound",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "switch_kb_sound",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 310,
+        "y": 300,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "beb8a63179add8a2",
+        "type": "ui_switch",
+        "z": "864fb8936408d478",
+        "name": "switch_kb_light",
+        "label": "Keyboard light",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 10,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "switch_kb_light",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 300,
+        "y": 340,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "996c84de4b829fa4",
+        "type": "ui_switch",
+        "z": "864fb8936408d478",
+        "name": "switch_alarm_propel",
+        "label": "Alarm propel",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 11,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "switch_alarm_propel",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 320,
+        "y": 380,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "1e8dd2fb37f46dbc",
+        "type": "ui_numeric",
+        "z": "864fb8936408d478",
+        "name": "alarm_delay_time",
+        "label": "Delay time",
+        "tooltip": "",
+        "group": "6f06ed931a72a75f",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "wrap": false,
+        "passthru": false,
+        "topic": "alarm_delay_time",
+        "topicType": "str",
+        "format": "{{value}} s",
+        "min": 0,
+        "max": "999",
+        "step": 1,
+        "className": "",
+        "x": 310,
+        "y": 420,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "87d4e13e32900147",
+        "type": "ui_dropdown",
+        "z": "864fb8936408d478",
+        "name": "PowerEvent",
+        "label": "Power event",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "6f06ed931a72a75f",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "PowerEvent",
+        "topicType": "str",
+        "className": "",
+        "x": 290,
+        "y": 460,
+        "wires": [
+            [
+                "7c8e8cab7e5028a2"
+            ]
+        ]
+    },
+    {
+        "id": "7c8e8cab7e5028a2",
+        "type": "function",
+        "z": "864fb8936408d478",
+        "name": "settings request",
+        "func": "\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 260,
+        "wires": [
+            [
+                "c716e4436911223f",
+                "5a0d436f290d5143"
+            ]
+        ]
+    },
+    {
+        "id": "1b5908aaeb5091e2",
+        "type": "inject",
+        "z": "864fb8936408d478",
+        "name": "getDataModel",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "getDataModel",
+        "x": 590,
+        "y": 380,
+        "wires": [
+            [
+                "5a0d436f290d5143"
+            ]
+        ]
+    },
+    {
+        "id": "c716e4436911223f",
+        "type": "debug",
+        "z": "864fb8936408d478",
+        "name": "AlarmSend",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 570,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "c43e894751651a39",
+        "type": "ui_button",
+        "z": "864fb8936408d478",
+        "name": "btnAddPart",
+        "group": "5bcc01d50842950c",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "label": "Add",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "addPart",
+        "topicType": "str",
+        "x": 290,
+        "y": 840,
+        "wires": [
+            [
+                "30fa68bf21c5d29a"
+            ]
+        ]
+    },
+    {
+        "id": "1aee69392f05c081",
+        "type": "ui_button",
+        "z": "864fb8936408d478",
+        "name": "btnDeletePart",
+        "group": "5bcc01d50842950c",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "label": "Delete",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "deletePart",
+        "topicType": "str",
+        "x": 300,
+        "y": 880,
+        "wires": [
+            [
+                "30fa68bf21c5d29a"
+            ]
+        ]
+    },
+    {
+        "id": "13b83f6d1e5d60fb",
+        "type": "ui_button",
+        "z": "864fb8936408d478",
+        "name": "btnModifyPart",
+        "group": "5bcc01d50842950c",
+        "order": 10,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "label": "Apply",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "modifyPart",
+        "topicType": "str",
+        "x": 300,
+        "y": 920,
+        "wires": [
+            [
+                "30fa68bf21c5d29a"
+            ]
+        ]
+    },
+    {
+        "id": "tyd_bf7e42af1c428123e1vazc",
+        "type": "tuya-local-device",
+        "project": "631c26a290020b8b",
+        "deviceId": "bf7e42af1c428123e1vayc",
+        "localKey": "Ot1FdepQXBqAJPq.",
+        "home": "159643150",
+        "room": "91404175",
+        "gateway": "",
+        "cid": "",
+        "ip": "",
+        "port": "6668",
+        "deviceCategory": "mal",
+        "tuyaVersion": "",
+        "deviceMac": "",
+        "autoStart": true,
+        "cacheAnnouncement": true,
+        "retryTimeout": "1000",
+        "findTimeout": "10000",
+        "eventMode": "event-both",
+        "name": "Caravan alarm"
+    },
+    {
+        "id": "5bcc01d50842950c",
+        "type": "ui_group",
+        "name": "AlarmParts",
+        "tab": "ad62308d7e0cdfed",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "6f06ed931a72a75f",
+        "type": "ui_group",
+        "name": "AlarmSettings",
+        "tab": "ad62308d7e0cdfed",
+        "order": 3,
+        "disp": true,
+        "width": "6",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "631c26a290020b8b",
+        "type": "tuya-project",
+        "cloud": "1b199021e7a15eb5",
+        "dbUri": "",
+        "home": "159643150",
+        "room": "91404175",
+        "name": "caravan",
+        "translate": false,
+        "network": "",
+        "version": 1
+    },
+    {
+        "id": "ad62308d7e0cdfed",
+        "type": "ui_tab",
+        "name": "Control",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "1b199021e7a15eb5",
+        "type": "tuya-cloud",
+        "userId": "",
+        "deviceId": "bf466388bb265eb6b2cf8i",
+        "name": ""
+    }
+]

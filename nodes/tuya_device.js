@@ -1,4 +1,5 @@
 const path = require('path')
+const { send } = require('process')
 
 module.exports = function (RED) {
   'use strict'
@@ -17,6 +18,7 @@ module.exports = function (RED) {
 
       this.device = this.deviceNode?.device
       this.dps = /*config.dps && config.dps.includes(',') && config.dps.split(',') ||*/ config.dps
+      this.multiDps = !!config.multiDps
 
       this.deviceStatusHandler = this.onDeviceStatus.bind(this)
       this.deviceDataHandler = this.onDeviceData.bind(this)
@@ -51,8 +53,11 @@ module.exports = function (RED) {
 
     onInput(msg, send, done) {
       this.log(`Recieved input: ${JSON.stringify(msg)}`)
-      let operation = msg.operation || msg.payload.operation || 'SET'
-      delete msg.payload.operation
+      // spacial threatment for DP nodes or if msg.topic is string (not number for DPS)  
+      // (no msg.peration, msg.topic contains SubCommand, msg.payload: parameters)
+      const subCommand = msg.topic && (this.dps && !isNaN(this.dps) || (typeof msg.topic === 'string'))
+      let operation = msg.operation || msg.payload?.operation || (!subCommand && 'SET')
+      delete msg.payload?.operation
       if (['GET', 'SET', 'REFRESH'].indexOf(operation) != -1) {
         // the device has to be connected.
         if (!this.device.isConnected) {
@@ -71,7 +76,7 @@ module.exports = function (RED) {
           }
           else {
             this.device.tuyaSet(msg.options || { //operation: 'SET'
-              dps: msg.dps || msg.topic || this.dps,
+              dps: msg.dps || msg.topic || this.dps || undefined,
               set: msg.payload
             })
             .then(() => {
@@ -92,10 +97,21 @@ module.exports = function (RED) {
         case 'CONTROL':
           this.device.tuyaControl(msg.payload.action, msg.payload.value)
           break
-        case 'getDataModel':
-          msg.payload = this.device.getServices()
-          send(msg)
-          break
+        default:
+          try {
+            //this.log(`-- operation:${operation}, topic:${msg.topic}`)
+            msg.payload = this.device.onCommand(msg.topic, msg.payload, (postEvents) => {
+              if (postEvents && postEvents.length) this.postMessages(postEvents)
+            })
+            if ((msg.payload || !isNaN(msg.payload)) && (typeof msg.payload.then !== 'function')) {
+              send(msg)
+            }
+          }
+          catch(err)
+          {
+            done(err.callstack || err)
+            return
+          }
       }
       done()
     }
@@ -125,25 +141,57 @@ module.exports = function (RED) {
       }
     }
 
-    onDeviceData(ev, payload) {
+    onDeviceData(ev, payload, postEvents) {
       //this.log(`-- onDeviceData [event:${ev}]: ${JSON.stringify(payload?.data)}, dps:${this.dps}, isArray:${Array.isArray(this.dps)}, type:${typeof this.dps}`)
+      const sendDpMsg = (dp, val) => {
+        const msg = {}
+        msg.payload = val
+        const prop = this.device.getDpCode(dp)
+        if (prop) msg.topic = prop
+        const options = this.device.getPropOptions(prop)
+        if (options) msg.options = options
+        this.send(msg)
+      }
+      
+      const dps = payload?.data?.dps || payload?.dps
       if (this.dps && !Array.isArray(this.dps)) {
-        const dps = payload?.data?.dps || payload?.dps
         if (!dps || (dps[this.dps] === undefined)) return
-        payload = dps[this.dps]
+        sendDpMsg(this.dps, dps[this.dps])
+        if (postEvents && postEvents.length) this.postMessages(postEvents)
+        return
+      }
+
+      if (this.multiDps && !Array.isArray(this.dps)) {
+        if ((typeof dps !== 'object') || Array.isArray(dps)) return
+        for (const [dp, val] of Object.entries(dps)) {
+          sendDpMsg(dp, val)
+        }
+        if (postEvents && postEvents.length) this.postMessages(postEvents)
+        return
       }
 
       this.send({ payload })
+      if (postEvents && postEvents.length) this.postMessages(postEvents)
     }
 
-    // get({gwId = '', devId = '', uid = '', t = '', data, cid, ctype, t}) { // ???
-    //   data = {
-    //     cid: '',
-    //     ctype: 0,
-    //     t: t === 'int' ? Date.now() : Date.now().toString(),
-    //     ...data}
-    //   this.device.tuyaGet({gwId, devId, uid, t})
-    // }
+    postMessages(postEvents) {
+      //this.log(`--   postEvents:${JSON.stringify(postEvents)}`)
+      for (const event of postEvents) {
+        if (!event.options) continue
+        let options = []
+        if (typeof event.options !== 'object') {
+          this.warn(`! typeof message.options:${typeof event.options}`)
+          continue
+        }
+        if (Array.isArray(event.options)) {
+          for (let idx = 0; idx < event.options.length; idx++) {
+            options.push({[event.options[idx]]: idx})
+          }
+        }
+        else options = [event.options]
+        this.send({ topic: event.cmd, payload: event.value, options })
+      }
+    }
   }
 
   RED.nodes.registerType('tuya-device', DeviceNode)

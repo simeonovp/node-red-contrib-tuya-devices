@@ -27,11 +27,22 @@ In the manager config form:
     - set the AccessID, AccessKey and Any deviceId (needed to recognise the userId and all devices mapped to the same user account)
     - optional can be set the Tuya cloud userId if known and a name for the config node
 
+## Usage
 If the cloud configuration is correct and the manager node has received at least once a message with topic 'updateDevices' all mapped devices will be listed in the config. The device capabilities will be cached localy. With the plus button can be added a config node for every local device. This config nodes contains all setting nedded to use the device localy and can be selected in the configuration of the Tuya device nodes. 
+The device nodes can be easy connected to dashboard ui nodes (see example below). For this the single DP must be selected or a topic must be used to select a rigth DP, e.g by using of switch node. If device capabilites exists in local cache (e.g. after once successfully loaded from cloud) the device commands can be requestet by message usung topic 'dispatchCommands' (as in examle). A whole data model for the device can be requested by message with topic 'getDataModel'. 
+
+## Examples
+Here an [flow examle](./img/alarm.json) for the possible control and configuration of a Tuya multifunctional alarm device.
 
 ## Changelog
 ### v1.2.x
 - Refactoring to use 'tuya-devices' library
+- Added support for MAC address and Tuya version to the local device
+- Added tuya explorer (Beta, e.g. http://localhost:1880/resources/node-red-contrib-tuya-devices/index.html)
+- Improve device scanner
+- Local devices can be used by IP or MAC address
+- added dynamic generation of device commands based on model definitions
+- Added extension for device category "mal". Especially for treatment of sub-devices
 
 ### v1.1.x
 - Make possible to use local devices connected by gateway
