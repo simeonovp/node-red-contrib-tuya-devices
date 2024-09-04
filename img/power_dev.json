@@ -1,0 +1,844 @@
+[
+    {
+        "id": "983bd6b37fd8708b",
+        "type": "inject",
+        "z": "5a8fde94e8fc7611",
+        "name": "getDataModel",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "getDataModel",
+        "x": 150,
+        "y": 2060,
+        "wires": [
+            [
+                "d3ca96c6f520a117"
+            ]
+        ]
+    },
+    {
+        "id": "5f8ddb349794448b",
+        "type": "inject",
+        "z": "5a8fde94e8fc7611",
+        "name": "dispatchCommands",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "dispatchCommands",
+        "x": 170,
+        "y": 2020,
+        "wires": [
+            [
+                "d3ca96c6f520a117"
+            ]
+        ]
+    },
+    {
+        "id": "d3ca96c6f520a117",
+        "type": "tuya-device",
+        "z": "5a8fde94e8fc7611",
+        "device": "tyd_bfd6b820e7599d5e53i8wc",
+        "dps": "",
+        "multiDps": true,
+        "name": "Ext_Power",
+        "outputs": 1,
+        "x": 210,
+        "y": 2320,
+        "wires": [
+            [
+                "7dee70d782326359",
+                "e856d2185623a102"
+            ]
+        ]
+    },
+    {
+        "id": "7dee70d782326359",
+        "type": "debug",
+        "z": "5a8fde94e8fc7611",
+        "name": "Ext_Power",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 350,
+        "y": 2060,
+        "wires": []
+    },
+    {
+        "id": "d993b4c58fc867a6",
+        "type": "ui_switch",
+        "z": "5a8fde94e8fc7611",
+        "name": "ext_pwr_switch_1",
+        "label": "Switch",
+        "tooltip": "",
+        "group": "6fba777ef9e7c6e0",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "switch_1",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 570,
+        "y": 2020,
+        "wires": [
+            [
+                "02b521df2577a1de"
+            ]
+        ]
+    },
+    {
+        "id": "e856d2185623a102",
+        "type": "switch",
+        "z": "5a8fde94e8fc7611",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "switch_1",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "countdown_1",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "add_ele",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "cur_current",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "cur_power",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "cur_voltage",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "test_bit",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "voltage_coe",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "electric_coe",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "power_coe",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "electricity_coe",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "fault",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "relay_status",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "light_mode",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "child_lock",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "cycle_time",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "online_state",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            },
+            {
+                "t": "eq",
+                "v": "sub_admin",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 19,
+        "x": 370,
+        "y": 2320,
+        "wires": [
+            [
+                "d993b4c58fc867a6"
+            ],
+            [
+                "69ad6924e7e8a694"
+            ],
+            [
+                "65e0fb3b62aff28b"
+            ],
+            [
+                "876bf0616af4a536"
+            ],
+            [
+                "a9751ea0d177b2e9"
+            ],
+            [
+                "edb506cf7c7d5ce8"
+            ],
+            [
+                "9e2c7fc64d3de452"
+            ],
+            [
+                "4bbba57d0139c7d7"
+            ],
+            [
+                "92e2e9d5340cd48f"
+            ],
+            [
+                "8f67d8d92a032b25"
+            ],
+            [
+                "f09d265828b7c1c5"
+            ],
+            [
+                "20189bdb0efb0402"
+            ],
+            [
+                "63f256e1c04b043d"
+            ],
+            [
+                "36dae73b5a14901b"
+            ],
+            [
+                "ed0899d3cf51e9fd"
+            ],
+            [
+                "8c61a7263adae2c9"
+            ],
+            [
+                "7469b6fce4c21686"
+            ],
+            [
+                "bf42e052a68ae8b1"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "69ad6924e7e8a694",
+        "type": "ui_numeric",
+        "z": "5a8fde94e8fc7611",
+        "name": "ext_pwr_countdown_1",
+        "label": "Countdown",
+        "tooltip": "",
+        "group": "6fba777ef9e7c6e0",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "wrap": false,
+        "passthru": false,
+        "topic": "countdown_1",
+        "topicType": "str",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "86400",
+        "step": "1",
+        "className": "",
+        "x": 580,
+        "y": 2060,
+        "wires": [
+            [
+                "02b521df2577a1de"
+            ]
+        ]
+    },
+    {
+        "id": "02b521df2577a1de",
+        "type": "function",
+        "z": "5a8fde94e8fc7611",
+        "name": "set",
+        "func": "\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 2200,
+        "wires": [
+            [
+                "d3ca96c6f520a117"
+            ]
+        ]
+    },
+    {
+        "id": "2cc152092eef31fd",
+        "type": "inject",
+        "z": "5a8fde94e8fc7611",
+        "name": "Get power",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "cur_power",
+        "x": 780,
+        "y": 2280,
+        "wires": [
+            [
+                "02b521df2577a1de"
+            ]
+        ]
+    },
+    {
+        "id": "65e0fb3b62aff28b",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_add_ele",
+        "label": "Add elelctricity",
+        "format": "{{value/1000}} kW",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 570,
+        "y": 2100,
+        "wires": []
+    },
+    {
+        "id": "9e2c7fc64d3de452",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 11,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_test_bit",
+        "label": "Test bit",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": true,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 560,
+        "y": 2260,
+        "wires": []
+    },
+    {
+        "id": "4bbba57d0139c7d7",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 12,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_voltage_coe",
+        "label": "Voltage coe",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 580,
+        "y": 2300,
+        "wires": []
+    },
+    {
+        "id": "92e2e9d5340cd48f",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 13,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_electric_coe",
+        "label": "Electric coe",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 580,
+        "y": 2340,
+        "wires": []
+    },
+    {
+        "id": "8f67d8d92a032b25",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 14,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_power_coe",
+        "label": "Power coe",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 580,
+        "y": 2380,
+        "wires": []
+    },
+    {
+        "id": "f09d265828b7c1c5",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 15,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_electricity_coe",
+        "label": "Electricity coe",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 590,
+        "y": 2420,
+        "wires": []
+    },
+    {
+        "id": "1d1b04749feee5aa",
+        "type": "debug",
+        "z": "5a8fde94e8fc7611",
+        "name": "Ext_Pwr_fault",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 2460,
+        "wires": []
+    },
+    {
+        "id": "63f256e1c04b043d",
+        "type": "ui_dropdown",
+        "z": "5a8fde94e8fc7611",
+        "name": "ext_pwr_relay_status",
+        "label": "Relay status",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "6fba777ef9e7c6e0",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "relay_status",
+        "topicType": "str",
+        "className": "",
+        "x": 580,
+        "y": 2500,
+        "wires": [
+            [
+                "02b521df2577a1de"
+            ]
+        ]
+    },
+    {
+        "id": "876bf0616af4a536",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_cur_current",
+        "label": "Cur current",
+        "format": "{{value/1000}} A",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 580,
+        "y": 2140,
+        "wires": []
+    },
+    {
+        "id": "a9751ea0d177b2e9",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_cur_power",
+        "label": "Cur power",
+        "format": "{{value/10}} W",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 570,
+        "y": 2180,
+        "wires": []
+    },
+    {
+        "id": "edb506cf7c7d5ce8",
+        "type": "ui_text",
+        "z": "5a8fde94e8fc7611",
+        "group": "6fba777ef9e7c6e0",
+        "order": 10,
+        "width": 0,
+        "height": 0,
+        "name": "ext_pwr_cur_voltage",
+        "label": "Cur voltage",
+        "format": "{{value/10}} V",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 580,
+        "y": 2220,
+        "wires": []
+    },
+    {
+        "id": "36dae73b5a14901b",
+        "type": "ui_dropdown",
+        "z": "5a8fde94e8fc7611",
+        "name": "ext_pwr_light_mode",
+        "label": "Light mode",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "6fba777ef9e7c6e0",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "light_mode",
+        "topicType": "str",
+        "className": "",
+        "x": 580,
+        "y": 2540,
+        "wires": [
+            [
+                "02b521df2577a1de"
+            ]
+        ]
+    },
+    {
+        "id": "ed0899d3cf51e9fd",
+        "type": "ui_switch",
+        "z": "5a8fde94e8fc7611",
+        "name": "ext_pwr_child_lock",
+        "label": "Child lock",
+        "tooltip": "",
+        "group": "6fba777ef9e7c6e0",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "true",
+        "topic": "child_lock",
+        "topicType": "str",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 570,
+        "y": 2580,
+        "wires": [
+            [
+                "02b521df2577a1de"
+            ]
+        ]
+    },
+    {
+        "id": "df502d1dae5ed209",
+        "type": "debug",
+        "z": "5a8fde94e8fc7611",
+        "name": "Ext_Pwr_cycle_time",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 740,
+        "y": 2620,
+        "wires": []
+    },
+    {
+        "id": "7469b6fce4c21686",
+        "type": "ui_dropdown",
+        "z": "5a8fde94e8fc7611",
+        "name": "ext_pwr_online_state",
+        "label": "Online state",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "6fba777ef9e7c6e0",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "online_state",
+        "topicType": "str",
+        "className": "",
+        "x": 580,
+        "y": 2660,
+        "wires": [
+            [
+                "02b521df2577a1de"
+            ]
+        ]
+    },
+    {
+        "id": "50f80bebe9ad124c",
+        "type": "debug",
+        "z": "5a8fde94e8fc7611",
+        "name": "Ext_Pwr_unknown",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 730,
+        "y": 2700,
+        "wires": []
+    },
+    {
+        "id": "20189bdb0efb0402",
+        "type": "function",
+        "z": "5a8fde94e8fc7611",
+        "name": "not 0",
+        "func": "if (msg.payload === 0) return\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 2460,
+        "wires": [
+            [
+                "1d1b04749feee5aa"
+            ]
+        ]
+    },
+    {
+        "id": "8c61a7263adae2c9",
+        "type": "function",
+        "z": "5a8fde94e8fc7611",
+        "name": "not empty",
+        "func": "if (msg.payload === '') return\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 2620,
+        "wires": [
+            [
+                "df502d1dae5ed209"
+            ]
+        ]
+    },
+    {
+        "id": "bf42e052a68ae8b1",
+        "type": "function",
+        "z": "5a8fde94e8fc7611",
+        "name": "not empty",
+        "func": "if (msg.payload === '') return\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 2700,
+        "wires": [
+            [
+                "50f80bebe9ad124c"
+            ]
+        ]
+    },
+    {
+        "id": "tyd_bfd6b820e7599d5e53i8wc",
+        "type": "tuya-local-device",
+        "project": "631c26a290020b8b",
+        "deviceId": "bfd6b810e7599d3e53i8wc",
+        "localKey": "+o8E_=c?<q.^={wx",
+        "home": "159643150",
+        "room": "",
+        "gateway": "",
+        "cid": "",
+        "ip": "",
+        "port": "6668",
+        "tuyaVersion": "3.4",
+        "deviceMac": "18:de:50:e1:05:85",
+        "autoStart": true,
+        "cacheAnnouncement": true,
+        "retryTimeout": "1000",
+        "findTimeout": "10000",
+        "eventMode": "event-both",
+        "name": "Extern power"
+    },
+    {
+        "id": "6fba777ef9e7c6e0",
+        "type": "ui_group",
+        "name": "Ext_Power",
+        "tab": "ad62308d7e0cdfed",
+        "order": 4,
+        "disp": true,
+        "width": "6",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "631c26a290020b8b",
+        "type": "tuya-project",
+        "cloud": "1b199021e7a15eb5",
+        "dbUri": "",
+        "home": "159643150",
+        "room": "91404175",
+        "name": "caravan",
+        "translate": false,
+        "network": "",
+        "version": 1
+    },
+    {
+        "id": "ad62308d7e0cdfed",
+        "type": "ui_tab",
+        "name": "Control",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "1b199021e7a15eb5",
+        "type": "tuya-cloud",
+        "userId": "",
+        "deviceId": "bf466388bb265eb6b2cf8i",
+        "name": ""
+    }
+]

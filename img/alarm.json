@@ -11,7 +11,7 @@
         "id": "5a0d436f290d5143",
         "type": "tuya-device",
         "z": "864fb8936408d478",
-        "device": "tyd_bf7e42af1c428123e1vazc",
+        "device": "tyd_bf7e55af1c428123e1vazc",
         "dps": "",
         "multiDps": true,
         "name": "Alarm",
@@ -46,7 +46,7 @@
         "id": "30fa68bf21c5d29a",
         "type": "tuya-device",
         "z": "864fb8936408d478",
-        "device": "tyd_bf7e42af1c428123e1vazc",
+        "device": "tyd_bf7e55af1c428123e1vazc",
         "dps": "38",
         "name": "sub_admin",
         "outputs": 1,
@@ -1166,7 +1166,7 @@
         ]
     },
     {
-        "id": "tyd_bf7e42af1c428123e1vazc",
+        "id": "tyd_bf7e55af1c428123e1vazc",
         "type": "tuya-local-device",
         "project": "631c26a290020b8b",
         "deviceId": "bf7e42af1c428123e1vayc",

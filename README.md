@@ -32,7 +32,9 @@ If the cloud configuration is correct and the manager node has received at least
 The device nodes can be easy connected to dashboard ui nodes (see example below). For this the single DP must be selected or a topic must be used to select a rigth DP, e.g by using of switch node. If device capabilites exists in local cache (e.g. after once successfully loaded from cloud) the device commands can be requestet by message usung topic 'dispatchCommands' (as in examle). A whole data model for the device can be requested by message with topic 'getDataModel'. 
 
 ## Examples
-Here an [flow examle](./img/alarm.json) for the possible control and configuration of a Tuya multifunctional alarm device.
+- an [flow examle](./img/alarm.json) for the possible control and configuration of a Tuya multifunctional alarm device.
+- an [flow examle](./img/th_sensor.json) used Tuya themperature and humidity sensor device.
+- an [flow examle](./img/power_dev.json) used Tuya power device.
 
 ## Changelog
 ### v1.2.x

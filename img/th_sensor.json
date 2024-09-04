@@ -1,0 +1,510 @@
+[
+    {
+        "id": "252c7613b51198c9",
+        "type": "ui_gauge",
+        "z": "5a8fde94e8fc7611",
+        "name": "TempOutside",
+        "group": "7e35d929cc17d450",
+        "order": 18,
+        "width": "2",
+        "height": "2",
+        "gtype": "gage",
+        "title": "Temp Aussen",
+        "label": "°C",
+        "format": "{{value/10}}",
+        "min": "-100",
+        "max": "500",
+        "colors": [
+            "#e6e600",
+            "#00b500",
+            "#ca3838"
+        ],
+        "seg1": "100",
+        "seg2": "300",
+        "diff": false,
+        "className": "",
+        "x": 550,
+        "y": 1720,
+        "wires": []
+    },
+    {
+        "id": "c3441628b4bb0cde",
+        "type": "ui_gauge",
+        "z": "5a8fde94e8fc7611",
+        "name": "HumOutside",
+        "group": "7e35d929cc17d450",
+        "order": 19,
+        "width": "2",
+        "height": "2",
+        "gtype": "gage",
+        "title": "Feucht. Aussen",
+        "label": "%",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "100",
+        "colors": [
+            "#e6e600",
+            "#00b500",
+            "#ca3838"
+        ],
+        "seg1": "30",
+        "seg2": "70",
+        "diff": false,
+        "className": "",
+        "x": 550,
+        "y": 1760,
+        "wires": []
+    },
+    {
+        "id": "ff0420b636bfb421",
+        "type": "inject",
+        "z": "5a8fde94e8fc7611",
+        "name": "getDataModel",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "getDataModel",
+        "x": 150,
+        "y": 1740,
+        "wires": [
+            [
+                "e6133febe207bbde"
+            ]
+        ]
+    },
+    {
+        "id": "0163edfd35c8e895",
+        "type": "inject",
+        "z": "5a8fde94e8fc7611",
+        "name": "dispatchCommands",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "dispatchCommands",
+        "x": 170,
+        "y": 1700,
+        "wires": [
+            [
+                "e6133febe207bbde"
+            ]
+        ]
+    },
+    {
+        "id": "e6133febe207bbde",
+        "type": "tuya-device",
+        "z": "5a8fde94e8fc7611",
+        "device": "tyd_bfd584og3lzwzafm",
+        "dps": "",
+        "multiDps": true,
+        "name": "TH outside",
+        "outputs": 1,
+        "x": 210,
+        "y": 1820,
+        "wires": [
+            [
+                "df635ed2d247d54c",
+                "356e136c04987235"
+            ]
+        ]
+    },
+    {
+        "id": "356e136c04987235",
+        "type": "debug",
+        "z": "5a8fde94e8fc7611",
+        "name": "TH_Outside",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 350,
+        "y": 1740,
+        "wires": []
+    },
+    {
+        "id": "df635ed2d247d54c",
+        "type": "switch",
+        "z": "5a8fde94e8fc7611",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "temp_current",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "humidity_value",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "battery_percentage",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "temp_unit_convert",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "temp_calibration",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "hum_calibration",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 7,
+        "x": 370,
+        "y": 1820,
+        "wires": [
+            [
+                "252c7613b51198c9"
+            ],
+            [
+                "c3441628b4bb0cde"
+            ],
+            [
+                "0aa22b82e101c9cb"
+            ],
+            [
+                "0ed8d4120c39f12d"
+            ],
+            [
+                "758765775545d7ad"
+            ],
+            [
+                "48b915676ef311c3"
+            ],
+            [
+                "3ed0e87784afccbd"
+            ]
+        ]
+    },
+    {
+        "id": "0ed8d4120c39f12d",
+        "type": "ui_dropdown",
+        "z": "5a8fde94e8fc7611",
+        "name": "th_inside_unit",
+        "label": "Unit",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "9a5343fb98aa30ef",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "",
+                "value": "",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "temp_unit_convert",
+        "topicType": "str",
+        "className": "",
+        "x": 560,
+        "y": 1840,
+        "wires": [
+            [
+                "3abce021d78417c5",
+                "ec57dcfda5e83b94"
+            ]
+        ]
+    },
+    {
+        "id": "0aa22b82e101c9cb",
+        "type": "ui_gauge",
+        "z": "5a8fde94e8fc7611",
+        "name": "BattTHOutside",
+        "group": "7e35d929cc17d450",
+        "order": 20,
+        "width": "2",
+        "height": "2",
+        "gtype": "gage",
+        "title": "Battery TH Aussen",
+        "label": "%",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "100",
+        "colors": [
+            "#ca3838",
+            "#e6e600",
+            "#00b500"
+        ],
+        "seg1": "30",
+        "seg2": "70",
+        "diff": false,
+        "className": "",
+        "x": 560,
+        "y": 1800,
+        "wires": []
+    },
+    {
+        "id": "758765775545d7ad",
+        "type": "ui_numeric",
+        "z": "5a8fde94e8fc7611",
+        "name": "th_inside_temp_calibration",
+        "label": "Temp calibration",
+        "tooltip": "",
+        "group": "9a5343fb98aa30ef",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "wrap": false,
+        "passthru": false,
+        "topic": "temp_calibration",
+        "topicType": "str",
+        "format": "{{value/10}} °C",
+        "min": "-200",
+        "max": "200",
+        "step": "10",
+        "className": "",
+        "x": 600,
+        "y": 1880,
+        "wires": [
+            [
+                "3abce021d78417c5",
+                "ec57dcfda5e83b94"
+            ]
+        ]
+    },
+    {
+        "id": "48b915676ef311c3",
+        "type": "ui_numeric",
+        "z": "5a8fde94e8fc7611",
+        "name": "th_inside_hum_calibration",
+        "label": "Hum calibration",
+        "tooltip": "",
+        "group": "9a5343fb98aa30ef",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "wrap": false,
+        "passthru": false,
+        "topic": "hum_calibration",
+        "topicType": "str",
+        "format": "{{value}} %",
+        "min": "-10",
+        "max": "10",
+        "step": 1,
+        "className": "",
+        "x": 590,
+        "y": 1920,
+        "wires": [
+            [
+                "3abce021d78417c5",
+                "ec57dcfda5e83b94"
+            ]
+        ]
+    },
+    {
+        "id": "3ed0e87784afccbd",
+        "type": "debug",
+        "z": "5a8fde94e8fc7611",
+        "name": "TH_Outside_unknown",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 1960,
+        "wires": []
+    },
+    {
+        "id": "3abce021d78417c5",
+        "type": "debug",
+        "z": "5a8fde94e8fc7611",
+        "name": "TH_Outside_cal",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 820,
+        "y": 1800,
+        "wires": []
+    },
+    {
+        "id": "ec57dcfda5e83b94",
+        "type": "function",
+        "z": "5a8fde94e8fc7611",
+        "name": "set",
+        "func": "\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 1880,
+        "wires": [
+            [
+                "e6133febe207bbde"
+            ]
+        ]
+    },
+    {
+        "id": "d83caeed5167d8d5",
+        "type": "inject",
+        "z": "5a8fde94e8fc7611",
+        "name": "Get unit",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "temp_unit_convert",
+        "x": 790,
+        "y": 1960,
+        "wires": [
+            [
+                "ec57dcfda5e83b94"
+            ]
+        ]
+    },
+    {
+        "id": "7e35d929cc17d450",
+        "type": "ui_group",
+        "name": "Steuerung",
+        "tab": "ce34c573395b6e39",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "tyd_bfd584og3lzwzafm",
+        "type": "tuya-local-device",
+        "project": "631c26a290020b8b",
+        "deviceId": "bfd584og4lzwzafm",
+        "localKey": "R(K.~@lS7?]/ovM]",
+        "home": "159643150",
+        "room": "91404175",
+        "gateway": "tyd_bfa8dd8ead878c2a7lr6j",
+        "cid": "2d4551b4cc22705a",
+        "ip": "",
+        "port": "6668",
+        "deviceCategory": "wsdcg",
+        "tuyaVersion": "",
+        "deviceMac": "",
+        "autoStart": true,
+        "cacheAnnouncement": true,
+        "retryTimeout": "1000",
+        "findTimeout": "10000",
+        "eventMode": "event-both",
+        "name": "Temperature outside"
+    },
+    {
+        "id": "9a5343fb98aa30ef",
+        "type": "ui_group",
+        "name": "TH_Outside",
+        "tab": "ad62308d7e0cdfed",
+        "order": 7,
+        "disp": true,
+        "width": "6",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "ce34c573395b6e39",
+        "type": "ui_tab",
+        "name": "Caravan",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "631c26a290020b8b",
+        "type": "tuya-project",
+        "cloud": "1b199021e7a15eb5",
+        "dbUri": "",
+        "home": "159643150",
+        "room": "91404175",
+        "name": "caravan",
+        "translate": false,
+        "network": "",
+        "version": 1
+    },
+    {
+        "id": "tyd_bfa8dd8ead878c2a7lr6j",
+        "type": "tuya-local-device",
+        "project": "631c26a290020b8b",
+        "deviceId": "bfa8dd8ead87b9c2a7lr6j",
+        "localKey": "R(K.~@lS9?]/ovM]",
+        "home": "159643150",
+        "room": "",
+        "gateway": "",
+        "cid": "",
+        "ip": "",
+        "port": "6668",
+        "tuyaVersion": "3.4",
+        "deviceMac": "d8:d6:68:ce:85:10",
+        "autoStart": true,
+        "cacheAnnouncement": false,
+        "retryTimeout": "1000",
+        "findTimeout": "10000",
+        "eventMode": "event-both",
+        "name": "Gateway"
+    },
+    {
+        "id": "ad62308d7e0cdfed",
+        "type": "ui_tab",
+        "name": "Control",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "1b199021e7a15eb5",
+        "type": "tuya-cloud",
+        "userId": "",
+        "deviceId": "bf466388bb265eb6b2cf8i",
+        "name": ""
+    }
+]
