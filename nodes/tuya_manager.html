@@ -24,9 +24,10 @@
           <thead>
             <tr id="table-head">
               <th style="width:10%"><input type="text" value="Icon" style="width:100%" readonly></th>
-              <th style="text-align:left;width:30%"><input type="text" value="Cloud name" style="width:100%" readonly></th>
+              <th style="text-align:left;width:25%"><input type="text" value="Cloud name" style="width:100%" readonly></th>
               <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
               <th style="text-align:left;width:20%"><input type="text" value="Space" style="width:100%" readonly></th>
+              <th style="text-align:left;width:10%"><input type="text" value="Cat." style="width:100%" readonly></th>
               <th style="width:10%"></th>
             </tr>
           </thead>
@@ -250,6 +251,7 @@
               <td><input type="text" value="${cloudDevice.name}" style="width:100%" readonly></td>
               <td><input type="text" id="node-name-${deviceId}" value="${node.name}" style="width:100%"${node.deviceId && ' readonly' || ''}></td>
               <td><input type="text" value="${room?.name || ''}" style="width:100%" readonly></td>
+              <td><input type="text" value="${cloudDevice.category || ''}" style="width:100%" readonly></td>
               <td>
                 <button type="button" id="add-node-${deviceId}" ${node.deviceId && 'hidden' || 'class="red-ui-button"'}>
                   <i class="fa fa-plus"></i>
@@ -272,7 +274,7 @@
         }
       }
 
-      const refresh = () => {
+      const refresh = (cleanup) => {
         if (!this.projectNode) {
           if (!this.project) return console.error('project not configured: ' + this.project)
           this.projectNode = RED.nodes.node(this.project)
@@ -284,42 +286,52 @@
         this.modelsDirty = true
         this.devicesDirty = true
 
-        if (!this.models) {
+        if (cleanup) {
+          this.models = {}
+          this.cloudDevices = {}
+          this.homes = {}
+          this.announcements = {}
+          refreshModels()
+          refreshDevices()
+        }
+        else if (!this.models) {
           this.projectNode.getModels(models => {
             this.models = models
             refreshModels()
             refresh()
           })
-          return
         }
-
-        if (!this.cloudDevices) {
+        else if (!this.cloudDevices) {
           this.projectNode.getCloudDevices(cloudDevices => {
             this.cloudDevices = cloudDevices
             refreshDevices()
             refresh()
           })
-          return
         }
-        if (!this.homes) {
+        else if (!this.homes) {
           this.projectNode.getHomes(homes => {
             this.homes = homes
             refreshDevices()
           })
         }
-        if (!this.announcements) {
+        else if (!this.announcements) {
           this.projectNode.getAnnouncements(announcements => {
             this.announcements = announcements
+            refreshDevices()
           })
         }
-
-        if (this.modelsDirty) refreshModels()
-        if (this.devicesDirty) refreshDevices()
+        else {
+          if (this.modelsDirty) refreshModels()
+          if (this.devicesDirty) refreshDevices()
+        }
       }
 
       refresh()
 
-      $('#refresh-devices').click(() => this.projectNode.updateDevices(this))
+      $('#refresh-devices').click(() => {
+        refresh(true)
+        this.projectNode.updateDevices(this)
+      })
 
       const notificationTopic = 'notification/#'
       if (!this.unsubscribe) this.unsubscribe = () => {
@@ -331,8 +343,16 @@
         this.notificationHandler = ((topic, payload) => {
           const parts = topic.split('/')
           if (parts[1] !== this.id) return
-          if (topic === 'updateDevices') refresh()
-          else if (topic === 'userId') { //???
+          if (payload?.topic === 'updateDevices') {
+            console.log('notification for updateDevices')
+            this.models = null
+            this.cloudDevices = null
+            this.homes = null
+            this.announcements = null
+            refresh()
+          }
+          else if (payload?.topic === 'userId') { //???
+            console.log('notification for userId')
             if (this.projectNode?.cloud) {
               const cloud = RED.nodes.node(this.projectNode?.cloud)
               if (cloud && !cloud.userId) {
@@ -341,6 +361,7 @@
               }
             }
           }
+          else console.log('unknown notification for ' + payload?.topic)
         }).bind(this)
         RED.comms.subscribe(notificationTopic, this.notificationHandler)
       }

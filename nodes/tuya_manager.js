@@ -39,8 +39,7 @@ module.exports = function (RED) {
             try {
               (async ()=> {
                 await this.project.updateCache()
-                //++ msg = TODO
-                //++ this.sendToFrontend(msg) // notify frontend to refresh resources
+                this.sendToFrontend({topic: msg.topic, payload: 'update'}) // notify frontend to refresh resources
                 done()
               })()
             } 
@@ -98,7 +97,7 @@ module.exports = function (RED) {
     }
 
     sendToFrontend(payload) {
-      //this.log(`-- sendToFrontend`)
+      this.log(`-- sendToFrontend topic:${payload.topic}`)
       RED.events.emit('runtime-event', { id: this.id, retain: false, payload })
     }
 

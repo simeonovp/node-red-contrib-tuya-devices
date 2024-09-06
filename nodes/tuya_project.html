@@ -38,6 +38,35 @@
 
 <script type="text/javascript">
   const tuya_devices = {
+    cacheTables: Object.freeze({
+      users: 'users.json',
+      homes: 'homes.json',
+      devices: 'devices.json',
+      models: 'models.json',
+      announcements: 'announcements.json',
+    }),
+    cache: {},
+    resDir: (project) => `resources/node-red-contrib-tuya-devices/${project || 'default'}/`,
+    loadCacheTable: (project, table, callback) => {
+      if (!tuya_devices.cache[project]) tuya_devices.cache[project] = {}
+      const cache = tuya_devices.cache[project]
+      // console.log(`-- enter loadCacheTable, project:${project}, table:${table}`)
+      project = project || 'default'
+      if (cache[table]) return callback(cache[table])
+      const resDir = tuya_devices.resDir(project)
+      const url = resDir + (tuya_devices.cacheTables[table] || (table + '.json'))
+      console.log(`loadCacheTable fetch, resDir:${resDir}, url:${url}`)
+      fetch(url).then(r=>r.json().then(data=>{
+        console.log(`loadCacheTable received table:${table}`)
+        cache[table] = data
+        callback?.(data)
+      }))
+    },
+    clearCache: (project) => { tuya_devices.cache[project || 'default'] = {} },
+    updateCache: (project) => {
+      tuya_devices.clearCache(project)
+      for(const table of Object.keys(tuya_devices.cacheTables)) tuya_devices.loadCacheTable(project, table)
+    },
     deviceNodeId: (deviceId) => ('tyd_' + deviceId),
     modelNodeId: (modelId) => ('tym_' + modelId),
     addTuyaModel:  (obj) => {
@@ -128,39 +157,20 @@
     label: function() {
       // use label callback to perform init
       const init = () => {
-        this.resDir = () => `resources/node-red-contrib-tuya-devices/${this.name || 'default'}/`
-        this.getUsers = ((callback) => {
-          if (this._users) return callback(this._users)
-          const url = this.resDir() + 'users.json'
-          fetch(url).then(r=>r.json().then(callback))
-        })
-        this.getHomes = ((callback) => {
-          if (this._homes) return callback(this._homes)
-          const url = this.resDir() + 'homes.json'
-          fetch(url).then(r=>r.json().then(callback))
-        })
-        this.getCloudDevices = ((callback) => {
-          if (this._cloudDevices) return callback(this._cloudDevices)
-          const url = this.resDir() + 'devices.json'
-          fetch(url).then(r=>r.json().then(callback))
-        })
-        this.getModels = ((callback) => {
-          if (this._models) return callback(this._models)
-          const url = this.resDir() + 'models.json'
-          fetch(url).then(r=>r.json().then(callback))
-        })
-        this.getAnnouncements = ((callback) => {
-          if (this._announcements) return callback(this._announcements)
-          const url = this.resDir() + 'announcements.json'
-          fetch(url).then(r=>r.json().then(callback))
-        })
+        this.resDir = () => tuya_devices.resDir(this.name)
+        this.getUsers = (callback) => tuya_devices.loadCacheTable(this.name, 'users', callback)
+        this.getHomes = (callback) => tuya_devices.loadCacheTable(this.name, 'homes', callback)
+        this.getCloudDevices = (callback) => tuya_devices.loadCacheTable(this.name, 'devices', callback)
+        this.getModels = (callback) => tuya_devices.loadCacheTable(this.name, 'models', callback)
+        this.getAnnouncements = (callback) => tuya_devices.loadCacheTable(this.name, 'announcements', callback)
+        this.cache = tuya_devices.cache[this.name]
+
         this.updateDevices = (node) => {
-          this._cloudDevices = null
-          this._models = null
+          tuya_devices.clearCache(this.name)
           tuya_devices.sendMsg(node, {topic: 'updateDevices'}, (resp) => {})
         }
-        this.getCloudDevices(cloudDevices => this._cloudDevices = cloudDevices)
-        this.getModels(models => this._models = models)
+        tuya_devices.updateCache(this.name)
+
         if (this.version !== 1) {
           for (const user of this.users) tuya_devices.updateDeviceId(user)
           this._config.version = 1
@@ -205,13 +215,13 @@
       // check local keys
       this.getCloudDevices(cloudDevices => {
         console.log(`Check local keys:`)
-        for (const deviceId in this._cloudDevices) {
+        for (const deviceId in this.cache.cloudDevices) {
           const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
           if (!node) {
             console.log(`- device ${deviceId} not used`)
             continue
           }
-          const cloudDevice = this._cloudDevices[deviceId]
+          const cloudDevice = this.cache.cloudDevices[deviceId]
           if (node.localKey === cloudDevice.local_key)
             console.log(`- device ${deviceId} "${node.name}" localKey up to date`)
           else {
