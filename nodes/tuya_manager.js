@@ -1,3 +1,7 @@
+const Restarter = require('process-restarter')
+const path = require('path')
+const os = require('os')
+
 module.exports = function (RED) {
   'use strict'
 
@@ -9,7 +13,7 @@ module.exports = function (RED) {
       const cloudStatusHandler = this.onCloudStatus.bind(this)
       const deviceFindHandler = this.onDeviceEvent.bind(this)
       this.projectNode = this.config.project && RED.nodes.getNode(this.config.project)
-      
+
       if (this.projectNode) {
         if (this.projectNode.type !== 'tuya-project') {
           this.warn('Project configuration is wrong or missing, please review the node settings')
@@ -30,11 +34,24 @@ module.exports = function (RED) {
         }
         done()
       })
+      
+      // use the command 'sudo visudo'
+      // or 'sudo vim /etc/sudoers.d/010_user-node-red'
+      // and add for user 'user' the line:
+      // user ALL=(ALL) NOPASSWD: /bin/systemctl restart nodered.service
+      this.restarer = new Restarter('nodered.service', 'node-red',
+        path.join(os.homedir(), '.node-red', 'start-nodered.sh'))
 
       this.on('input', (msg, send, done) => {
         if (!this.project) return done('Project not configured')
         
         switch (msg.topic) {
+          case 'restartNodeRed':
+            try {
+              this.restarer.restart()
+              done()
+            } catch(err) { done(err.stack || err) }
+            break;
           case 'updateDevices':
             try {
               (async ()=> {
@@ -87,7 +104,7 @@ module.exports = function (RED) {
         case 'Offline': return this.status({ fill: 'red', text: 'offline', shape: 'ring' })
       }
       if (userId) {
-        this.log(`-- sendToFrontend userId ${userId}`)
+        //-- this.log(`-- sendToFrontend userId ${userId}`)
         this.sendToFrontend({topic: 'userId', payload: userId})
       }
     }
@@ -97,7 +114,7 @@ module.exports = function (RED) {
     }
 
     sendToFrontend(payload) {
-      this.log(`-- sendToFrontend topic:${payload.topic}`)
+      //-- this.log(`-- sendToFrontend topic:${payload.topic}`)
       RED.events.emit('runtime-event', { id: this.id, retain: false, payload })
     }
 
