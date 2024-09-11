@@ -1,11 +1,16 @@
 const { Device } = require('tuya-devices')
 
+const DEBUG = false
+
 module.exports = function (RED) {
   'use strict'
  
   class LocalDevice {
     constructor (config) {
       RED.nodes.createNode(this, config)
+
+      this.debug = DEBUG ? this.log.bind(this) : (() => {})
+    
       if (config.gateway) {
         this.gatewayNode = RED.nodes.getNode(config.gateway)
         if (!this.gatewayNode || ((this.gatewayNode.type !== 'tuya-local-device'))) {

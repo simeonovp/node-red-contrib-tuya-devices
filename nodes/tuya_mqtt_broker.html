@@ -1,0 +1,79 @@
+<script type="text/html" data-template-name="tuya-mqtt-broker">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-broker"><i class="fa fa-globe"></i> Address</label>
+    <input type="text" id="node-config-input-broker" style="width:40%;" placeholder="e.g. localhost">
+    <label for="node-config-input-port" style="margin-left:20px; width:43px; "> Port</label>
+    <input type="text" id="node-config-input-port" placeholder="1883" style="width:55px">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-useTls" style="width: auto">Enable secure (SSL/TLS) connection</label>
+    <input type="checkbox" id="node-config-input-useTls" style="display: inline-block; width: auto; vertical-align: top;">
+    <div id="node-config-row-tls" class="hide">
+      <label style="width: auto; margin-left: 20px; margin-right: 10px;" for="node-config-input-tls">TLS Configuration</label>
+      <input style="width: 300px;" type="text" id="node-config-input-tls">
+    </div>
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-clientId"><i class="fa fa-tag"></i> Client ID</label>
+    <input type="text" id="node-config-input-clientId" placeholder="Leave blank for auto generated">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-user"><i class="fa fa-user"></i> Username</label>
+    <input type="text" id="node-config-input-user">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-password"><i class="fa fa-lock"></i> Password</label>
+    <input type="password" id="node-config-input-password">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-keepAlive" style="width: auto"><i class="fa fa-clock-o"></i> Keep alive time (s)</label>
+    <input type="text" id="node-config-input-keepAlive" style="width: 50px">
+    <input type="checkbox" id="node-config-input-cleanSession" style="margin-left: 30px; height: 1em;display: inline-block; width: auto; vertical-align: middle;">
+    <label for="node-config-input-cleanSession" style="width: auto;">Use clean session</label>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tuya-mqtt-broker">
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('tuya-mqtt-broker', {
+    category: 'config',
+    defaults: {
+      name: { value: '' },
+      clientId: {value: '' },
+      broker: {value: '', required: true},
+      port: {value: 1883, required: true},
+      useTls: {value: false},
+      tls: {type:'tls-config', required: false},
+      verifyservercert: { value: false},
+      keepAlive: {value: 60},
+      cleanSession: {value: true},
+    },
+    credentials: {
+      user: {type: 'text'},
+      password: {type: 'password'}
+    },
+    label: function() {
+      return this.name || this.clientId || 'Tuya MQTT Broker' 
+    },
+    oneditprepare: function () {
+      const updateTLSOptions = () => {
+        if ($('#node-config-input-useTls').is(':checked')) {
+          $('#node-config-row-tls').show()
+        }
+        else {
+          $('#node-config-row-tls').hide()
+        }
+      }
+      updateTLSOptions()
+      $('#node-config-input-useTls').on('change', () => updateTLSOptions())
+    },
+    oneditsave: function() {
+    },
+  })
+</script>

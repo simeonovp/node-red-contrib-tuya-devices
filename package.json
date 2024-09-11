@@ -28,7 +28,8 @@
       "tuya-manager": "nodes/tuya_manager.js",
       "tuya-local-device": "nodes/tuya_local_device.js",
       "tuya-device": "nodes/tuya_device.js",
-      "tuya-model": "nodes/tuya_model.js"
+      "tuya-model": "nodes/tuya_model.js",
+      "tuya-mqtt-broker": "nodes/tuya_mqtt_broker.js"
     }
   },
   "dependencies": {
@@ -37,7 +38,7 @@
     "mqtt": "^4.3.7",
     "process-restarter": "^1.0.0",
     "request": "^2.88.2",
-    "tuya-devices": "^1.0.0",
+    "tuya-devices": "^1.1.0",
     "tuya-cloud-sdk-nodejs-ex": "^1.1.3",
     "tuyapi": "~7.5.1"
   },

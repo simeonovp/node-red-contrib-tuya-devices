@@ -1,35 +1,50 @@
 <script type="text/html" data-template-name="tuya-project">
   <div class="form-row">
-    <label for="node-config-input-cloud"><i class="fa fa-tag"></i> Cloud access</label>
-    <input type="text" id="node-config-input-cloud">
+    <ul id="tuya-project-tabs"></ul>
   </div>
-  <div class="form-row">
-    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-config-input-name" placeholder="Name">
-  </div>
-  <div class="form-row">
-    <label for="node-config-input-dbUri"><i class="fa fa-tag"></i> DB url (optional)</label>
-    <input type="text" id="node-config-input-dbUri">
-    <br>
-    URL to project DBs storage. Used for initial project setup without cloud access.
-  </div>
-  <div class="form-row">
-    <label for="project-home"><i class="fa fa-dot-circle-o"></i> Home</label>
-    <select id="project-home" style="width:120px !important"></select>
-    <!-- <label for="node-config-input-home"><i class="fa fa-tag"></i> Home</label>
-    <input type="text" id="node-config-input-home"> -->
-    <br>
-  </div>
-  <div class="form-row">
-    <label for="project-room"><i class="fa fa-dot-circle-o"></i> Room</label>
-    <select id="project-room" style="width:120px !important"></select>
-    <!-- <label for="node-config-input-room"><i class="fa fa-tag"></i> Room</label>
-    <input type="text" id="node-config-input-room"> -->
-    <br>
-  </div>
-  <div class="form-row">
-    <label for="node-config-input-translate"><i class="fa fa-tag"></i> Auto translate</label>
-    <input type="checkbox" id="node-config-input-translate">
+  <div id="tuya-project-tabs-content">
+    <div id="tuya-project-settings-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-dbUri"><i class="fa fa-tag"></i> DB url (optional)</label>
+        <input type="text" id="node-config-input-dbUri">
+        <br>
+        URL to project DBs storage. Used for initial project setup without cloud access.
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-translate"><i class="fa fa-tag"></i> Auto translate</label>
+        <input type="checkbox" id="node-config-input-translate">
+      </div>
+    </div>
+    <div id="tuya-project-cloud-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-cloud"><i class="fa fa-tag"></i> Cloud access</label>
+        <input type="text" id="node-config-input-cloud">
+      </div>
+      <div class="form-row">
+        <label for="project-home"><i class="fa fa-dot-circle-o"></i> Home</label>
+        <select id="project-home" style="width:120px !important"></select>
+        <br>
+      </div>
+      <div class="form-row">
+        <label for="project-room"><i class="fa fa-dot-circle-o"></i> Room</label>
+        <select id="project-room" style="width:120px !important"></select>
+        <br>
+      </div>
+    </div>
+    <div id="tuya-project-mqtt-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-broker"><i class="fa fa-tag"></i> MQTT broker</label>
+        <input type="text" id="node-config-input-broker">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-fullTopic"><i class="fa fa-tag"></i> Full topic</label>
+        <input type="text" id="node-config-input-fullTopic" placeholder="Leave blank for auto generated">
+      </div>
+    </div>
   </div>
 </script>
 
@@ -153,6 +168,9 @@
       network: { value: '' },
       version: { value: 1 },
       language: { value: 'en' },
+      //MQTT
+      broker: { type: 'tuya-mqtt-broker', required: false },
+      fullTopic: { value: 'tuya/%topic%/%prefix%' },
     },
     label: function() {
       // use label callback to perform init
@@ -182,6 +200,17 @@
       return this.name || 'Tuya Project' 
     },
     oneditprepare: function () {
+      const tabs = RED.tabs.create({
+        id: 'tuya-project-tabs',
+        onchange: function (tab) {
+          $('#tuya-project-tabs-content').children().hide()
+          $('#' + tab.id).show()
+        }
+      })
+      tabs.addTab({ id: 'tuya-project-settings-tab', label: 'Settings' })
+      tabs.addTab({ id: 'tuya-project-cloud-tab', label: 'Cloud' })
+      tabs.addTab({ id: 'tuya-project-mqtt-tab', label: 'Mqtt' })
+
       //
       const refreshHomes = (homes) => {
         //this.homes = homes
@@ -215,13 +244,13 @@
       // check local keys
       this.getCloudDevices(cloudDevices => {
         console.log(`Check local keys:`)
-        for (const deviceId in this.cache.cloudDevices) {
+        for (const deviceId in this.cache?.cloudDevices) {
           const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
           if (!node) {
             console.log(`- device ${deviceId} not used`)
             continue
           }
-          const cloudDevice = this.cache.cloudDevices[deviceId]
+          const cloudDevice = this.cache?.cloudDevices[deviceId]
           if (node.localKey === cloudDevice.local_key)
             console.log(`- device ${deviceId} "${node.name}" localKey up to date`)
           else {
@@ -235,6 +264,9 @@
     oneditsave: function() {
       if (this.home === undefined) this.home = ''
       if (this.room === undefined) this.room = ''
+
+      if (this.broker === undefined) this.broker = ''
+      if (this.fullTopic === undefined) this.fullTopic = 'tuya/%topic%/%prefix%'
     },
   })
 </script>
