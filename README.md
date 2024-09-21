@@ -26,6 +26,7 @@ In the manager config form:
     In the cloud config form:  
     - set the AccessID, AccessKey and Any deviceId (needed to recognise the userId and all devices mapped to the same user account)
     - optional can be set the Tuya cloud userId if known and a name for the config node
+  - Optional can be added new MQTT broker. It will be used for all Tuya devices in the project. The device data can be accessed in the broker with MQTT topic "tuya/(deviceId)/tele/(dp)"
 
 ## Usage
 If the cloud configuration is correct and the manager node has received at least once a message with topic 'updateDevices' all mapped devices will be listed in the config. The device capabilities will be cached localy. With the plus button can be added a config node for every local device. This config nodes contains all setting nedded to use the device localy and can be selected in the configuration of the Tuya device nodes. 
@@ -37,6 +38,11 @@ The device nodes can be easy connected to dashboard ui nodes (see example below)
 - an [flow examle](./img/power_dev.json) used Tuya power device.
 
 ## Changelog
+
+### v1.3.x
+- Add possibility to restart Node-Red (service or application) running on Debian system (e.g. RaspberryPI) over the GUI by send message with topic "restartNodeRed" to a Tuya Manager node. For development purposes Node-Red can be startet by the script (~/.node-red/start-nodered.sh) to make possible to restart it.
+- Added support of MQTT for Tuya devices. The activation and configuration can be make in a Tuya project node. All devices in the project uses the same MQTT broker
+
 ### v1.2.x
 - Refactoring to use 'tuya-devices' library
 - Added support for MAC address and Tuya version to the local device

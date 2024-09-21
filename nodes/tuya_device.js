@@ -1,6 +1,3 @@
-const path = require('path')
-const { send } = require('process')
-
 module.exports = function (RED) {
   'use strict'
 
@@ -19,6 +16,17 @@ module.exports = function (RED) {
       this.device = this.deviceNode?.device
       this.dps = /*config.dps && config.dps.includes(',') && config.dps.split(',') ||*/ config.dps
       this.multiDps = !!config.multiDps
+      this.outputsMode = (config.outputsMode === undefined) ? parseInt(config.outputs) : parseInt(config.outputsMode)
+      if (this.outputsMode === 3) {
+        this.outputs = {}
+        const properties = this.device.properties
+        this.outputsCount = properties.length + 1 // index 0 is for data output
+        for (const [index, value] of properties.entries()) {
+          if (!value?.abilityId) continue
+          this.outputs[value.abilityId] = index + 1
+        }
+        this.log(`-- outputsCount:${this.outputsCount}, outputs:${JSON.stringify(this.outputs)}`)
+      }
 
       this.deviceStatusHandler = this.onDeviceStatus.bind(this)
       this.deviceDataHandler = this.onDeviceData.bind(this)
@@ -117,7 +125,7 @@ module.exports = function (RED) {
     }
 
     onDeviceStatus(state, data) {
-      (this.config.outputs > 1) && data && this.send([null, { payload: { state, ...data } }])
+      (this.outputsMode === 2) && data && this.send([null, { payload: { state, ...data } }])
       switch (state) {
         case 'disabled':
           this.status({ fill: 'gray', shape: 'ring', text: state })
@@ -163,10 +171,21 @@ module.exports = function (RED) {
 
       if (this.multiDps && !Array.isArray(this.dps)) {
         if ((typeof dps !== 'object') || Array.isArray(dps)) return
-        for (const [dp, val] of Object.entries(dps)) {
-          sendDpMsg(dp, val)
+        if (this.outputsMode === 3) {
+          const msgs = Array(this.outputsCount).fill(null)
+          msgs[0] = { payload: dps }
+          for (const [dp, val] of Object.entries(dps)) {
+            const idx = this.outputs[dp]
+            if (idx) msgs[idx] = { payload: val }
+          }
+          this.send(msgs)
         }
-        if (postEvents && postEvents.length) this.postMessages(postEvents)
+        else {
+          for (const [dp, val] of Object.entries(dps)) {
+            sendDpMsg(dp, val)
+          }
+          if (postEvents && postEvents.length) this.postMessages(postEvents)
+        }
         return
       }
 
