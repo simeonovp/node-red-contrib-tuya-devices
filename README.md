@@ -33,15 +33,15 @@ If the cloud configuration is correct and the manager node has received at least
 The device nodes can be easy connected to dashboard ui nodes (see example below). For this the single DP must be selected or a topic must be used to select a rigth DP, e.g by using of switch node. If device capabilites exists in local cache (e.g. after once successfully loaded from cloud) the device commands can be requestet by message usung topic 'dispatchCommands' (as in examle). A whole data model for the device can be requested by message with topic 'getDataModel'. 
 
 ## Examples
-- an [flow examle](./img/alarm.json) for the possible control and configuration of a Tuya multifunctional alarm device.
-- an [flow examle](./img/th_sensor.json) used Tuya themperature and humidity sensor device.
-- an [flow examle](./img/power_dev.json) used Tuya power device.
+- [Tuya power device flow examle](./img/power_dev.json)
+- [Tuya themperature and humidity sensor device flow examle](./img/th_sensor.json)
+- [Tuya multifunctional alarm device flow examle](./img/alarm.json) for control and configuration
 
 ## Changelog
 
 ### v1.3.x
 - Add possibility to restart Node-Red (service or application) running on Debian system (e.g. RaspberryPI) over the GUI by send message with topic "restartNodeRed" to a Tuya Manager node. For development purposes Node-Red can be startet by the script (~/.node-red/start-nodered.sh) to make possible to restart it.
-- Added support of MQTT for Tuya devices. The activation and configuration can be make in a Tuya project node. All devices in the project uses the same MQTT broker
+- Added support of MQTT for Tuya devices (Beta status). The activation and configuration can be make in a Tuya project node. All devices in the project uses the same MQTT broker. 
 
 ### v1.2.x
 - Refactoring to use 'tuya-devices' library
