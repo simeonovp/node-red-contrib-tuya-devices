@@ -46,7 +46,8 @@ The device nodes can be easy connected to dashboard ui nodes (see example below)
 ### v1.2.x
 - Refactoring to use 'tuya-devices' library
 - Added support for MAC address and Tuya version to the local device
-- Added tuya explorer (Beta, e.g. http://localhost:1880/resources/node-red-contrib-tuya-devices/index.html)
+- Added tuya explorer (Beta, e.g. http://localhost:1880/resources/node-red-contrib-tuya-devices/index.html if no project configured or
+  http://{ip-or-host}:1880/resources/node-red-contrib-tuya-devices/{project-name}.html)
 - Improve device scanner
 - Local devices can be used by IP or MAC address
 - added dynamic generation of device commands based on model definitions

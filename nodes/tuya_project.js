@@ -1,6 +1,6 @@
 const { Project } = require('tuya-devices')
+const fs = require('fs')
 const path = require('path')
-const express = require('express')
 
 const DEBUG = false
 
@@ -15,8 +15,22 @@ module.exports = function (RED) {
       this.debug('config:' + JSON.stringify(config))
 
       config.name = config.name || 'default'
-      config.resDir = path.resolve(path.join(__dirname, '../resources', config.name))
+      const rootDir = path.resolve(path.join(__dirname, '../resources'))
+      config.resDir = path.join(rootDir, config.name)
       config.cloudLogDir = path.join(config.resDir, 'cloud')
+
+      const indexHtmlPath = path.join(rootDir, 'index.html')
+      const projectHtmlPath = path.join(rootDir, config.name + '.html')
+      if (!fs.existsSync(projectHtmlPath) && fs.existsSync(indexHtmlPath)) {
+        try {
+          this.log(`Generate project explorer WEB page ${projectHtmlPath}`)
+          fs.writeFileSync(projectHtmlPath, fs.readFileSync(indexHtmlPath, 'utf-8').replace(/\.\/default\//g, `./${config.name}/`), 'utf-8')
+        }
+        catch(err) {
+          this.error('Error on generation project explorer WEB page:' + err)
+        } 
+      }
+      else if (!fs.existsSync(indexHtmlPath)) this.warn(`Default project explorer WEB page ${indexHtmlPath} not exists`)
 
       this.cloudNode = config.cloud && RED.nodes.getNode(config.cloud)
       if (!this.cloudNode || (this.cloudNode.type !== 'tuya-cloud')) {

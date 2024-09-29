@@ -18,6 +18,9 @@
         <label for="node-config-input-translate"><i class="fa fa-tag"></i> Auto translate</label>
         <input type="checkbox" id="node-config-input-translate">
       </div>
+      <div class="form-row">
+        <a id="tuya-explorer-url" href="" target="_blank">Tuya cache explorer</a>
+      </div>
     </div>
     <div id="tuya-project-cloud-tab" style="display:none">
       <div class="form-row">
@@ -65,14 +68,13 @@
     loadCacheTable: (project, table, callback) => {
       if (!tuya_devices.cache[project]) tuya_devices.cache[project] = {}
       const cache = tuya_devices.cache[project]
-      // console.log(`-- enter loadCacheTable, project:${project}, table:${table}`)
       project = project || 'default'
       if (cache[table]) return callback(cache[table])
       const resDir = tuya_devices.resDir(project)
       const url = resDir + (tuya_devices.cacheTables[table] || (table + '.json'))
-      console.log(`loadCacheTable fetch, resDir:${resDir}, url:${url}`)
+      //console.log(`loadCacheTable fetch, resDir:${resDir}, url:${url}`)
       fetch(url).then(r=>r.json().then(data=>{
-        console.log(`loadCacheTable received table:${table}`)
+        //console.log(`loadCacheTable received table:${table}`)
         cache[table] = data
         callback?.(data)
       }))
@@ -210,8 +212,8 @@
       tabs.addTab({ id: 'tuya-project-settings-tab', label: 'Settings' })
       tabs.addTab({ id: 'tuya-project-cloud-tab', label: 'Cloud' })
       tabs.addTab({ id: 'tuya-project-mqtt-tab', label: 'Mqtt' })
+      $('#tuya-explorer-url').attr('href', `/resources/node-red-contrib-tuya-devices/${this.name || index}.html`)
 
-      //
       const refreshHomes = (homes) => {
         //this.homes = homes
         $elHome = $('#project-home')

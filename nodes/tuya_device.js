@@ -25,7 +25,6 @@ module.exports = function (RED) {
           if (!value?.abilityId) continue
           this.outputs[value.abilityId] = index + 1
         }
-        this.log(`-- outputsCount:${this.outputsCount}, outputs:${JSON.stringify(this.outputs)}`)
       }
 
       this.deviceStatusHandler = this.onDeviceStatus.bind(this)

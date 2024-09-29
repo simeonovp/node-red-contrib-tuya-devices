@@ -40,14 +40,17 @@
       name: { value: '' },
       outputs: { value: 1 },
       outputsMode: { value: 1 },
-      outputLabels: { value: ['data', 'status'] },
+      outputLabelList: { value: ['data', 'status1'] },
     },
     icon: 'tuya-device.svg',
     paletteLabel: 'Device',
     inputs: 1,
     outputs: 2,
-    outputLabels: ['data', 'status'],
-    label: function() { 
+    outputLabels: function (index) {
+      return Array.isArray(this.outputLabelList) && (index < this.outputLabelList.length)
+        ? this.outputLabelList[index] : ''
+    },
+    label: function () { 
       const nameFromDev = (devName) => devName && this.dps && `${devName}_${this.dps}` || devName
       return this.name || nameFromDev(RED.nodes.node(this.device)?.name) || 'Tuya Device' 
     },
@@ -73,28 +76,25 @@
             $el.empty()
             $el.append($('<option></option>').attr('value', '').text('all'))
             if (services) {
-              const outputLabels = ['data']
+              const labelList = ['data']
               for (const service of services) {
                 if (!service.properties) continue
                 for (const prop of service.properties) {
-                  outputLabels.push(prop.code)
+                  labelList.push(prop.code)
                   $el.append($('<option></option>').attr('value', prop.abilityId.toString()).text(`(${prop.abilityId}) ${prop.code}`))
                 }
               }
               if (this.outputsMode == '1') {
                 this.outputs = 1
-                this.outputLabels = ['data']
-                console.log(`-- outputsMode: 1, outputs: ${this.outputs}, outputLabels: ${this.outputLabels}`)
+                this.outputLabelList = ['data']
               }
               else if (this.outputsMode == '2') {
                 this.outputs = 2
-                this.outputLabels = ['data', 'status']
-                console.log(`-- outputsMode: 2, outputs: ${this.outputs}, outputLabels: ${this.outputLabels}`)
+                this.outputLabelList = ['data', 'status']
               }
               else if (this.outputsMode == '3') {
-                this.outputs = outputLabels.length
-                this.outputLabels = outputLabels
-                console.log(`-- outputsMode: 3, outputs: ${this.outputs}, outputLabels: ${this.outputLabels}`)
+                this.outputs = labelList.length
+                this.outputLabelList = labelList
               }
             }
             else {
@@ -108,18 +108,26 @@
           })
         })
       }
+
+      if (typeof this.outputLabels !== 'function') { // dirty fix for nodes saved with v1.3.x
+        if (Array.isArray(this.outputLabels)) this.outputLabelList = this.outputLabels
+        if (this.outputLabels) {
+          const _def = RED.nodes.getType('tuya-device')
+          if (!_def) console.error(`Config node type 'tuya-device' not registered`)
+          else this.outputLabels = _def.outputLabels.bind(this)
+        }
+      }
       $('#node-input-device').change(()=>onChangeDevice())
       $('#node-input-outputsMode').change(()=>{
         this.outputsMode = $('#node-input-outputsMode').val()
         fillDeviceProperties()
       })
-      console.log(`-- LOAD outputsMode: ${this.outputsMode}, outputs: ${this.outputs}, outputLabels: ${this.outputLabels}`)
+      
       fillDeviceProperties()
     },
     oneditsave: function() {
       if (this.multiDps === undefined) this.multiDps = false
       if (this.outputsMode === undefined) this.outputsMode = this.outputs
-      console.log(`-- SAVE outputsMode: ${this.outputsMode}, outputs: ${this.outputs}, outputLabels: ${this.outputLabels}`)
     }
   })
 </script>
