@@ -39,6 +39,13 @@ The device nodes can be easy connected to dashboard ui nodes (see example below)
 
 ## Changelog
 
+### v1.3.1
+- Fixed critical error on load device model
+- Added clearCache command (msg: {"topic":"clearCache"}). Optional message parameters: "complete" and "backup", both of type boolean
+- Make Cache syncronisation more robust in case of connection problems
+- Added possibility to sort translations (e.g. after manual edit)
+- Added link to cache explorer in the project GUI
+
 ### v1.3.x
 - Add possibility to restart Node-Red (service or application) running on Debian system (e.g. RaspberryPI) over the GUI by send message with topic "restartNodeRed" to a Tuya Manager node. For development purposes Node-Red can be startet by the script (~/.node-red/start-nodered.sh) to make possible to restart it.
 - Added support of MQTT for Tuya devices (Beta status). The activation and configuration can be make in a Tuya project node. All devices in the project uses the same MQTT broker. 
