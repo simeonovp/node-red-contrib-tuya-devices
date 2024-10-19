@@ -43,19 +43,21 @@ module.exports = function (RED) {
 
       this.project = new Project(this.cloud, config, this)
 
-      this.mqttBrokerNode = config.broker && RED.nodes.getNode(config.broker)
-      if (!this.mqttBrokerNode || (this.mqttBrokerNode.type !== 'tuya-mqtt-broker')) {
-        this.warn('Cloud configuration is wrong or missing, please review the node settings')
-        if (!this.mqttBrokerNode) this.warn('  mqttBrokerNode:' + this.mqttBrokerNode)
-        else if (this.mqttBrokerNode.type !== 'tuya-mqtt-broker') this.warn('  mqttBrokerNode.type:' + this.mqttBrokerNode.type)
-        this.mqttBroker = null
+      if (config.broker) {
+        this.mqttBrokerNode = config.broker && RED.nodes.getNode(config.broker)
+        if (!this.mqttBrokerNode || (this.mqttBrokerNode.type !== 'tuya-mqtt-broker')) {
+          this.warn('Mqtt configuration is wrong or missing, please review the node settings')
+          if (!this.mqttBrokerNode) this.warn('  mqttBrokerNode:' + this.mqttBrokerNode)
+          else if (this.mqttBrokerNode.type !== 'tuya-mqtt-broker') this.warn('  mqttBrokerNode.type:' + this.mqttBrokerNode.type)
+          this.mqttBroker = null
+        }
+        else {
+          this.mqttBroker = this.mqttBrokerNode.mqttBroker
+          this.fullTopic = config.fullTopic
+          this.project.setMqttBroker(this.mqttBroker, this.fullTopic)
+        }
       }
-      else {
-        this.mqttBroker = this.mqttBrokerNode.mqttBroker
-        this.fullTopic = config.fullTopic
-        this.project.setMqttBroker(this.mqttBroker, this.fullTopic)
-      }
-
+      
       this.on('close', (done) => {
         this.project.deinit()
         done()
