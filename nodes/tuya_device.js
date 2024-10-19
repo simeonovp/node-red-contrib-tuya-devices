@@ -160,7 +160,7 @@ module.exports = function (RED) {
         return msg
       }
 
-      const sendDpMsg = (dp, val) => this.send(buildDpMsg(p, val))
+      const sendDpMsg = (dp, val) => this.send(buildDpMsg(dp, val))
       
       const dps = payload?.data?.dps || payload?.dps
       if (this.dps && !Array.isArray(this.dps)) {
