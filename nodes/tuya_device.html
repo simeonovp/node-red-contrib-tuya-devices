@@ -80,7 +80,7 @@
               for (const service of services) {
                 if (!service.properties) continue
                 for (const prop of service.properties) {
-                  labelList.push(prop.code)
+                  labelList.push(`(${prop.abilityId}) ${prop.code}`)
                   $el.append($('<option></option>').attr('value', prop.abilityId.toString()).text(`(${prop.abilityId}) ${prop.code}`))
                 }
               }

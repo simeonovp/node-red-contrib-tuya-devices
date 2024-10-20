@@ -150,15 +150,17 @@ module.exports = function (RED) {
 
     onDeviceData(ev, payload, postEvents) {
       //this.log(`-- onDeviceData [event:${ev}]: ${JSON.stringify(payload?.data)}, dps:${this.dps}, isArray:${Array.isArray(this.dps)}, type:${typeof this.dps}`)
-      const sendDpMsg = (dp, val) => {
+      const buildDpMsg = (dp, val) => {
         const msg = {}
         msg.payload = val
         const prop = this.device.getDpCode(dp)
         if (prop) msg.topic = prop
         const options = this.device.getPropOptions(prop)
         if (options) msg.options = options
-        this.send(msg)
+        return msg
       }
+
+      const sendDpMsg = (dp, val) => this.send(buildDpMsg(dp, val))
       
       const dps = payload?.data?.dps || payload?.dps
       if (this.dps && !Array.isArray(this.dps)) {
@@ -175,7 +177,7 @@ module.exports = function (RED) {
           msgs[0] = { payload: dps }
           for (const [dp, val] of Object.entries(dps)) {
             const idx = this.outputs[dp]
-            if (idx) msgs[idx] = { payload: val }
+            if (idx) msgs[idx] = buildDpMsg(dp, val)
           }
           this.send(msgs)
         }
@@ -201,11 +203,13 @@ module.exports = function (RED) {
           this.warn(`! typeof message.options:${typeof event.options}`)
           continue
         }
+        // case 1: options are as array, convert elements to option objects an put this in array
         if (Array.isArray(event.options)) {
           for (let idx = 0; idx < event.options.length; idx++) {
             options.push({[event.options[idx]]: idx})
           }
         }
+        // case 2: options are already as option objects, put this in array
         else options = [event.options]
         this.send({ topic: event.cmd, payload: event.value, options })
       }
