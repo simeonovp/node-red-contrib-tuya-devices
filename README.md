@@ -39,6 +39,15 @@ The device nodes can be easy connected to dashboard ui nodes (see example below)
 
 ## Changelog
 
+### v1.3.3
+- Add extra support for security cams (category 'sp'), e.g. PTZ
+- Added support for device context in cache
+- Improve cache functionality
+- Make more robust the usage of ARP functionality (due to problems on some platforms)
+
+### v1.3.2
+- No functional changes
+
 ### v1.3.1
 - Fixed critical error on load device model
 - Added clearCache command (msg: {"topic":"clearCache"}). Optional message parameters: "complete" and "backup", both of type boolean
