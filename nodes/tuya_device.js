@@ -156,7 +156,15 @@ module.exports = function (RED) {
         const prop = this.device.getDpCode(dp)
         if (prop) msg.topic = prop
         const options = this.device.getPropOptions(prop)
-        if (options) msg.options = options
+        if (options) {
+          if (Array.isArray(options)) msg.options = options
+          else {
+            msg.options = []
+            for (const [val, name] of Object.entries(options)) {
+              msg.options.push({[name]: val})
+            }
+          }
+        }
         return msg
       }
 
