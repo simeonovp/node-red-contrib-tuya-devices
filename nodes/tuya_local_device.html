@@ -39,6 +39,7 @@
       <div class="form-row">
         <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
         <input type="text" id="node-config-input-ip">
+        <a id="node-config-input-web" href="" target="_blank"> Web</a>
       </div>
       <div class="form-row">
         <label for="node-config-input-port"><i class="fa fa-tag"></i> Port</label>
@@ -247,6 +248,9 @@
         this.tuyaVersion = announcement?.version || this.tuyaVersion|| ''
         $('#node-config-input-deviceMac').val(this.deviceMac)
         $('#node-config-input-tuyaVersion').val(this.tuyaVersion)
+        this.ip = announcement?.ip || this.ip || ''
+        $('#node-config-input-ip').val(this.ip)
+        $('#node-config-input-web').attr('href', this.ip && ('http://' + this.ip) || '') 
       })
     },
     oneditsave: function() {
