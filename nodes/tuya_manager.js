@@ -52,21 +52,21 @@ module.exports = function (RED) {
               done()
             } catch(err) { done(err.stack || err) }
             break;
-          case 'updateDevices':
-            try {
-              (async ()=> {
-                await this.project.updateCache()
-                this.sendToFrontend({topic: msg.topic, payload: 'update'}) // notify frontend to refresh resources
-                done()
-              })()
-            } 
-            catch(err) {
-              this.error(`on input ${msg.topic} error:` + err)
-              msg.error = err
-              this.sendToFrontend(msg)
-              done()
-            }
-            break
+          // case 'updateDevices':
+          //   try {
+          //     (async ()=> {
+          //       await this.project.updateCache()
+          //       this.sendToFrontend({topic: msg.topic, payload: 'update'}) // notify frontend to refresh resources
+          //       done()
+          //     })()
+          //   } 
+          //   catch(err) {
+          //     this.error(`on input ${msg.topic} error:` + err)
+          //     msg.error = err
+          //     this.sendToFrontend(msg)
+          //     done()
+          //   }
+          //   break
           case 'updateDeviceDataModel':
             msg.topic = 'updateAllModels'
             return this.tryProjectCommand(msg, send, done)
@@ -88,6 +88,13 @@ module.exports = function (RED) {
         
         this.log('Command ' + msg.topic)
         await this.project[msg.topic](msg)
+        switch (msg.topic) {
+          case 'updateDevices':
+          case 'backupCache':
+          case 'clearCache':
+            this.sendToFrontend({topic: msg.topic, payload: msg}) // notify frontend
+            break
+        }
         send && send(msg)
         done()
       }
@@ -117,7 +124,6 @@ module.exports = function (RED) {
       //-- this.log(`-- sendToFrontend topic:${payload.topic}`)
       RED.events.emit('runtime-event', { id: this.id, retain: false, payload })
     }
-
   }
 
   RED.nodes.registerType('tuya-manager', ManagerNode)

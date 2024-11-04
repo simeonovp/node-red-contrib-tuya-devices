@@ -205,8 +205,8 @@ module.exports = function (RED) {
     postMessages(postEvents) {
       //this.log(`--   postEvents:${JSON.stringify(postEvents)}`)
       for (const event of postEvents) {
-        let options = []
         if (typeof event.options === 'object') {
+          let options = []
           // case 1: options are as array, convert elements to option objects an put this in array
           if (Array.isArray(event.options)) {
             for (let idx = 0; idx < event.options.length; idx++) {
@@ -215,8 +215,9 @@ module.exports = function (RED) {
           }
           // case 2: options are already as option objects, put this in array
           else options = [event.options]
+          this.send({ topic: event.cmd, payload: event.value, options })
         }
-        this.send({ topic: event.cmd, payload: event.value, options })
+        else this.send({ topic: event.cmd, payload: event.value })
       }
     }
   }

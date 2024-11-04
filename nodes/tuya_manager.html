@@ -15,9 +15,14 @@
     <div id="tuya-manager-devices-tab" style="display:none">
       <div style="width:100%">
         <div class="form-row">
-          <label for="refresh-devices"><i class="fa fa-tag"></i> Refresh</label>
           <button type="button" id="refresh-devices" class="red-ui-button">
-            <i class="fa fa-refresh"></i>
+            <i class="fa fa-refresh"></i> Refresh
+          </button>
+          <button type="button" id="clear-cache" class="red-ui-button">
+            <i class="fa fa-trash"></i> Clear cache
+          </button>
+          <button type="button" id="backup-cache" class="red-ui-button">
+            <i class="fa fa-download"></i> Save cache
           </button>
         </div>
         <table id="device-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
@@ -238,11 +243,11 @@
         const tbody = $('#device-table > tbody')
         tbody.html('')
         const ilist = []
-        const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
         for (const deviceId in this.cloudDevices) {
           const room = getRoom(deviceId)
           if (projectRoom && (projectRoom != room?.room_id)) continue
           const cloudDevice = this.cloudDevices[deviceId]
+          const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
           const shapshotUri = `${resDir}icons/${cloudDevice.icon}`
           const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId)) || { name: cloudDevice.name }
           ilist.push(`
@@ -333,6 +338,31 @@
         this.projectNode.updateDevices(this)
       })
 
+      $('#clear-cache').click(() => { tuya_devices.sendMsg(this, {topic: 'clearCache'}, (resp) => {})})
+      $('#backup-cache').click(() => { tuya_devices.sendMsg(this, {topic: 'backupCache'}, (resp) => {})})
+
+      const downloadCache = () => {
+        const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
+        if (!resDir) return
+
+        const now = new Date()
+        const year = String(now.getFullYear()).slice(-2)
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        const hours = String(now.getHours()).padStart(2, '0')
+        const minutes = String(now.getMinutes()).padStart(2, '0')
+        const seconds = String(now.getSeconds()).padStart(2, '0')
+        const filename =  `cache_${year}${month}${day}-${hours}${minutes}${seconds}.zip`
+
+        const link = document.createElement('a')
+        link.href = resDir + 'backup/cache.zip'
+        link.download = filename
+
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+
       const notificationTopic = 'notification/#'
       if (!this.unsubscribe) this.unsubscribe = () => {
         if (this.notificationHandler) RED.comms.unsubscribe(notificationTopic, this.notificationHandler)
@@ -343,15 +373,23 @@
         this.notificationHandler = ((topic, payload) => {
           const parts = topic.split('/')
           if (parts[1] !== this.id) return
-          if (payload?.topic === 'updateDevices') {
+          switch (payload?.topic) {
+          case 'updateDevices':
             console.log('notification for updateDevices')
             this.models = null
             this.cloudDevices = null
             this.homes = null
             this.announcements = null
             refresh()
-          }
-          else if (payload?.topic === 'userId') { //???
+            break
+          case 'clearCache':
+            console.log('notification for clearCache')
+            break
+          case 'backupCache':
+            console.log('notification for backupCache')
+            if (payload) downloadCache()
+            break
+          case 'userId': //???
             console.log('notification for userId')
             if (this.projectNode?.cloud) {
               const cloud = RED.nodes.node(this.projectNode?.cloud)
@@ -360,8 +398,10 @@
                 cloud.dirty(true)
               }
             }
+            break
+          default:
+            console.log('unknown notification for ' + payload?.topic)
           }
-          else console.log('unknown notification for ' + payload?.topic)
         }).bind(this)
         RED.comms.subscribe(notificationTopic, this.notificationHandler)
       }
