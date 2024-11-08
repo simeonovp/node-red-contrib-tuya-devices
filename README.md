@@ -33,11 +33,16 @@ If the cloud configuration is correct and the manager node has received at least
 The device nodes can be easy connected to dashboard ui nodes (see example below). For this the single DP must be selected or a topic must be used to select a rigth DP, e.g by using of switch node. If device capabilites exists in local cache (e.g. after once successfully loaded from cloud) the device commands can be requestet by message usung topic 'dispatchCommands' (as in examle). A whole data model for the device can be requested by message with topic 'getDataModel'. 
 
 ## Examples
+- [Step by step with pictures](./doc/step_by_step.md)
 - [Tuya power device flow examle](./img/power_dev.json)
 - [Tuya themperature and humidity sensor device flow examle](./img/th_sensor.json)
 - [Tuya multifunctional alarm device flow examle](./img/alarm.json) for control and configuration
 
 ## Changelog
+
+### v1.3.5
+- Fixed critical error in local cache handling
+- Added step by step example
 
 ### v1.3.4
 - Improved manager GUI, added some buttons (e.g. clear and save local cache)

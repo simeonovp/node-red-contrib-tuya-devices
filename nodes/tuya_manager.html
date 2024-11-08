@@ -324,6 +324,7 @@
         }
         else if (!this.announcements) {
           this.projectNode.getAnnouncements(announcements => {
+            if (!announcements) return
             this.announcements = announcements
             refreshDevices()
           })
