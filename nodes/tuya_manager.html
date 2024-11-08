@@ -16,7 +16,10 @@
       <div style="width:100%">
         <div class="form-row">
           <button type="button" id="refresh-devices" class="red-ui-button">
-            <i class="fa fa-refresh"></i> Refresh
+            <i class="fa fa-refresh"></i> Refresh devices
+          </button>
+          <button type="button" id="update-home" class="red-ui-button">
+            <i class="fa fa-refresh"></i> Update home
           </button>
           <button type="button" id="clear-cache" class="red-ui-button">
             <i class="fa fa-trash"></i> Clear cache
@@ -243,11 +246,11 @@
         const tbody = $('#device-table > tbody')
         tbody.html('')
         const ilist = []
+        const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
         for (const deviceId in this.cloudDevices) {
           const room = getRoom(deviceId)
           if (projectRoom && (projectRoom != room?.room_id)) continue
           const cloudDevice = this.cloudDevices[deviceId]
-          const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
           const shapshotUri = `${resDir}icons/${cloudDevice.icon}`
           const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId)) || { name: cloudDevice.name }
           ilist.push(`
@@ -337,7 +340,8 @@
         refresh(true)
         this.projectNode.updateDevices(this)
       })
-
+      
+      $('#update-home').click(() => { tuya_devices.sendMsg(this, {topic: 'updateHome'}, (resp) => {})})
       $('#clear-cache').click(() => { tuya_devices.sendMsg(this, {topic: 'clearCache'}, (resp) => {})})
       $('#backup-cache').click(() => { tuya_devices.sendMsg(this, {topic: 'backupCache'}, (resp) => {})})
 

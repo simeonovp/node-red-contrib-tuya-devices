@@ -39,6 +39,11 @@ The device nodes can be easy connected to dashboard ui nodes (see example below)
 
 ## Changelog
 
+### v1.3.4
+- Improved manager GUI, added some buttons (e.g. clear and save local cache)
+- Added link to access device Web interface if supported
+- Added support for device context for some device categiries
+
 ### v1.3.3
 - Add extra support for security cams (category 'sp'), e.g. PTZ
 - Added support for device context in cache
