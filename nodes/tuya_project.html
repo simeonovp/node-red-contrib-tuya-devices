@@ -48,6 +48,31 @@
         <input type="text" id="node-config-input-fullTopic" placeholder="Leave blank for auto generated">
       </div>
     </div>
+    <div id="tuya-project-misc-tab" style="display:none">
+      <fieldset>
+        <legend>Debug output in terminal</legend>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgProject" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgProject" style="width: auto">Project</label>
+        </div>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgCache" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgCache" style="width: auto">Local cache</label>
+        </div>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgCloud" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgCloud" style="width: auto">Cloud connection</label>
+        </div>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgMqtt" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgMqtt" style="width: auto">MQTT broker connection</label>
+        </div>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgScanner" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgScanner" style="width: auto">Device scanner</label>
+        </div>
+      </fieldset>
+    </div>
   </div>
 </script>
 
@@ -173,6 +198,12 @@
       //MQTT
       broker: { type: 'tuya-mqtt-broker', required: false },
       fullTopic: { value: 'tuya/%topic%/%prefix%' },
+      //Debug
+      dbgProject: { value: false },
+      dbgCache: { value: false },
+      dbgCloud: { value: false },
+      dbgMqtt: { value: false },
+      dbgScanner: { value: false },
     },
     label: function() {
       // use label callback to perform init
@@ -183,6 +214,8 @@
         this.getCloudDevices = (callback) => tuya_devices.loadCacheTable(this.name, 'devices', callback)
         this.getModels = (callback) => tuya_devices.loadCacheTable(this.name, 'models', callback)
         this.getAnnouncements = (callback) => tuya_devices.loadCacheTable(this.name, 'announcements', callback)
+        this.getContext = (callback) => tuya_devices.loadCacheTable(this.name, 'context', callback)
+        this.getOverloads = (callback) => tuya_devices.loadCacheTable(this.name, 'overloads', callback)
         this.cache = tuya_devices.cache[this.name]
 
         this.updateDevices = (node) => {
@@ -212,6 +245,7 @@
       tabs.addTab({ id: 'tuya-project-settings-tab', label: 'Settings' })
       tabs.addTab({ id: 'tuya-project-cloud-tab', label: 'Cloud' })
       tabs.addTab({ id: 'tuya-project-mqtt-tab', label: 'Mqtt' })
+      tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
       $('#tuya-explorer-url').attr('href', `/resources/node-red-contrib-tuya-devices/${this.name || index}.html`)
 
       const refreshHomes = (homes) => {

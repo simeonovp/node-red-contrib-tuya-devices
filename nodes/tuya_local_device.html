@@ -28,22 +28,24 @@
         <label for="node-config-input-autoStart"><i class="fa fa-tag"></i> Auto connect</label>
         <input type="checkbox" id="node-config-input-autoStart">
       </div>
-      <div class="form-row">
-        <label for="node-config-input-cacheAnnouncement"><i class="fa fa-tag"></i> Cache announcement</label>
-        <input type="checkbox" id="node-config-input-cacheAnnouncement">
-      </div>
-      <div class="form-row">
-        <label for="node-config-input-deviceMac"><i class="fa fa-tag"></i> MAC address</label>
-        <input type="text" id="node-config-input-deviceMac">
-      </div>
-      <div class="form-row">
-        <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
-        <input type="text" id="node-config-input-ip">
-        <a id="node-config-input-web" href="" target="_blank"> Web</a>
-      </div>
-      <div class="form-row">
-        <label for="node-config-input-port"><i class="fa fa-tag"></i> Port</label>
-        <input type="text" id="node-config-input-port">
+      <div id="tuya-wifi-device">
+        <div class="form-row">
+          <label for="node-config-input-cacheAnnouncement"><i class="fa fa-tag"></i> Cache announcement</label>
+          <input type="checkbox" id="node-config-input-cacheAnnouncement">
+        </div>
+        <div class="form-row">
+          <label for="node-config-input-deviceMac"><i class="fa fa-tag"></i> MAC address</label>
+          <input type="text" id="node-config-input-deviceMac">
+        </div>
+        <div class="form-row">
+          <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
+          <input type="text" id="node-config-input-ip">
+          <a id="node-config-input-web" href="" target="_blank"> Web</a>
+        </div>
+        <div class="form-row">
+          <label for="node-config-input-port"><i class="fa fa-tag"></i> Port</label>
+          <input type="text" id="node-config-input-port">
+        </div>
       </div>
       <div class="form-row">
         <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -53,7 +55,8 @@
         <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> MQTT topic</label>
         <input type="text" id="node-config-input-fullTopic">
       </div> -->
-      <hr>
+    </div>
+    <div id="tuya-dps-tab" style="display:none">
       <div class="form-row">
         <table id="dps-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
           <thead>
@@ -68,6 +71,8 @@
           <tbody></tbody>
         </table>
       </div>
+    </div>
+    <div id="tuya-extension-tab" style="display:none">
     </div>
     <div id="tuya-advanced-tab" style="display:none">
       <div class="form-row">
@@ -96,6 +101,27 @@
           <option value="event-both">Both Events</option>
         </select>
       </div>
+      <div class="form-row">
+        <label for="node-config-input-reinitOnLost"><i class="fa fa-wrench"></i> Reinit on lost connection</label>
+        <input type="checkbox" id="node-config-input-reinitOnLost">
+      </div>
+    </div>
+    <div id="tuya-project-misc-tab" style="display:none">
+      <fieldset>
+        <legend>Debug output in terminal</legend>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgDevice" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgDevice" style="width: auto">Device</label>
+        </div>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgDeviceExtension" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgDeviceExtension" style="width: auto">Device extension</label>
+        </div>
+        <div class="form-row">
+          <input type="checkbox" id="node-config-input-dbgTuyaDevice" style="display: inline-block; width: auto; vertical-align: top;">
+          <label for="node-config-input-dbgTuyaDevice" style="width: auto">Local connection</label>
+        </div>
+      </fieldset>
     </div>
   </div>
 </script>
@@ -124,8 +150,13 @@
       cacheAnnouncement: { value: true, required: true },
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
+      reinitOnLost: { value: false },
       eventMode: { value: 'event-both', required: true },
       name: { value: '', required: true },
+      //Debug
+      dbgDevice: { value: false },
+      dbgDeviceExtension: { value: false },
+      dbgTuyaDevice: { value: false },
     },
     label: function() { 
       // use label callback to perform init
@@ -154,6 +185,65 @@
             })
           })
         })
+        this.getOverloads = (callback => {
+          if (this._overloads) return callback(this._overloads)
+          this._overloads = {}
+          this.getCloudDevice(cloudDevice => {
+            const project = RED.nodes.node(this.project)
+            project.getOverloads && project.getOverloads(overloads => {
+              if (overloads && overloads.models)  this._overloads = overloads.models[cloudDevice.dataModel]
+              callback(this._overloads)
+            })
+          })
+        })
+        this.getRanges = (callback => {
+          if (this._ranges) return callback(this._ranges)
+          this.getServices(services => {
+            this._ranges = {}
+            if (services) {
+              for (const service of services) {
+                if (!service.properties) continue
+                for (const prop of service.properties) {
+                  if (prop.typeSpec.range) {
+                    const range = {}
+                    for (let i = 0; i < prop.typeSpec.range.length; i++) {
+                      range[i] = prop.typeSpec.range[i]
+                    }
+                    this._ranges[prop.code] = range
+                  }
+                }
+              }
+            }
+            this.getOverloads(overloads => {
+              if (overloads.ranges) this._ranges = Object.assign(this._ranges, overloads.ranges)
+              callback(this._ranges)
+            })
+          })
+        })
+        this.getContext = (callback => {
+          if (this._context) return callback(this._context)
+          this.getCloudDevice(cloudDevice => {
+            if (!cloudDevice.category) return callback(null)
+            const category = cloudDevice.category
+            const project = RED.nodes.node(this.project)
+            project.getContext && project.getContext(context => {
+              if (!context) return callback(null)
+              if (!context.category) {
+                // look for device in all categories
+                for (const categoryContext of Object.values(context)) {
+                  if (categoryContext[this.deviceId]) {
+                    this._context = categoryContext[this.deviceId]
+                    return callback(this._context)
+                  }
+                }
+                return callback(null)
+              }
+              if (!context.category.hasOwnProperty(this.deviceId)) return callback(null)
+              this._context = context.category[this.deviceId]
+              callback(this._context)
+            })
+          })
+        })
         this.init = true
       }
       return this.name || 'Tuya Device' 
@@ -167,7 +257,10 @@
         }
       })
       tabs.addTab({ id: 'tuya-settings-tab', label: 'Settings' })
+      tabs.addTab({ id: 'tuya-dps-tab', label: 'DataPoints' })
       tabs.addTab({ id: 'tuya-advanced-tab', label: 'Advanced' })
+      tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
+      let tabExtensionExists = false
 
       //-- if (!this.tuyaVersion) $('#node-config-input-tuyaVersion').val(3.1)
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
@@ -176,66 +269,176 @@
       const refreshGateway = () => {
         const gateway = $('#node-config-input-gateway').val()
         if (gateway && (gateway !== '_ADD_')) {
-          $('#node-config-input-cacheAnnouncement').parent().hide()
-          $('#node-config-input-ip').parent().hide()
-          $('#node-config-input-port').parent().hide()
+          $('#tuya-wifi-device').hide()
           $('#node-config-input-tuyaVersion').parent().hide()
-          $('#node-config-input-deviceMac').parent().hide()
         }
         else {
-          $('#node-config-input-cacheAnnouncement').parent().show()
-          $('#node-config-input-ip').parent().show()
-          $('#node-config-input-port').parent().show()
+          $('#tuya-wifi-device').show()
           $('#node-config-input-tuyaVersion').parent().show()
-          $('#node-config-input-deviceMac').parent().show()
         }
       }
       $('#node-config-input-gateway').on('change', refreshGateway)
 
+      const updateDpsTable = (services) => {
+        const el = $('#dps-table > tbody')
+        el.html('')
+        const ilist = []
+        if (services) {
+          for (const service of services) {
+            if (!service.properties) continue
+            for (const prop of service.properties) {
+              ilist.push(`
+                <tr>
+                  <td><input type="text" value="${prop.abilityId}" style="width:100%" readonly></td>
+                  <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
+                  <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop._custom_name || prop.name || ''}" title="${prop._custom_description || prop.description || ''}" style="width:100%" readonly></td>
+                  <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" title='${prop.typeSpec && JSON.stringify(prop.typeSpec, null, 2) || ''}' style="width:100%" readonly></td>
+                  <td><input type="text" value="${prop.accessMode}" style="width:100%" readonly></td>
+                </tr>`)
+            }
+          }
+        }
+        el.append(ilist.join(''))
+      }
+
+      const updateExtTable = (context) => {
+        const data = Object.values(context).find(value => (typeof value === 'object') && (value !== null)) || {}
+        const labels = ['id'].concat(Object.keys(data))
+
+        const div = document.createElement('div')
+        div.className = 'form-row'
+
+        const table = document.createElement('table')
+        table.id = 'dps-table'
+        table.className = 'table table-hover'
+        table.style.border = '1px solid'
+        table.style.borderCollapse = 'collapse'
+        table.style.width = '100%'
+
+        const thead = document.createElement('thead')
+        const tr = document.createElement('tr')
+        tr.id = 'table-head'
+
+        const th = document.createElement('th')
+        //th.style.textAlign = 'left'
+        //th.style.width = '10%'
+
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.value = 'Id' //??
+        input.style.width = '100%'
+        input.readOnly = true
+
+        th.appendChild(input)
+        tr.appendChild(th)
+        thead.appendChild(tr)
+
+        const tbody = document.createElement('tbody')
+
+        table.appendChild(thead)
+        table.appendChild(tbody)
+        div.appendChild(table)
+
+        return div
+      }
+
+      const updateExtension = (context) => {
+        const tabId = 'tuya-extension-tab'
+        const el = $('#tuya-extension-tab')
+        if (!context) {
+          el.html('')
+          if (tabExtensionExists) {
+            tabs.removeTab(tabId)
+            tabExtensionExists = false
+          }
+          return
+        }
+        
+        if (!tabExtensionExists) {
+          tabs.addTab({ id: tabId, label: 'SubDevices' })
+          tabExtensionExists = true
+        }
+        const getContextTabs = () => {
+          for (const item of Object.values(context)) {
+            if (typeof item === 'object') {
+              const extTabs = Object.keys(item)
+              const subItem = extTabs.length && item[extTabs[0]]
+              if (subItem && (typeof subItem === 'object') && subItem.hasOwnProperty('selection')) {
+                return { data: item, selection: context.selection, code: context.code }
+              }
+            }
+          }
+        }
+        
+        this.getRanges((ranges) => {
+          const contextTabs = getContextTabs()
+          if (contextTabs) {
+            // <div class="form-row">
+            //   <ul id="tuya-extension-tabs"></ul>
+            // </div>
+            // <div class="form-row" id="tuya-extension-view"></div>
+            const tabsRow = document.createElement('div')
+            tabsRow.className = 'form-row'
+            const ul = document.createElement('ul')
+            ul.id = 'tuya-extension-tabs'
+            tabsRow.appendChild(ul)
+            el[0].appendChild(tabsRow)
+
+            const tableRow = document.createElement('div')
+            tableRow.className = 'form-row'
+            tableRow.id = 'tuya-extension-view'
+            el[0].appendChild(tableRow)
+            // ****************************
+            const extTabs = RED.tabs.create({
+              id: 'tuya-extension-tabs',
+              onchange: function (tab) {
+                $('#tuya-extension-view').children().hide()
+                $('#' + tab.id).show()
+              }
+            })
+            const range = contextTabs.code && ranges[contextTabs.code] || {}
+            for (const tab of Object.keys(contextTabs.data)) {
+              const label = range[tab] || ('Category' + tab)
+              const tabId = 'tuya-extension-tab' + tab
+              extTabs.addTab({ id: tabId, label})
+
+              const elExtView = $('#tuya-extension-view')
+              elExtView.html('')
+
+              const tableDiv = document.createElement('div')
+              tableDiv.id = tabId
+              tableDiv.style.display = 'none'
+              const table = updateExtTable(contextTabs.data[tab])
+              if (table) tableDiv.appendChild(table)
+
+              elExtView[0].appendChild(tableDiv)
+            }
+          }
+          else {
+            //TODO
+          }
+        })
+      }
+
+      const updateWidgets = () => {
+        this.getServices(services => {
+          if (!services) {
+            console.warn('device properties has no data model')
+            return
+          }
+          updateDpsTable(services)
+        })
+        this.getContext(context => updateExtension(context))
+      }
+
       const fillDeviceProperties = () => {
-        this.getCloudDevice(cloudDevice=>{
+        this.getCloudDevice(cloudDevice => {
           if (!cloudDevice) return console.error('[local device] device not found')
           if (!this.deviceCategory) {
             this.deviceCategory = cloudDevice.category
             $('#node-config-input-deviceCategory').val(this.deviceCategory)
           }
-          this.getServices(services=>{
-            if (!services) {
-              console.warn('device properties has no data model')
-              if (!cloudDevice.properties) console.error('device properties has no properties')
-            }
-
-            const el = $('#dps-table > tbody')
-            el.html('')
-            const ilist = []
-            if (services) {
-              for (const service of services) {
-                if (!service.properties) continue
-                for (const prop of service.properties) {
-                  ilist.push(`
-                    <tr>
-                      <td><input type="text" value="${prop.abilityId}" style="width:100%" readonly></td>
-                      <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
-                      <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop._custom_name || prop.name || ''}" title="${prop._custom_description || prop.description || ''}" style="width:100%"></td>
-                      <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" title='${prop.typeSpec && JSON.stringify(prop.typeSpec, null, 2) || ''}' style="width:100%" readonly></td>
-                      <td><input type="text" value="${prop.accessMode}" style="width:100%" readonly></td>
-                    </tr>`)
-                }
-              }
-            }
-            else {
-              for (const prop of cloudDevice.properties) {
-                ilist.push(`
-                  <tr>
-                    <td><input type="text" value="${prop.dp_id}" style="width:100%" readonly></td>
-                    <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
-                    <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop._custom_name || prop.name || ''}" style="width:100%"></td>
-                    <td><input type="text" value="" style="width:100%" readonly></td>
-                  </tr>`)
-              }
-            }
-            el.append(ilist.join(''))
-          })
+          updateWidgets()
         })
       }
 

@@ -20,10 +20,11 @@
       <option value="2">Use status output</option>
       <option value="3">Multi outputs (data + dps)</option>
     </select>
-  </div>  <div class="form-row">
+  </div>  
+  <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
-  </div>
+  </div>  
 </script>
 
 <script type="text/html" data-help-name="tuya-device">
@@ -56,56 +57,62 @@
     },
     oneditprepare: function () {
       let device = this.device && RED.nodes.node(this.device)
+      
       const onChangeDevice = () => {
         const deviceId = $('#node-input-device').val()
         if (deviceId !== this.device) $('#node-input-dps').val('')
         device = deviceId && RED.nodes.node(deviceId)
         fillDeviceProperties()
       }
+
+      const updateOutputs = (services, labelList) => {
+        if (this.outputsMode == '1') {
+          this.outputs = 1
+          this.outputLabelList = ['data']
+        }
+        else if (this.outputsMode == '2') {
+          this.outputs = 2
+          this.outputLabelList = ['data', 'status']
+        }
+        else if (this.outputsMode == '3') {
+          this.outputs = labelList.length
+          this.outputLabelList = labelList
+        }
+      }
+
+      const updateDpsList = (services) => {
+        $el = $('#node-input-dps')
+        $el.empty()
+        $el.append($('<option></option>').attr('value', '').text('all'))
+        if (!services) return
+        const labelList = ['data']
+        for (const service of services) {
+          if (!service.properties) continue
+          for (const prop of service.properties) {
+            labelList.push(`(${prop.abilityId}) ${prop.code}`)
+            $el.append($('<option></option>').attr('value', prop.abilityId.toString()).text(`(${prop.abilityId}) ${prop.code}`))
+          }
+        }
+        if (services) updateOutputs(services, labelList)
+        $el.val(this.dps)
+        $el.change(() => { })
+      }
+
+      const updateWidgets = () => {
+        device.getServices(services=>{
+          if (!services) {
+            console.warn('device properties has no data model')
+            return
+          }
+          updateDpsList(services)
+        })
+      }
+
       const fillDeviceProperties = () => {
         if (!device) return
         device.getCloudDevice(cloudDevice=>{
           if (!cloudDevice) return console.error('[device] device not found')
-          device.getServices(services=>{
-            if (!services) {
-              console.warn('device properties has no data model')
-              if (!cloudDevice.properties) console.error('device properties has no properties')
-            }
-
-            $el = $('#node-input-dps')
-            $el.empty()
-            $el.append($('<option></option>').attr('value', '').text('all'))
-            if (services) {
-              const labelList = ['data']
-              for (const service of services) {
-                if (!service.properties) continue
-                for (const prop of service.properties) {
-                  labelList.push(`(${prop.abilityId}) ${prop.code}`)
-                  $el.append($('<option></option>').attr('value', prop.abilityId.toString()).text(`(${prop.abilityId}) ${prop.code}`))
-                }
-              }
-              if (this.outputsMode == '1') {
-                this.outputs = 1
-                this.outputLabelList = ['data']
-              }
-              else if (this.outputsMode == '2') {
-                this.outputs = 2
-                this.outputLabelList = ['data', 'status']
-              }
-              else if (this.outputsMode == '3') {
-                this.outputs = labelList.length
-                this.outputLabelList = labelList
-              }
-            }
-            else {
-              for (const prop of cloudDevice.properties) {
-                $el.append($('<option></option>').attr('value', prop.dp_id.toString()).text(`(${prop.dp_id}) ${prop.code}`))
-              }
-            }
-            $el.val(this.dps)
-            $el.change(() => {
-            })
-          })
+          updateWidgets()
         })
       }
 

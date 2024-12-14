@@ -18,6 +18,12 @@ module.exports = function (RED) {
       const rootDir = path.resolve(path.join(__dirname, '../resources'))
       config.resDir = path.join(rootDir, config.name)
       config.cloudLogDir = path.join(config.resDir, 'cloud')
+      config.debug = {}
+      if (config.dbgProject) config.debug.Project = true
+      if (config.dbgCache) config.debug.Cache = true
+      if (config.dbgCloud) config.debug.Cloud = true
+      if (config.dbgMqtt) config.debug.MQTTBroker = true
+      if (config.dbgScanner) config.debug.Scanner = true
 
       const indexHtmlPath = path.join(rootDir, 'index.html')
       const projectHtmlPath = path.join(rootDir, config.name + '.html')

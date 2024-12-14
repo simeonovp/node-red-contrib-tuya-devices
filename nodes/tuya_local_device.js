@@ -1,7 +1,5 @@
 const { Device } = require('tuya-devices')
 
-const DEBUG = false
-
 module.exports = function (RED) {
   'use strict'
  
@@ -9,8 +7,11 @@ module.exports = function (RED) {
     constructor (config) {
       RED.nodes.createNode(this, config)
 
-      this.debug = DEBUG ? this.log.bind(this) : (() => {})
-    
+      config.debug = {}
+      if (config.dbgDevice) config.debug.Device = true
+      if (config.dbgDeviceExtension) config.debug.DeviceExtension = true
+      if (config.dbgTuyaDevice) config.debug.TuyaDevice = true
+
       if (config.gateway) {
         this.gatewayNode = RED.nodes.getNode(config.gateway)
         if (!this.gatewayNode || ((this.gatewayNode.type !== 'tuya-local-device'))) {

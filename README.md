@@ -40,6 +40,14 @@ The device nodes can be easy connected to dashboard ui nodes (see example below)
 
 ## Changelog
 
+### v1.3.6
+- Added possibility to reinit device on lost connection
+- Improved debug logging configuration
+- Improved cloud restore
+- Try load icons in cache from local db
+- Fixed problem on deinit project
+- Convert tuya error messages to readable string
+
 ### v1.3.5
 - Fixed critical error in local cache handling
 - Added step by step example
