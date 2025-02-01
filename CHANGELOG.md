@@ -1,3 +1,6 @@
+# v1.4.0
+- Added for business cloud applications
+
 # v1.3.7
 - Added possibility to backup cache local to be used after version update
 - Added resolution for some cloud connection error codes

@@ -47,9 +47,15 @@ module.exports = function (RED) {
       }
       else {
         this.cloud = this.cloudNode.cloud
+        if (this.cloud && config.dbgCloud) this.cloud.debug = this.cloud.log
       }
 
       this.project = new Project(this.cloud, config, this)
+      const cloudApi = this.cloudNode?.cloudApi
+      if (cloudApi) {
+        this.project.setCloudApi(cloudApi)
+        if (cloudApi && config.dbgCloud) cloudApi.debug = cloudApi.log
+      }
 
       if (config.broker) {
         this.mqttBrokerNode = config.broker && RED.nodes.getNode(config.broker)
@@ -62,6 +68,7 @@ module.exports = function (RED) {
         else {
           this.mqttBroker = this.mqttBrokerNode.mqttBroker
           this.fullTopic = config.fullTopic
+          if (this.mqttBroker && config.dbgMqtt) this.mqttBroker.debug = this.mqttBroker.log
           this.project.setMqttBroker(this.mqttBroker, this.fullTopic)
         }
       }

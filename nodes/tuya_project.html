@@ -246,7 +246,7 @@
       tabs.addTab({ id: 'tuya-project-cloud-tab', label: 'Cloud' })
       tabs.addTab({ id: 'tuya-project-mqtt-tab', label: 'Mqtt' })
       tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
-      $('#tuya-explorer-url').attr('href', `/resources/node-red-contrib-tuya-devices/${this.name || index}.html`)
+      $('#tuya-explorer-url').attr('href', `/resources/node-red-contrib-tuya-devices/${this.name || 'index'}.html`)
 
       const refreshHomes = (homes) => {
         //this.homes = homes

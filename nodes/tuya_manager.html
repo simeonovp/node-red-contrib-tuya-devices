@@ -251,7 +251,8 @@
           const room = getRoom(deviceId)
           if (projectRoom && (projectRoom != room?.room_id)) continue
           const cloudDevice = this.cloudDevices[deviceId]
-          const shapshotUri = `${resDir}icons/${cloudDevice.icon}`
+          const iconPath = cloudDevice.icon || new URL(cloudDevice.iconUrl).pathname.substring(1)
+          const shapshotUri = `${resDir}icons/${iconPath}`
           const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId)) || { name: cloudDevice.name }
           ilist.push(`
             <tr>

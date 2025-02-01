@@ -1,5 +1,9 @@
 <script type="text/html" data-template-name="tuya-cloud">
   <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
     <label for="node-config-input-accessId"><i class="fa fa-user"></i> AccessId</label>
     <input type="text" id="node-config-input-accessId">
   </div>
@@ -16,19 +20,43 @@
       <option value="cn">China</option>
       <option value="in">India</option>
     </select>
-</div>
-  <div class="form-row">
-    <label for="node-config-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
-    <input type="text" id="node-config-input-userId">
   </div>
   <div class="form-row">
-    <label for="node-config-input-deviceId"><i class="fa fa-tag"></i> Any deviceId</label>
-    <input type="text" id="node-config-input-deviceId">
-    <br>Used to recognize the user Id if not set
+    <label for="node-config-input-appType"><i class="fa fa-tag"></i> App type</label>
+    <select id="node-config-input-appType" style="width:120px !important">
+      <option value="" selected disabled hidden>Smart</option>
+      <option value="0">Smart</option>
+      <option value="1">Business</option>
+    </select>
   </div>
-  <div class="form-row">
-    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-config-input-name" placeholder="Name">
+  <div id="tuya-smartapp-settings" style="display:none">
+    <div class="form-row">
+      <label for="node-config-input-userId"><i class="fa fa-tag"></i> UserId (optional)</label>
+      <input type="text" id="node-config-input-userId">
+    </div>
+    <div class="form-row">
+      <label for="node-config-input-deviceId"><i class="fa fa-tag"></i> Any deviceId</label>
+      <input type="text" id="node-config-input-deviceId">
+      <br>Used to recognize the user Id if not set
+    </div>
+  </div>
+  <div id="tuya-businessapp-settings" style="display:none" hidden>
+    <div class="form-row">
+      <label for="node-config-input-secret2"><i class="fa fa-lock"></i> Secret key</label>
+      <input type="text" id="node-config-input-secret2">
+    </div>
+    <div class="form-row">
+      <label for="node-config-input-certSign"><i class="fa fa-lock"></i> Certificate</label>
+      <input type="text" id="node-config-input-certSign">
+    </div>
+    <div class="form-row">
+      <label for="node-config-input-email"><i class="fa fa-user"></i> User (email)</label>
+      <input type="text" id="node-config-input-email">
+    </div>
+    <div class="form-row">
+      <label for="node-config-input-password"><i class="fa fa-lock"></i> Password</label>
+      <input type="text" id="node-config-input-password">
+    </div>
   </div>
 </script>
 
@@ -39,17 +67,38 @@
   RED.nodes.registerType('tuya-cloud', {
     category: 'config',
     defaults: {
+      name: { value: '' },
       region: { value: '' },
       userId: { value: '' },
       deviceId: { value: '' },
-      name: { value: '' },
+      appType: { value: 0 },
     },
     credentials: {
       accessId: { type: 'text', required: true },
-      accessKey: { type: 'password', required: true }
+      accessKey: { type: 'password', required: true },
+      secret2: { type: 'text' },
+      certSign: { type: 'text' },
+      email: { type: 'text' },
+      password: { type: 'password' },
     },
     label: function() { return this.name || 'Tuya Cloud' },
     oneditprepare: function () {
+      const selectAppSettings = () => {
+        $('#tuya-smartapp-settings').hide()
+        $('#tuya-businessapp-settings').hide()
+        if (!this.appType) {
+          $('#tuya-smartapp-settings').show()
+        }
+        else {
+          $('#tuya-businessapp-settings').show()
+        }
+      }
+
+      $('#node-config-input-appType').change(()=>{
+        this.appType = $('#node-config-input-appType').val()
+        selectAppSettings()
+      })
+      selectAppSettings()
     }
   })
 </script>
