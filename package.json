@@ -53,7 +53,11 @@
     "doc/*",
     "img/*",
     "lib/*",
-    "resources/*",
+    "resources/css/*",
+    "resources/fonts/*",
+    "resources/script/*",
+    "resources/index.html",
+    "resources/jsondb.js",
     "nodes/*"
   ],
   "main": "index.js"
