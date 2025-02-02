@@ -168,21 +168,40 @@
           if (!project) return console.error('project not found: ' + this.project)
           if (this.home === undefined) this.home = project.home || ''
           if (this.room === undefined) this.room = project.room || ''
-          project.getCloudDevices && project.getCloudDevices(cloudDevices=>{
+          project.getCloudDevices && project.getCloudDevices(cloudDevices => {
             if (!cloudDevices) return console.error('download devices failed')
             this._device = cloudDevices[this.deviceId]
             callback(this._device)
           })
-        }).bind(this)
-        this.getServices = (callback => {
-          if (this._services) return callback(this._services)
-          this.getCloudDevice(cloudDevice=>{
-            if (!cloudDevice?.dataModel) return
-            const project = RED.nodes.node(this.project)
-            project.getModels && project.getModels(models => {
-              this._services = models[cloudDevice.dataModel]
-              callback(this._services)
-            })
+        })
+        this.getProperties = (callback => {
+          if (this._properties) return callback(this._properties)
+          this.getCloudDevice(device => {
+            this._propertie = []
+            if (device?.productId) {
+              if (!this.project) return console.error('project not configured: ' + this.project)
+              const project = RED.nodes.node(this.project)
+              project.getSchemas && project.getSchemas(schemas => {
+                const schema = schemas && schemas[device.productId]?.schemaInfo?.schema
+                if (Array.isArray(schema)) {
+                  for (const prop of schema) {
+                    this._propertie.push(prop)
+                  }
+                }
+              })
+            }
+            else if (device?.dataModel) {
+              const services = this.getServices(deviceId)
+              if (Array.isArray(services)) {
+                for (const service of services) {
+                  if (!Array.isArray(service.properties)) continue
+                  for (const property of service.properties) {
+                    this._propertie.push(property)
+                  }
+                }
+              }
+            }
+            return callback(this._propertie)
           })
         })
         this.getOverloads = (callback => {
@@ -191,26 +210,32 @@
           this.getCloudDevice(cloudDevice => {
             const project = RED.nodes.node(this.project)
             project.getOverloads && project.getOverloads(overloads => {
-              if (overloads && overloads.models)  this._overloads = overloads.models[cloudDevice.dataModel]
+              if (overloads && overloads.models) {
+                if (cloudDevice.productId) {
+                  this._overloads = overloads.schemas[cloudDevice.productId]
+                  //TODO
+                }
+                else if (cloudDevice.dataModel) {
+                  this._overloads = overloads.models[cloudDevice.dataModel]
+                }
+              }
               callback(this._overloads)
             })
           })
         })
         this.getRanges = (callback => {
           if (this._ranges) return callback(this._ranges)
-          this.getServices(services => {
+          this.getProperties(properties => {
             this._ranges = {}
-            if (services) {
-              for (const service of services) {
-                if (!service.properties) continue
-                for (const prop of service.properties) {
-                  if (prop.typeSpec.range) {
-                    const range = {}
-                    for (let i = 0; i < prop.typeSpec.range.length; i++) {
-                      range[i] = prop.typeSpec.range[i]
-                    }
-                    this._ranges[prop.code] = range
+            if (Array.isArray(properties)) {
+              for (const prop of properties) {
+                const propRange = prop.property ? prop.property.range : prop.typeSpec.range
+                if (propRange) {
+                  const range = {}
+                  for (let i = 0; i < propRange.length; i++) {
+                    range[i] = propRange[i]
                   }
+                  this._ranges[prop.code] = range
                 }
               }
             }
@@ -279,23 +304,23 @@
       }
       $('#node-config-input-gateway').on('change', refreshGateway)
 
-      const updateDpsTable = (services) => {
+      const updateDpsTable = (properties) => {
         const el = $('#dps-table > tbody')
         el.html('')
         const ilist = []
-        if (services) {
-          for (const service of services) {
-            if (!service.properties) continue
-            for (const prop of service.properties) {
-              ilist.push(`
-                <tr>
-                  <td><input type="text" value="${prop.abilityId}" style="width:100%" readonly></td>
-                  <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
-                  <td><input type="text" id="dps-${this.deviceId}-${prop.dp_id}" value="${prop._custom_name || prop.name || ''}" title="${prop._custom_description || prop.description || ''}" style="width:100%" readonly></td>
-                  <td><input type="text" value="${prop.typeSpec && prop.typeSpec.type || ''}" title='${prop.typeSpec && JSON.stringify(prop.typeSpec, null, 2) || ''}' style="width:100%" readonly></td>
-                  <td><input type="text" value="${prop.accessMode}" style="width:100%" readonly></td>
-                </tr>`)
-            }
+        if (Array.isArray(properties)) {
+          for (const prop of properties) {
+            const id = prop.id || prop.abilityId
+            const mode = prop.mode || prop.accessMode
+            const typeSpec = prop.property || prop.typeSpec
+            ilist.push(`
+              <tr>
+                <td><input type="text" value="${id}" style="width:100%" readonly></td>
+                <td><input type="text" value="${prop.code}" style="width:100%" readonly></td>
+                <td><input type="text" id="dps-${this.deviceId}-${id}" value="${prop._custom_name || prop.name || ''}" title="${prop._custom_description || prop.description || ''}" style="width:100%" readonly></td>
+                <td><input type="text" value="${typeSpec && typeSpec.type || ''}" title='${typeSpec && JSON.stringify(typeSpec, null, 2) || ''}' style="width:100%" readonly></td>
+                <td><input type="text" value="${mode}" style="width:100%" readonly></td>
+              </tr>`)
           }
         }
         el.append(ilist.join(''))
@@ -421,12 +446,12 @@
       }
 
       const updateWidgets = () => {
-        this.getServices(services => {
-          if (!services) {
+        this.getProperties(properties => {
+          if (!Array.isArray(properties)) {
             console.warn('device properties has no data model')
             return
           }
-          updateDpsTable(services)
+          updateDpsTable(properties)
         })
         this.getContext(context => updateExtension(context))
       }

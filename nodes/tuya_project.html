@@ -86,6 +86,7 @@
       homes: 'homes.json',
       devices: 'devices.json',
       models: 'models.json',
+      schemas: 'schemas.json',
       announcements: 'announcements.json',
     }),
     cache: {},
@@ -213,6 +214,7 @@
         this.getHomes = (callback) => tuya_devices.loadCacheTable(this.name, 'homes', callback)
         this.getCloudDevices = (callback) => tuya_devices.loadCacheTable(this.name, 'devices', callback)
         this.getModels = (callback) => tuya_devices.loadCacheTable(this.name, 'models', callback)
+        this.getSchemas = (callback) => tuya_devices.loadCacheTable(this.name, 'schemas', callback)
         this.getAnnouncements = (callback) => tuya_devices.loadCacheTable(this.name, 'announcements', callback)
         this.getContext = (callback) => tuya_devices.loadCacheTable(this.name, 'context', callback)
         this.getOverloads = (callback) => tuya_devices.loadCacheTable(this.name, 'overloads', callback)

@@ -95,11 +95,17 @@
         $(`#add-node-${modelId}`).hide()
         $(`#node-name-${modelId}`).attr('readonly','readonly')
         name = $(`#node-name-${modelId}`).val() || name || ''
-        tuya_devices.addTuyaModel({modelId, services, name})
+        tuya_devices.addTuyaModel({modelId, services, name}) //??? currently not used
         this.modelsDirty = true
       }
+      
+      const addSchemaNode = (schemaId, name) => {
+        if (!schemaId) return // invalid parameter, nothink to do
+        //TODO
+        //this.schemasDirty = true
+      }
 
-      const addDeviceNode = (deviceId) => { // !!! devId is cloud device id, n0t the node id of local device node
+      const addDeviceNode = (deviceId) => { // !!! devId is cloud device id, not the node id of local device node
         if (!deviceId) return // invalid parameter, nothink to do
         const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
         if (devNode) return devNode // already exist, nothink to do
@@ -109,83 +115,140 @@
         $(`#add-node-${deviceId}`).hide()
         $(`#node-name-${deviceId}`).attr('readonly','readonly')
         const name = $(`#node-name-${deviceId}`).val() || ''
-        const cloudDevice = { 
-          // identification:
-          id: '', //-> deviceId
-          local_key: '', //-> localKey
-          name: '', //-> cname
-          uuid: '',
-          // capabilities:
-          category: '',
-          category_name: '',
-          product_id: '',
-          product_name: '',
-          icon: '',
-          model: '',
-          dataModel: '',
-          // linkage:
-          sub: true,
-          gateway_id: '', //-> gateway.deviceId
-          owner_id: '', //-> project.cloud.userId
-          // location:
-          lat: '',
-          lon: '',
-          time_zone: '', //'+02:00'
-          // dynamic:
-          ip: '', //-> ip
-          active_time: 0,
-          create_time: 0,
-          update_time: 0,
-          online: false,
-          ..._cloudDevice 
+
+        const businessDevice = () => {
+          return { 
+            activeTime: 0,
+            category: '',
+            categoryCode: '',
+            devAttribute: 0,
+            devId: deviceId,
+            devKey: '',
+            dpMaxTime: 0,
+            dpName: {},
+            dps: { },
+            iconUrl: '',
+            ip: '',
+            lat: '',
+            localKey: '',
+            lon: '',
+            mac: '',
+            meshId: '',
+            moduleMap: {},
+            name: '',
+            nodeId: '',
+            productId: '',
+            runtimeEnv: '',
+            timezoneId: '',
+            topoType: 0,
+            uuid: '',
+            virtual: false,
+            ..._cloudDevice 
+          }
         }
+        const smartDevice = () => { 
+          return { 
+            // identification:
+            id: '',
+            local_key: '',
+            name: '',
+            uuid: '',
+            // capabilities:
+            category: '',
+            category_name: '',
+            product_id: '',
+            product_name: '',
+            icon: '',
+            model: '',
+            dataModel: '',
+            // linkage:
+            sub: true,
+            gateway_id: '',
+            owner_id: '',
+            // location:
+            lat: '',
+            lon: '',
+            time_zone: '', //'+02:00'
+            // dynamic:
+            ip: '', //-> ip
+            active_time: 0,
+            create_time: 0,
+            update_time: 0,
+            online: false,
+            ..._cloudDevice 
+          }
+        }
+        const cloudDevice = _cloudDevice.devId ? businessDevice() : smartDevice()
+        delete cloudDevice.dps
         delete cloudDevice.properties
 
-        addModelNode(cloudDevice.dataModel, cloudDevice.name)
-        const gwNode = addDeviceNode(cloudDevice.gateway_id)
+        if (cloudDevice.productId) {
+          addSchemaNode(cloudDevice.productId, cloudDevice.name)
+        }
+        else if (cloudDevice.dataModel) {
+          addModelNode(cloudDevice.dataModel, cloudDevice.name)
+        }
+        const gwNode = addDeviceNode(cloudDevice.meshId || cloudDevice.gateway_id)
         const gateway = gwNode?.id || ''
-        const deviceMac = this.announcements?.[deviceId]?.mac || ''
+        const mac = cloudDevice.mac || this.announcements?.[deviceId]?.mac || ''
+        const localKey = cloudDevice.localKey || cloudDevice.local_key
+        const cid = cloudDevice.nodeId || cloudDevice.cid || cloudDevice.node_id
         
         tuya_devices.addLocalDevice({ 
           project: this.project, 
           deviceId, 
-          localKey: cloudDevice.local_key, 
+          localKey, 
           gateway,
-          cid: cloudDevice.cid || cloudDevice.node_id,
+          cid,
           name,
           cloudDevice,
-          deviceMac, 
+          mac, 
         })
         this.devicesDirty = true
       }
 
       const refreshModels = () => {
         const models = this.models
-        if (!models) return $('#model-table').html('')
-        const tbody = $('#model-table > tbody')
-        tbody.html('')
-        const ilist = []
-        for (const modelId in models) {
-          const services = models[modelId]
-          const name = '' // (services?.length === 1) && (services[0].label || services[0].name) || modelId
-          const node = RED.nodes.node(tuya_devices.modelNodeId(modelId)) || { name }
-          const serviceCount = services?.length || 0
-          let propCount = 0
-          if (serviceCount) services.forEach(service => {
-            propCount += (service.properties?.length || 0)
-          });
-          ilist.push(`
+        const schemas = this.schemas
+        if (!models && !schemas) return $('#model-table').html('')
+
+        const getModelRow = (modelId, propCount, nodeName, nodeModelId) => {
+          return `
             <tr>
               <td><input type="text" value="${modelId}" style="width:100%" readonly></td>
               <td><input type="text" value="${propCount}" style="width:100%" readonly></td>
-              <td><input type="text" id="node-name-${modelId}" value="${node.name}" style="width:100%"${node.modelId && ' readonly' || ''}></td>
+              <td><input type="text" id="node-name-${modelId}" value="${nodeName}" style="width:100%"${nodeModelId && ' readonly' || ''}></td>
               <td>
-                <button type="button" id="add-node-${modelId}" ${node.modelId && 'hidden' || 'class="red-ui-button"'}>
+                <button type="button" id="add-node-${modelId}" ${nodeModelId && 'hidden' || 'class="red-ui-button"'}>
                   <i class="fa fa-plus"></i>
                 </button>
               </td>
             </tr>
-          `)
+          `
+        }
+
+        const tbody = $('#model-table > tbody')
+        tbody.html('')
+        const ilist = []
+        if (schemas) {
+          for (const schema of Object.values(schemas)) {
+            const propCount = schema.schemaInfo?.schema?.length || 0
+            const quickOpDps = schema.shortcut?.quickOpDps.length || 0
+            ilist.push(getModelRow(schema.id, `${propCount} (${quickOpDps})`, `${schema.category} (${schema.categoryCode})`, schema.id,))
+          }
+        }
+        if (models) {
+          for (const modelId in models) {
+            const services = models[modelId]
+            const name = '' // (services?.length === 1) && (services[0].label || services[0].name) || modelId
+            const node = RED.nodes.node(tuya_devices.modelNodeId(modelId)) || { name }
+            const serviceCount = services?.length || 0
+            let propCount = 0
+            if (serviceCount) services.forEach(service => {
+              propCount += (service.properties?.length || 0)
+            });
+            ilist.push(getModelRow(modelId, propCount, node.name, node.modelId))
+          }
         }
         tbody.append(ilist.join(''))
         this.modelsDirty = false
@@ -276,7 +339,12 @@
 
           const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
           if (devNode) {
-            if (cloudDevice.dataModel) addModelNode(cloudDevice.dataModel, cloudDevice.name)
+            if (cloudDevice.productId) {
+              addSchemaNode(cloudDevice.productId, cloudDevice.name)
+            }
+            else if (cloudDevice.dataModel) {
+              addModelNode(cloudDevice.dataModel, cloudDevice.name)
+            }
             if (cloudDevice.gateway_id) addDeviceNode(cloudDevice.gateway_id)
           }
           else $(`#add-node-${deviceId}`).click(() => addDeviceNode(deviceId))
@@ -289,14 +357,17 @@
           this.projectNode = RED.nodes.node(this.project)
           if (!this.projectNode) return console.error('project not found: ' + this.project)
           if (!this.projectNode.getModels) return console.error('project getModels not found: ' + this.project)
+          if (!this.projectNode.getSchemas) return console.error('project getSchemas not found: ' + this.project)
           if (!this.projectNode.getCloudDevices) return console.error('project getCloudDevices not found: ' + this.project)
         }
 
         this.modelsDirty = true
+        this.schemasDirty = true
         this.devicesDirty = true
 
         if (cleanup) {
           this.models = {}
+          this.schemas = {}
           this.cloudDevices = {}
           this.homes = {}
           this.announcements = {}
@@ -306,6 +377,13 @@
         else if (!this.models) {
           this.projectNode.getModels(models => {
             this.models = models
+            refreshModels()
+            refresh()
+          })
+        }
+        else if (!this.schemas) {
+          this.projectNode.getSchemas(schemas => {
+            this.schemas = schemas
             refreshModels()
             refresh()
           })
@@ -332,6 +410,7 @@
         }
         else {
           if (this.modelsDirty) refreshModels()
+          if (this.schemasDirty) refreshModels()
           if (this.devicesDirty) refreshDevices()
         }
       }
@@ -383,6 +462,7 @@
           case 'updateDevices':
             console.log('notification for updateDevices')
             this.models = null
+            this.schemas = null
             this.cloudDevices = null
             this.homes = null
             this.announcements = null

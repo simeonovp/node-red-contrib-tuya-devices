@@ -65,7 +65,7 @@
         fillDeviceProperties()
       }
 
-      const updateOutputs = (services, labelList) => {
+      const updateOutputs = (properties, labelList) => {
         if (this.outputsMode == '1') {
           this.outputs = 1
           this.outputLabelList = ['data']
@@ -80,37 +80,41 @@
         }
       }
 
-      const updateDpsList = (services) => {
+      const updateDpsList = (properties) => {
         $el = $('#node-input-dps')
         $el.empty()
         $el.append($('<option></option>').attr('value', '').text('all'))
-        if (!services) return
+        if (!Array.isArray(properties)) return
         const labelList = ['data']
-        for (const service of services) {
-          if (!service.properties) continue
-          for (const prop of service.properties) {
+        for (const prop of properties) {
+          if (prop.id) {
+            //TODO support schemas
+            labelList.push(`(${prop.id}) ${prop.code}`)
+            $el.append($('<option></option>').attr('value', prop.id.toString()).text(`(${prop.id}) ${prop.code}`))
+          }
+          else {
             labelList.push(`(${prop.abilityId}) ${prop.code}`)
             $el.append($('<option></option>').attr('value', prop.abilityId.toString()).text(`(${prop.abilityId}) ${prop.code}`))
           }
         }
-        if (services) updateOutputs(services, labelList)
+        updateOutputs(properties, labelList)
         $el.val(this.dps)
         $el.change(() => { })
       }
 
       const updateWidgets = () => {
-        device.getServices(services=>{
-          if (!services) {
+        device.getProperties(properties => {
+          if (!properties) {
             console.warn('device properties has no data model')
             return
           }
-          updateDpsList(services)
+          updateDpsList(properties)
         })
       }
 
       const fillDeviceProperties = () => {
         if (!device) return
-        device.getCloudDevice(cloudDevice=>{
+        device.getCloudDevice(cloudDevice => {
           if (!cloudDevice) return console.error('[device] device not found')
           updateWidgets()
         })
