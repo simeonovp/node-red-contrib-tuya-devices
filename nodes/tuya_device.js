@@ -5,15 +5,22 @@ module.exports = function (RED) {
     constructor (config) {
       RED.nodes.createNode(this, config)
       this.config = config
-      this.deviceNode = this.config.device && RED.nodes.getNode(this.config.device)
-      if (!this.deviceNode || ((this.deviceNode.type !== 'tuya-local-device'))) {
-        this.error('Device configuration is wrong or missing, please review the node settings, type:' + typeof this.deviceNode?.type)
+
+      this.deviceNode = RED.nodes.getNode(config.device)
+      if (this.deviceNode?.type === 'tuya-local-device') {
+        this.device = this.deviceNode?.device
+        if (!this.device) this.error('Device object is ' + this.device)
+      }
+      else {
+        this.error(`Device node not found, deviceId:'${config.device}'`)
+      }
+
+      if (!this.device) {
         this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
         this.device = null
         return
       }
-
-      this.device = this.deviceNode?.device
+      
       this.dps = /*config.dps && config.dps.includes(',') && config.dps.split(',') ||*/ config.dps
       this.multiDps = !!config.multiDps
       this.outputsMode = (config.outputsMode === undefined) ? parseInt(config.outputs) : parseInt(config.outputsMode)

@@ -1,5 +1,9 @@
+# v1.4.1
+- Fixed error on update cloud data
+- Integrate business application data modell as addition to an smart application data
+
 # v1.4.0
-- Added for business cloud applications
+- Added support for business cloud applications
 
 # v1.3.7
 - Added possibility to backup cache local to be used after version update

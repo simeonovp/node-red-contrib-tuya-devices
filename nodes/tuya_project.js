@@ -11,7 +11,7 @@ module.exports = function (RED) {
     constructor (config) {
       RED.nodes.createNode(this, config)
 
-      this.debug = DEBUG ? this.log.bind(this) : (() => {})
+      this.debug = (DEBUG || config.dbgProject) ? this.log.bind(this) : (() => {})
       this.debug('config:' + JSON.stringify(config))
 
       config.name = config.name || 'default'
@@ -40,39 +40,49 @@ module.exports = function (RED) {
       }
       else if (!fs.existsSync(indexHtmlPath)) this.warn(`Default project explorer WEB page ${indexHtmlPath} not exists`)
 
-      this.cloudNode = config.cloud && RED.nodes.getNode(config.cloud)
-      if (!this.cloudNode || (this.cloudNode.type !== 'tuya-cloud')) {
-        this.warn('Cloud configuration is wrong or missing, please review the node settings')
-        this.cloud = null
-      }
-      else {
-        this.cloud = this.cloudNode.cloud
-        if (this.cloud && config.dbgCloud) this.cloud.debug = this.cloud.log
+      if (config.cloud) {
+        // link cloud
+        this.cloudNode = RED.nodes.getNode(config.cloud)
+        if (this.cloudNode?.type === 'tuya-cloud') {
+          this.debug('link cloud')
+          this.cloud = this.cloudNode?.cloud
+          if (!this.cloud) this.error('cloud object is ' + this.cloud)
+          else if (config.dbgCloud) this.cloud.debug = this.cloud.log
+        }
+        else {
+          this.warn('Cloud configuration is wrong or missing, please review the node settings')
+          this.cloud = null
+        }
       }
 
+      // init project
+      this.debug('init project')
       this.project = new Project(this.cloud, config, this)
       const cloudApi = this.cloudNode?.cloudApi
       if (cloudApi) {
         this.project.setCloudApi(cloudApi)
         if (cloudApi && config.dbgCloud) cloudApi.debug = cloudApi.log
       }
-
+      
       if (config.broker) {
-        this.mqttBrokerNode = config.broker && RED.nodes.getNode(config.broker)
-        if (!this.mqttBrokerNode || (this.mqttBrokerNode.type !== 'tuya-mqtt-broker')) {
-          this.warn('Mqtt configuration is wrong or missing, please review the node settings')
-          if (!this.mqttBrokerNode) this.warn('  mqttBrokerNode:' + this.mqttBrokerNode)
-          else if (this.mqttBrokerNode.type !== 'tuya-mqtt-broker') this.warn('  mqttBrokerNode.type:' + this.mqttBrokerNode.type)
-          this.mqttBroker = null
+        // link MQTT broker
+        this.mqttBrokerNode = RED.nodes.getNode(config.broker)
+        if (this.mqttBrokerNode?.type === 'tuya-mqtt-broker') {
+          this.debug('link MQTT broker')
+          this.mqttBroker = this.mqttBrokerNode?.mqttBroker
+          if (this.mqttBroker) {
+            this.fullTopic = config.fullTopic
+            if (this.mqttBroker && config.dbgMqtt) this.mqttBroker.debug = this.mqttBroker.log
+            this.project.setMqttBroker(this.mqttBroker, this.fullTopic)
+          }
+          else this.error('MQTT broker object is ' + this.mqttBroker)
         }
         else {
-          this.mqttBroker = this.mqttBrokerNode.mqttBroker
-          this.fullTopic = config.fullTopic
-          if (this.mqttBroker && config.dbgMqtt) this.mqttBroker.debug = this.mqttBroker.log
-          this.project.setMqttBroker(this.mqttBroker, this.fullTopic)
+          this.warn('Mqtt configuration is wrong or missing, please review the node settings')
+          this.mqttBroker = null
         }
       }
-      
+
       this.on('close', (done) => {
         this.project.deinit()
         done()

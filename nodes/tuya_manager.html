@@ -90,19 +90,12 @@
         if (!modelId) return // invalid parameter, nothink to do
         const modelNode = RED.nodes.node(tuya_devices.modelNodeId(modelId))
         if (modelNode) return modelNode // already exist, nothink to do
-        const services = this.models[modelId]
-        if (!services) return // model not exists in the DB
+
         $(`#add-node-${modelId}`).hide()
-        $(`#node-name-${modelId}`).attr('readonly','readonly')
-        name = $(`#node-name-${modelId}`).val() || name || ''
-        tuya_devices.addTuyaModel({modelId, services, name}) //??? currently not used
-        this.modelsDirty = true
-      }
-      
-      const addSchemaNode = (schemaId, name) => {
-        if (!schemaId) return // invalid parameter, nothink to do
-        //TODO
-        //this.schemasDirty = true
+          $(`#node-name-${modelId}`).attr('readonly','readonly')
+          name = $(`#node-name-${modelId}`).val() || name || ''
+          tuya_devices.addTuyaModel({modelId, name})
+          this.modelsDirty = true
       }
 
       const addDeviceNode = (deviceId) => { // !!! devId is cloud device id, not the node id of local device node
@@ -182,11 +175,9 @@
         delete cloudDevice.dps
         delete cloudDevice.properties
 
-        if (cloudDevice.productId) {
-          addSchemaNode(cloudDevice.productId, cloudDevice.name)
-        }
-        else if (cloudDevice.dataModel) {
-          addModelNode(cloudDevice.dataModel, cloudDevice.name)
+        const modelId = cloudDevice.productId || cloudDevice.dataModel
+        if (modelId) {
+          addModelNode(modelId, cloudDevice.name)
         }
         const gwNode = addDeviceNode(cloudDevice.meshId || cloudDevice.gateway_id)
         const gateway = gwNode?.id || ''
@@ -339,12 +330,8 @@
 
           const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
           if (devNode) {
-            if (cloudDevice.productId) {
-              addSchemaNode(cloudDevice.productId, cloudDevice.name)
-            }
-            else if (cloudDevice.dataModel) {
-              addModelNode(cloudDevice.dataModel, cloudDevice.name)
-            }
+            const modelId = cloudDevice.productId || cloudDevice.dataModel
+            addModelNode(modelId, cloudDevice.name)
             if (cloudDevice.gateway_id) addDeviceNode(cloudDevice.gateway_id)
           }
           else $(`#add-node-${deviceId}`).click(() => addDeviceNode(deviceId))

@@ -12,21 +12,17 @@ module.exports = function (RED) {
 
       const cloudStatusHandler = this.onCloudStatus.bind(this)
       const deviceFindHandler = this.onDeviceEvent.bind(this)
-      this.projectNode = this.config.project && RED.nodes.getNode(this.config.project)
 
-      if (this.projectNode) {
-        if (this.projectNode.type !== 'tuya-project') {
-          this.warn('Project configuration is wrong or missing, please review the node settings')
-          this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
-          this.project = null
-        }
-        else {
-          this.project = this.projectNode.project
+      this.projectNode = RED.nodes.getNode(config.project)
+      if (this.projectNode?.type === 'tuya-project') {
+        this.project = this.projectNode?.project
+        if (this.project) {
           this.project.addListener('cloud-status', cloudStatusHandler)
           this.project.addListener('device-find', deviceFindHandler)
         }
+        else this.error('Project object is ' + this.project)
       }
-  
+
       this.on('close', (done) => {
         if (this.project) {
           this.project.removeListener('cloud-status', cloudStatusHandler)

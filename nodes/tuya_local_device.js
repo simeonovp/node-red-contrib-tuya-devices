@@ -15,7 +15,7 @@ module.exports = function (RED) {
       if (config.gateway) {
         this.gatewayNode = RED.nodes.getNode(config.gateway)
         if (!this.gatewayNode || ((this.gatewayNode.type !== 'tuya-local-device'))) {
-          this.error(`Device configuration is wrong or missing, please review the node settings, 
+          this.error(`LocalDevice configuration is wrong or missing, please review the node settings, 
             id:${config.gateway}
             node:${this.gatewayNode}
             type:${typeof this.gatewayNode?.type}`)
@@ -26,13 +26,14 @@ module.exports = function (RED) {
         }
       }
 
-      this.projectNode = config.project && RED.nodes.getNode(config.project)
-      if (!this.projectNode || ((this.projectNode.type !== 'tuya-project'))) {
-        this.error('Device configuration is wrong or missing, please review the node settings, type:' + typeof this.projectNode?.type)
-        this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
+      this.projectNode = RED.nodes.getNode(config.project)
+      if (this.projectNode?.type === 'tuya-project') {
+        this.project = this.projectNode?.project
+        if (!this.project) this.error('Project object is ' + this.project)
       }
       else {
-        this.project = this.projectNode?.project
+        this.error('LocalDevice configuration is wrong or missing, please review the node settings, type:' + typeof this.projectNode?.type)
+        this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
       }
 
       this.device = new Device(this.gateway, this.project, config, this)

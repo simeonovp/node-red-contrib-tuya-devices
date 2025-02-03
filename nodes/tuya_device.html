@@ -87,15 +87,9 @@
         if (!Array.isArray(properties)) return
         const labelList = ['data']
         for (const prop of properties) {
-          if (prop.id) {
-            //TODO support schemas
-            labelList.push(`(${prop.id}) ${prop.code}`)
-            $el.append($('<option></option>').attr('value', prop.id.toString()).text(`(${prop.id}) ${prop.code}`))
-          }
-          else {
-            labelList.push(`(${prop.abilityId}) ${prop.code}`)
-            $el.append($('<option></option>').attr('value', prop.abilityId.toString()).text(`(${prop.abilityId}) ${prop.code}`))
-          }
+          const id = prop.id || prop.abilityId
+          labelList.push(`(${id}) ${prop.code}`)
+          $el.append($('<option></option>').attr('value', id.toString()).text(`(${id}) ${prop.code}`))
         }
         updateOutputs(properties, labelList)
         $el.val(this.dps)

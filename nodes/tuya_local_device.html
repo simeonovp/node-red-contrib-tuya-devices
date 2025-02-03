@@ -177,7 +177,7 @@
         this.getProperties = (callback => {
           if (this._properties) return callback(this._properties)
           this.getCloudDevice(device => {
-            this._propertie = []
+            this._properties = []
             if (device?.productId) {
               if (!this.project) return console.error('project not configured: ' + this.project)
               const project = RED.nodes.node(this.project)
@@ -185,7 +185,7 @@
                 const schema = schemas && schemas[device.productId]?.schemaInfo?.schema
                 if (Array.isArray(schema)) {
                   for (const prop of schema) {
-                    this._propertie.push(prop)
+                    this._properties.push(prop)
                   }
                 }
               })
@@ -196,7 +196,7 @@
                 for (const service of services) {
                   if (!Array.isArray(service.properties)) continue
                   for (const property of service.properties) {
-                    this._propertie.push(property)
+                    this._properties.push(property)
                   }
                 }
               }
@@ -207,16 +207,16 @@
         this.getOverloads = (callback => {
           if (this._overloads) return callback(this._overloads)
           this._overloads = {}
-          this.getCloudDevice(cloudDevice => {
+          this.getCloudDevice(device => {
             const project = RED.nodes.node(this.project)
             project.getOverloads && project.getOverloads(overloads => {
               if (overloads && overloads.models) {
-                if (cloudDevice.productId) {
-                  this._overloads = overloads.schemas[cloudDevice.productId]
+                if (device.productId) {
+                  this._overloads = overloads.schemas[device.productId]
                   //TODO
                 }
-                else if (cloudDevice.dataModel) {
-                  this._overloads = overloads.models[cloudDevice.dataModel]
+                else if (device.dataModel) {
+                  this._overloads = overloads.models[device.dataModel]
                 }
               }
               callback(this._overloads)
@@ -247,9 +247,9 @@
         })
         this.getContext = (callback => {
           if (this._context) return callback(this._context)
-          this.getCloudDevice(cloudDevice => {
-            if (!cloudDevice.category) return callback(null)
-            const category = cloudDevice.category
+          this.getCloudDevice(device => {
+            if (!device.category) return callback(null)
+            const category = device.category
             const project = RED.nodes.node(this.project)
             project.getContext && project.getContext(context => {
               if (!context) return callback(null)

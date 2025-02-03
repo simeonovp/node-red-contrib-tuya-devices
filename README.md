@@ -23,7 +23,8 @@ In the manager config form:
   In the project config form:  
   - set the name for the project
   - Add new tuya-cloud. 
-    In the cloud config form:  
+    In the cloud config form you can select the application type as "smart" to use own Tuya appliction created in Tuya IoT. The other option is to use an account in an own or existing bisiness application.
+    Config for smart application:
     - set the AccessID, AccessKey and Any deviceId (needed to recognise the userId and all devices mapped to the same user account)
     - optional can be set the Tuya cloud userId if known and a name for the config node
   - Optional can be added new MQTT broker. It will be used for all Tuya devices in the project. The device data can be accessed in the broker with MQTT topic "tuya/(deviceId)/tele/(dp)"

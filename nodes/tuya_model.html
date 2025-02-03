@@ -122,7 +122,7 @@
           const slist = []
           const plist = []
           let sidx = 0
-          for (const service of this.services) {
+          for (const service of this.services) { //TODO use properties
             sidx++
             if (!service.label) service.label = service.name || ''
             slist.push(`<tr>
