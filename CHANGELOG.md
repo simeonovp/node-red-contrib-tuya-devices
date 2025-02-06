@@ -1,6 +1,9 @@
+# v1.4.2
+- Fixed error on add device using smart application data model
+
 # v1.4.1
 - Fixed error on update cloud data
-- Integrate business application data modell as addition to an smart application data
+- Integrate business application data model as addition to an smart application data
 
 # v1.4.0
 - Added support for business cloud applications

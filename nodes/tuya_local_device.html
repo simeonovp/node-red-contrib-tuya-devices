@@ -191,15 +191,18 @@
               })
             }
             else if (device?.dataModel) {
-              const services = this.getServices(deviceId)
-              if (Array.isArray(services)) {
-                for (const service of services) {
-                  if (!Array.isArray(service.properties)) continue
-                  for (const property of service.properties) {
-                    this._properties.push(property)
+              const project = RED.nodes.node(this.project)
+              project.getModels && project.getModels(models => {
+                const services = models[device?.dataModel]
+                if (Array.isArray(services)) {
+                  for (const service of services) {
+                    if (!Array.isArray(service.properties)) continue
+                    for (const property of service.properties) {
+                      this._properties.push(property)
+                    }
                   }
                 }
-              }
+              })
             }
             return callback(this._propertie)
           })
