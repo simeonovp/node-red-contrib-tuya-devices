@@ -1,3 +1,7 @@
+# v1.4.3
+- Fixed error on get properties in device GUI (due to typo)
+- Improve tuya_local_device GUI. Added netType to tuya_local_device settings
+
 # v1.4.2
 - Fixed error on add device using smart application data model
 
