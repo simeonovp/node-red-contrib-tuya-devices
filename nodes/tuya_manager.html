@@ -102,13 +102,14 @@
         if (!deviceId) return // invalid parameter, nothink to do
         const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
         if (devNode) return devNode // already exist, nothink to do
-        const _cloudDevice = this.cloudDevices[deviceId]
-        if (!_cloudDevice) return // device not exists in the DB
+        const cloudDevice = this.cloudDevices[deviceId]
+        if (!cloudDevice) return // device not exists in the DB
 
         $(`#add-node-${deviceId}`).hide()
         $(`#node-name-${deviceId}`).attr('readonly','readonly')
         const name = $(`#node-name-${deviceId}`).val() || ''
 
+        const isBusinessModel = !!cloudDevice.devId
         const businessDevice = () => {
           return { 
             activeTime: 0,
@@ -136,9 +137,10 @@
             topoType: 0,
             uuid: '',
             virtual: false,
-            ..._cloudDevice 
+            ...cloudDevice 
           }
         }
+
         const smartDevice = () => { 
           return { 
             // identification:
@@ -157,6 +159,7 @@
             // linkage:
             sub: true,
             gateway_id: '',
+            node_id: '', // available on client devices, = uuid
             owner_id: '',
             // location:
             lat: '',
@@ -168,33 +171,64 @@
             create_time: 0,
             update_time: 0,
             online: false,
-            ..._cloudDevice 
+            ...cloudDevice 
           }
         }
-        const cloudDevice = _cloudDevice.devId ? businessDevice() : smartDevice()
-        delete cloudDevice.dps
-        delete cloudDevice.properties
 
-        const modelId = cloudDevice.productId || cloudDevice.dataModel
-        if (modelId) {
-          addModelNode(modelId, cloudDevice.name)
-        }
-        const gwNode = addDeviceNode(cloudDevice.meshId || cloudDevice.gateway_id)
-        const gateway = gwNode?.id || ''
-        const mac = cloudDevice.mac || this.announcements?.[deviceId]?.mac || ''
-        const localKey = cloudDevice.localKey || cloudDevice.local_key
-        const cid = cloudDevice.nodeId || cloudDevice.cid || cloudDevice.node_id
-        
-        tuya_devices.addLocalDevice({ 
+        const modelId = isBusinessModel ? cloudDevice.productId : cloudDevice.dataModel
+        if (modelId) addModelNode(modelId, cloudDevice.name)
+
+        const devConfig = { 
           project: this.project, 
-          deviceId, 
-          localKey, 
-          gateway,
-          cid,
-          name,
-          cloudDevice,
-          mac, 
-        })
+          deviceId: '', 
+          localKey: '',
+          netType: 0,
+          gateway: '',
+          cid: '',
+          name: cloudDevice.name || '',
+          cloudDevice: null,
+          mac: this.announcements?.[deviceId]?.mac || '', 
+        }
+
+        if (isBusinessModel) {
+          devConfig.deviceId = cloudDevice.devId
+          devConfig.localKey = cloudDevice.localKey
+          switch (cloudDevice.topoType)
+          {
+          case 0:
+            devConfig.netType = 2 // Gateway
+            break
+          case 1:
+            devConfig.netType = 3 // Gateway client
+            devConfig.gateway = cloudDevice.meshId
+            devConfig.cid = cloudDevice.nodeId
+            addDeviceNode(gateway)
+            break
+          default:
+            devConfig.netType = 1 // IP device
+          }
+          devConfig.mac = cloudDevice.mac
+        }
+        else {
+          devConfig.deviceId = cloudDevice.id
+          devConfig.localKey = cloudDevice.local_key
+          if (cloudDevice.sub) {
+            if (cloudDevice.gateway_id) {
+              devConfig.netType = 3 // Gateway client
+              devConfig.gateway = cloudDevice.gateway_id
+              devConfig.cid = cloudDevice.node_id || cloudDevice.cid || ''
+              addDeviceNode(gateway)
+            }
+            else if(cloudDevice) {
+              devConfig.netType = 2 // Gateway
+            }
+          }
+          else if(cloudDevice.ip) {
+            devConfig.netType = 1 // IP device
+          }
+        }
+       
+        tuya_devices.addLocalDevice(devConfig)
         this.devicesDirty = true
       }
 

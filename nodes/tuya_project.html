@@ -187,16 +187,19 @@
   RED.nodes.registerType('tuya-project', {
     category: 'config',
     defaults: {
-      cloud: { type: 'tuya-cloud', required: false },
+      // Settings tab
+      name: { value: '' },
       dbUri: { value: '' },
+      translate: { value: true },
+      // Cloud tab
+      cloud: { type: 'tuya-cloud', required: false },
       home: { value: '' },
       room: { value: '' },
-      name: { value: '' },
-      translate: { value: true },
+      // not configurable
       network: { value: '' },
       version: { value: 1 },
       language: { value: 'en' },
-      //MQTT
+      //MQTT tab
       broker: { type: 'tuya-mqtt-broker', required: false },
       fullTopic: { value: 'tuya/%topic%/%prefix%' },
       //Debug
@@ -226,7 +229,7 @@
         }
         tuya_devices.updateCache(this.name)
 
-        if (this.version !== 1) {
+        if (!this.version) {
           for (const user of this.users) tuya_devices.updateDeviceId(user)
           this._config.version = 1
           this.version = 1

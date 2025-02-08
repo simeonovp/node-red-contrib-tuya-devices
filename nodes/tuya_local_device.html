@@ -5,6 +5,10 @@
   <div id="node-config-input-tabs-content">
     <div id="tuya-settings-tab" style="display:none">
       <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+      </div>
+      <div class="form-row">
         <label for="node-config-input-project"><i class="fa fa-dot-circle-o"></i> Project</label>
         <input type="text" id="node-config-input-project">
       </div>
@@ -17,18 +21,30 @@
         <input type="text" id="node-config-input-localKey">
       </div>
       <div class="form-row">
-        <label for="node-config-input-gateway"><i class="fa fa-tag"></i> Gateway</label>
-        <input type="text" id="node-config-input-gateway">
+        <label for="node-config-input-netType"><i class="fa fa-wrench"></i> Net type</label>
+        <select name="node-config-input-netType" id="node-config-input-netType">
+          <option value="" selected disabled hidden>Auto</option>
+          <option value="0">Auto</option>
+          <option value="1">IP device</option>
+          <option value="2">Gateway</option>
+          <option value="3">GW Client</option>
+        </select>
       </div>
-      <div class="form-row">
-        <label for="node-config-input-cid"><i class="fa fa-tag"></i> Node uuid</label>
-        <input type="text" id="node-config-input-cid">
-      </div>
-      <div class="form-row">
-        <label for="node-config-input-autoStart"><i class="fa fa-tag"></i> Auto connect</label>
-        <input type="checkbox" id="node-config-input-autoStart">
+      <div id="tuya-wifi-client">
+        <div class="form-row">
+          <label for="node-config-input-gateway"><i class="fa fa-tag"></i> Gateway</label>
+          <input type="text" id="node-config-input-gateway">
+        </div>
+        <div class="form-row">
+          <label for="node-config-input-cid"><i class="fa fa-tag"></i> Node uuid</label>
+          <input type="text" id="node-config-input-cid">
+        </div>
       </div>
       <div id="tuya-wifi-device">
+        <div class="form-row">
+          <label for="node-config-input-autoStart"><i class="fa fa-tag"></i> Auto connect</label>
+          <input type="checkbox" id="node-config-input-autoStart">
+        </div>
         <div class="form-row">
           <label for="node-config-input-cacheAnnouncement"><i class="fa fa-tag"></i> Cache announcement</label>
           <input type="checkbox" id="node-config-input-cacheAnnouncement">
@@ -46,10 +62,6 @@
           <label for="node-config-input-port"><i class="fa fa-tag"></i> Port</label>
           <input type="text" id="node-config-input-port">
         </div>
-      </div>
-      <div class="form-row">
-        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-config-input-name" placeholder="Name">
       </div>
       <!-- <div class="form-row">
         <label for="node-config-input-fullTopic"><i class="fa fa-wrench"></i> MQTT topic</label>
@@ -73,6 +85,7 @@
       </div>
     </div>
     <div id="tuya-extension-tab" style="display:none">
+      <!-- TODO -->
     </div>
     <div id="tuya-advanced-tab" style="display:none">
       <div class="form-row">
@@ -92,8 +105,7 @@
         <input type="number" id="node-config-input-findTimeout">
       </div>
       <div class="form-row">
-        <label for="node-config-input-eventMode"><i class="fa fa-wrench"></i> Tuya events to listen</label
-        >
+        <label for="node-config-input-eventMode"><i class="fa fa-wrench"></i> Tuya events to listen</label>
         <select name="node-config-input-eventMode" id="node-config-input-eventMode">
           <option value="" disabled hidden>Both Events</option>
           <option value="event-data">Data Event</option>
@@ -134,26 +146,30 @@
     category: 'config',
     defaults: {
       // node specific
+      // Settings tab
+      name: { value: '', required: true },
       project: { type: 'tuya-project', required: true },
       deviceId: { value: '', required: true },
       localKey: { value: '', required: true },
-      home: { value: '' },
-      room: { value: '' },
+      netType: { value: 0 },
       gateway: { type: 'tuya-local-device', required: false },
       cid: { value: '' },
-      ip: { value: '' },
-      port: { value: 6668 },
-      deviceCategory: { value: '' },
-      tuyaVersion: { value: '' },
-      deviceMac: { value: '' },
       autoStart: { value: true, required: true },
       cacheAnnouncement: { value: true, required: true },
+      deviceMac: { value: '' },
+      ip: { value: '' },
+      port: { value: 6668 },
+      //not configurable
+      home: { value: '' },
+      room: { value: '' },
+      // Advanced tab
+      deviceCategory: { value: '' },
+      tuyaVersion: { value: '' },
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
       reinitOnLost: { value: false },
       eventMode: { value: 'event-both', required: true },
-      name: { value: '', required: true },
-      //Debug
+      // MISC tab
       dbgDevice: { value: false },
       dbgDeviceExtension: { value: false },
       dbgTuyaDevice: { value: false },
@@ -290,19 +306,38 @@
       tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
       let tabExtensionExists = false
 
-      //-- if (!this.tuyaVersion) $('#node-config-input-tuyaVersion').val(3.1)
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
 
+      if (!this.netType) {
+        //recognize device net type
+        const gateway = $('#node-config-input-gateway').val()
+        if (this.gateway || gateway && (gateway !== '_ADD_')) this.netType = 3 // GW client
+        $('#node-config-input-netType').val(this.netType)
+      }
+      //TODO use netType
+      // Business app data model
+      // All: has [id, activeTime, category, categoryCode, devAttribute, devId (== id), dpMaxTime, dpName, iconUrl, localKey, moduleMap, naem, productId, runtimeEnv, timezoneId, uuid, virtual], hasn't [devKey], optional: [lat, lon, mac, skills]
+      // 1: IP device: has [ip]
+      // 2: Gateway: has [ip, meshId, nodeId, topoType], topoType=0
+      // 3: GW client: has [meshId, nodeId, topoType], topoType=1
+      // Smart app data model
+      // All: has [id, active_time, category, category_name, create_time, local_key, name, online, owner_id, product_id, product_name, sub, time_zone, update_time, uuid, dataModel], optional: [lat, lon, model],
+      //  intern [deviceId, localKey, name, cloudDevice]
+      // 1: IP device: has [ip], hasn't [gateway, cid], sub=false
+      // 2: Gateway: has [ip], sub=true
+      // 3: GW client: has [gateway_id, node_id], sub=true
+
+      // show/hide config block for wifi devices
       const refreshGateway = () => {
         const gateway = $('#node-config-input-gateway').val()
-        if (gateway && (gateway !== '_ADD_')) {
+        if (this.netType == 3) { // GW client
           $('#tuya-wifi-device').hide()
-          $('#node-config-input-tuyaVersion').parent().hide()
+          $('#tuya-wifi-client').show()
         }
         else {
           $('#tuya-wifi-device').show()
-          $('#node-config-input-tuyaVersion').parent().show()
+          $('#tuya-wifi-client').hide()
         }
       }
       $('#node-config-input-gateway').on('change', refreshGateway)
@@ -481,6 +516,8 @@
         $('#node-config-input-tuyaVersion').val(this.tuyaVersion)
         this.ip = announcement?.ip || this.ip || ''
         $('#node-config-input-ip').val(this.ip)
+        if (this.ip) $('#node-config-input-web').show()
+        else $('#node-config-input-web').hide()
         $('#node-config-input-web').attr('href', this.ip && ('http://' + this.ip) || '') 
       })
     },
