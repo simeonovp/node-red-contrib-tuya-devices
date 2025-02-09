@@ -24,15 +24,6 @@ module.exports = function (RED) {
       this.dps = /*config.dps && config.dps.includes(',') && config.dps.split(',') ||*/ config.dps
       this.multiDps = !!config.multiDps
       this.outputsMode = (config.outputsMode === undefined) ? parseInt(config.outputs) : parseInt(config.outputsMode)
-      if (this.outputsMode === 3) {
-        this.outputs = {}
-        const properties = this.device.properties
-        this.outputsCount = properties.length + 1 // index 0 is for data output
-        for (const [index, value] of properties.entries()) {
-          if (!value?.abilityId) continue
-          this.outputs[value.abilityId] = index + 1
-        }
-      }
 
       this.deviceStatusHandler = this.onDeviceStatus.bind(this)
       this.deviceDataHandler = this.onDeviceData.bind(this)
@@ -56,7 +47,18 @@ module.exports = function (RED) {
       this.device.register(this)
       this.device.addListener('tuya-status', this.deviceStatusHandler)
       this.device.addListener('tuya-data', this.deviceDataHandler)
-   }
+
+      if (this.outputsMode === 3) {
+        this.outputs = {}
+        const properties = this.device.properties
+        this.outputsCount = properties.length + 1 // index 0 is for data output
+        for (const [index, value] of properties.entries()) {
+          const id = value?.id || value?.abilityId
+          if (!id) continue
+          this.outputs[id] = index + 1
+        }
+      }
+    }
 
     deinit() {
       if(!this.device) return
