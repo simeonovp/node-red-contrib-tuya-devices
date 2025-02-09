@@ -39,7 +39,7 @@
     "process-restarter": "^1.0.0",
     "request": "^2.88.2",
     "tuya-cloud-sdk-nodejs-ex": "^1.1.3",
-    "tuya-devices": "^1.1.12",
+    "tuya-devices": "^1.1.13",
     "tuyapi": "~7.5.1"
   },
   "devDependencies": {

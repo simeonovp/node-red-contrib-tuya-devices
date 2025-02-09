@@ -13,7 +13,6 @@ module.exports = function (RED) {
 
       this.debug = (DEBUG || config.dbgProject) ? this.log.bind(this) : (() => {})
       this.debug('config:' + JSON.stringify(config))
-
       config.name = config.name || 'default'
       const rootDir = path.resolve(path.join(__dirname, '../resources'))
       config.resDir = path.join(rootDir, config.name)

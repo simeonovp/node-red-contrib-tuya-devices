@@ -195,6 +195,7 @@
           this.getCloudDevice(device => {
             this._properties = []
             if (device?.productId) {
+              this.isBusinessModel = true
               if (!this.project) return console.error('project not configured: ' + this.project)
               const project = RED.nodes.node(this.project)
               project.getSchemas && project.getSchemas(schemas => {
@@ -207,6 +208,7 @@
               })
             }
             else if (device?.dataModel) {
+              this.isBusinessModel = false
               const project = RED.nodes.node(this.project)
               project.getModels && project.getModels(models => {
                 const services = models[device?.dataModel]
@@ -248,7 +250,7 @@
             this._ranges = {}
             if (Array.isArray(properties)) {
               for (const prop of properties) {
-                const propRange = prop.property ? prop.property.range : prop.typeSpec.range
+                const propRange = this.isBusinessModel ? prop.property?.range : prop.typeSpec?.range
                 if (propRange) {
                   const range = {}
                   for (let i = 0; i < propRange.length; i++) {

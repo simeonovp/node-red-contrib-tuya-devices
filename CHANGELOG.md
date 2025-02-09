@@ -1,3 +1,9 @@
+# v1.4.4
+- Add possibility do disable ARP
+- Update overloads schema to support BADM (business app data model)
+- Command getDataModel returns properties instead services, to support also BADM
+- Fixed error in cache if schema not found
+
 # v1.4.3
 - Fixed error on get properties in device GUI (due to typo)
 - Improve tuya_local_device GUI. Added netType to tuya_local_device settings
