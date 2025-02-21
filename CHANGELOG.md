@@ -1,3 +1,6 @@
+# v1.4.5
+- Fixed bug in the GUI on configure the cloud settings. After switch to business app was not possible to show the smart app settings again
+
 # v1.4.4
 - Add possibility do disable ARP
 - Update overloads schema to support BADM (business app data model)

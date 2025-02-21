@@ -1,7 +1,7 @@
 {
   "name": "node-red-contrib-tuya-devices",
   "description": "Use Tuya devices local in NodeRed",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "license": "MIT",
   "author": "Peter Simeonov",
   "keywords": [

@@ -86,7 +86,7 @@
       const selectAppSettings = () => {
         $('#tuya-smartapp-settings').hide()
         $('#tuya-businessapp-settings').hide()
-        if (!this.appType) {
+        if (!parseInt(this.appType)) {
           $('#tuya-smartapp-settings').show()
         }
         else {
