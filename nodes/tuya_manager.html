@@ -47,10 +47,29 @@
       <table id="model-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
         <thead>
           <tr id="table-head">
-            <th style="text-align:left;width:40%"><input type="text" value="Cloud id" style="width:100%" readonly></th>
+            <th style="text-align:left;width:40%"><input type="text" value="Model Id" style="width:100%" readonly></th>
             <th style="text-align:left;width:10%"><input type="text" value="Properties" style="width:100%" readonly></th>
-            <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
+            <th style="text-align:left"><input type="text" value="Model" style="width:100%" readonly></th>
             <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="tuya-scanner-devices-tab" style="display:none">
+      <div class="form-row">
+        <button type="button" id="scanner-devices" class="red-ui-button">
+          <i class="fa fa-refresh"></i> Refresh
+        </button>
+      </div>
+      <table id="scanner-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
+        <thead>
+          <tr id="table-head">
+            <th style="width:10%"><input type="text" value="Icon" style="width:100%" readonly></th>
+            <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
+            <th style="text-align:left;width:20%"><input type="text" value="IP address" style="width:100%" readonly></th>
+            <th style="text-align:left;width:10%"><input type="text" value="Version" style="width:100%" readonly></th>
+            <th style="text-align:left;width:30%"><input type="text" value="Model" style="width:100%" readonly></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -74,8 +93,8 @@
     paletteLabel: 'Manager',
     inputs: 1,
     outputs: 1,
-    label: function() { return this.name || 'Tuya Manager' },
-    oneditprepare: function() {
+    label: function () { return this.name || 'Tuya Manager' },
+    oneditprepare: function () {
       const tabs = RED.tabs.create({
         id: 'tuya-manager-tabs',
         onchange: function (tab) {
@@ -85,6 +104,7 @@
       })
       tabs.addTab({ id: 'tuya-manager-devices-tab', label: 'Devices' })
       tabs.addTab({ id: 'tuya-manager-models-tab', label: 'Models' })
+      tabs.addTab({ id: 'tuya-scanner-devices-tab', label: 'Scanner' })
 
       const addModelNode = (modelId, name) => {
         if (!modelId) return // invalid parameter, nothink to do
@@ -92,10 +112,10 @@
         if (modelNode) return modelNode // already exist, nothink to do
 
         $(`#add-node-${modelId}`).hide()
-          $(`#node-name-${modelId}`).attr('readonly','readonly')
-          name = $(`#node-name-${modelId}`).val() || name || ''
-          tuya_devices.addTuyaModel({modelId, name})
-          this.modelsDirty = true
+        $(`#node-name-${modelId}`).attr('readonly', 'readonly')
+        name = $(`#node-name-${modelId}`).val() || name || ''
+        tuya_devices.addTuyaModel({ modelId, name })
+        this.modelsDirty = true
       }
 
       const addDeviceNode = (deviceId) => { // !!! devId is cloud device id, not the node id of local device node
@@ -106,13 +126,13 @@
         if (!cloudDevice) return // device not exists in the DB
 
         $(`#add-node-${deviceId}`).hide()
-        $(`#node-name-${deviceId}`).attr('readonly','readonly')
+        $(`#node-name-${deviceId}`).attr('readonly', 'readonly')
         const name = $(`#node-name-${deviceId}`).val() || ''
 
         const isBusinessModel = !!cloudDevice.devId
-        
+
         const businessDevice = () => {
-          return { 
+          return {
             activeTime: 0,
             category: '',
             categoryCode: '',
@@ -121,7 +141,7 @@
             devKey: '',
             dpMaxTime: 0,
             dpName: {},
-            dps: { },
+            dps: {},
             iconUrl: '',
             ip: '',
             lat: '',
@@ -138,12 +158,12 @@
             topoType: 0,
             uuid: '',
             virtual: false,
-            ...cloudDevice 
+            ...cloudDevice
           }
         }
 
-        const smartDevice = () => { 
-          return { 
+        const smartDevice = () => {
+          return {
             // identification:
             id: '',
             local_key: '',
@@ -172,41 +192,40 @@
             create_time: 0,
             update_time: 0,
             online: false,
-            ...cloudDevice 
+            ...cloudDevice
           }
         }
 
         const modelId = isBusinessModel ? cloudDevice.productId : cloudDevice.dataModel
         if (modelId) addModelNode(modelId, cloudDevice.name)
 
-        const devConfig = { 
-          project: this.project, 
-          deviceId: '', 
+        const devConfig = {
+          project: this.project,
+          deviceId: '',
           localKey: '',
           netType: 0,
           gateway: '',
           cid: '',
           name: cloudDevice.name || '',
           cloudDevice: null,
-          mac: this.announcements?.[deviceId]?.mac || '', 
+          mac: this.announcements?.[deviceId]?.mac || '',
         }
 
         if (isBusinessModel) {
           devConfig.deviceId = cloudDevice.devId
           devConfig.localKey = cloudDevice.localKey
-          switch (cloudDevice.topoType)
-          {
-          case 0:
-            devConfig.netType = 2 // Gateway
-            break
-          case 1:
-            devConfig.netType = 3 // Gateway client
-            devConfig.gateway = cloudDevice.meshId
-            devConfig.cid = cloudDevice.nodeId
-            addDeviceNode(gateway)
-            break
-          default:
-            devConfig.netType = 1 // IP device
+          switch (cloudDevice.topoType) {
+            case 0:
+              devConfig.netType = 2 // Gateway
+              break
+            case 1:
+              devConfig.netType = 3 // Gateway client
+              devConfig.gateway = cloudDevice.meshId
+              devConfig.cid = cloudDevice.nodeId
+              addDeviceNode(gateway)
+              break
+            default:
+              devConfig.netType = 1 // IP device
           }
           devConfig.mac = cloudDevice.mac
         }
@@ -220,47 +239,85 @@
               devConfig.cid = cloudDevice.node_id || cloudDevice.cid || ''
               addDeviceNode(gateway)
             }
-            else if(cloudDevice) {
+            else if (cloudDevice) {
               devConfig.netType = 2 // Gateway
             }
           }
-          else if(cloudDevice.ip) {
+          else if (cloudDevice.ip) {
             devConfig.netType = 1 // IP device
           }
         }
-       
+
         tuya_devices.addLocalDevice(devConfig)
         this.devicesDirty = true
       }
 
+      // recognize text color for not readonly
+      const tempInput = document.createElement('input')
+      document.body.appendChild(tempInput)
+      const textColor = window.getComputedStyle(tempInput).color
+      document.body.removeChild(tempInput)
+
+      document.querySelectorAll('#model-table thinput').forEach(input => {
+        input.style.color = textColor
+      })
+
       const refreshModels = () => {
         const models = this.models
         const schemas = this.schemas
-        if (!models && !schemas) return $('#model-table').html('')
+        if (!models && !schemas) return $('#model-table > tbody').empty()
 
-        const getModelRow = (modelId, propCount, nodeName, nodeModelId) => {
-          return `
-            <tr>
-              <td><input type="text" value="${modelId}" style="width:100%" readonly></td>
-              <td><input type="text" value="${propCount}" style="width:100%" readonly></td>
-              <td><input type="text" id="node-name-${modelId}" value="${nodeName}" style="width:100%"${nodeModelId && ' readonly' || ''}></td>
-              <td>
-                <button type="button" id="add-node-${modelId}" ${nodeModelId && 'hidden' || 'class="red-ui-button"'}>
-                  <i class="fa fa-plus"></i>
-                </button>
-              </td>
-            </tr>
-          `
+        const getModelRow = (modelId, propCount, modelName, nodeModelId) => {
+          const row = document.createElement('tr')
+
+          const createInputCell = (value, isReadonly) => {
+            const td = document.createElement('td')
+            const input = document.createElement('input')
+
+            input.type = 'text'
+            input.value = value
+            input.style.width = '100%'
+            input.readOnly = isReadonly
+            input.style.color = textColor
+
+            td.appendChild(input)
+            return td
+          }
+
+          row.appendChild(createInputCell(modelId, true))
+          row.appendChild(createInputCell(propCount, true))
+          const nameTd = createInputCell(modelName, !!nodeModelId)
+          nameTd.firstChild.id = `node-name-${modelId}`
+          row.appendChild(nameTd)
+
+          const buttonTd = document.createElement('td')
+          const button = document.createElement('button')
+          button.type = 'button'
+          button.id = `add-node-${modelId}`
+
+          if (nodeModelId) {
+            button.hidden = true
+          }
+          else {
+            button.classList.add('red-ui-button')
+            const icon = document.createElement('i')
+            icon.classList.add('fa', 'fa-plus')
+            button.appendChild(icon)
+          }
+
+          buttonTd.appendChild(button)
+          row.appendChild(buttonTd)
+          return row
         }
 
         const tbody = $('#model-table > tbody')
-        tbody.html('')
-        const ilist = []
+        tbody.empty()
+        const fragment = document.createDocumentFragment()
         if (schemas) {
           for (const schema of Object.values(schemas)) {
             const propCount = schema.schemaInfo?.schema?.length || 0
             const quickOpDps = schema.shortcut?.quickOpDps.length || 0
-            ilist.push(getModelRow(schema.id, `${propCount} (${quickOpDps})`, `${schema.category} (${schema.categoryCode})`, schema.id,))
+            fragment.appendChild(getModelRow(schema.id, `${propCount} (${quickOpDps})`, `${schema.category} (${schema.categoryCode})`, schema.id,))
           }
         }
         if (models) {
@@ -273,14 +330,15 @@
             if (serviceCount) services.forEach(service => {
               propCount += (service.properties?.length || 0)
             });
-            ilist.push(getModelRow(modelId, propCount, node.name, node.modelId))
+            fragment.appendChild(getModelRow(modelId, propCount, node.name, node.modelId))
           }
         }
-        tbody.append(ilist.join(''))
+        tbody.append(fragment)
+        tbody.on('click', '.red-ui-button', function() {
+          const modelId = this.id.replace('add-node-', '') // ID auslesen
+          addModelNode(modelId)
+        })
         this.modelsDirty = false
-        for (const modelId in models) {
-          $(`#add-node-${modelId}`).click(() => addModelNode(modelId))
-        }
       }
 
       const refreshDevicesHeaders = () => {
@@ -295,7 +353,6 @@
         ]
 
         const tr = document.createElement('tr')
-        // headers.forEach(header => {
         const addHeader = (header) => {
           const th = document.createElement('th')
 
@@ -307,6 +364,7 @@
           input.value = header.text
           input.style.width = '100%'
           input.readOnly = true
+          input.style.color = textColor
 
           th.appendChild(input)
           tr.appendChild(th)
@@ -316,14 +374,18 @@
         $headers.appendChild(tr)
       }
 
+      document.querySelectorAll('#device-table th input').forEach(input => {
+        input.style.color = textColor
+      })
+
       const refreshDevices = () => {
         this.devicesDirty = false
         if (!this.cloudDevices) return $('#device-table').html('')
         const projectRoom = this.projectNode?.room
         const getRoom = (deviceId) => {
-          if(this.homes) {
+          if (this.homes) {
             for (const home of Object.values(this.homes)) {
-              if(home.rooms) {
+              if (home.rooms) {
                 for (const room of Object.values(home.rooms)) {
                   if (room.devices?.hasOwnProperty(deviceId)) return room
                 }
@@ -331,10 +393,61 @@
             }
           }
         }
+
+        const createInputCell = (value, readOnly = true, width = '100%', id = '') => {
+          const td = document.createElement('td')
+          const input = document.createElement('input')
+          input.type = 'text'
+          input.value = value
+          input.style.width = width
+          input.readOnly = readOnly
+          input.style.color = textColor
+          if (id) input.id = id
+          td.appendChild(input)
+          return td
+        }
         
+        const getDeviceRow = (shapshotUri, cloudDevice, node, deviceId, room) => {
+          const tr = document.createElement('tr')
+
+          const td1 = document.createElement('td')
+          const inputImage = document.createElement('input')
+          inputImage.type = 'image'
+          inputImage.src = shapshotUri
+          inputImage.name = cloudDevice.name
+          inputImage.width = 48
+          inputImage.height = 48
+          inputImage.alt = cloudDevice.name
+          td1.appendChild(inputImage)
+          tr.appendChild(td1)
+
+          tr.appendChild(createInputCell(cloudDevice.name))
+          tr.appendChild(createInputCell(node.name, node.deviceId ? true : false, '100%', `node-name-${deviceId}`))
+          tr.appendChild(createInputCell(room?.name || '', true))
+          tr.appendChild(createInputCell(cloudDevice.category || '', true))
+
+          const td6 = document.createElement('td')
+          const button = document.createElement('button')
+          button.type = 'button'
+          button.id = `add-node-${deviceId}`
+          if (node.deviceId) {
+            button.hidden = true
+          }
+          else {
+            button.classList.add('red-ui-button')
+          }
+          const icon = document.createElement('i')
+          icon.classList.add('fa', 'fa-plus')
+          button.appendChild(icon)
+          td6.appendChild(button)
+          tr.appendChild(td6)
+
+          return tr
+        }
+
         const tbody = $('#device-table > tbody')
-        tbody.html('')
-        const ilist = []
+        tbody.empty()
+        const fragment = document.createDocumentFragment()
         const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
         for (const deviceId in this.cloudDevices) {
           const room = getRoom(deviceId)
@@ -343,22 +456,9 @@
           const iconPath = cloudDevice.icon || new URL(cloudDevice.iconUrl).pathname.substring(1)
           const shapshotUri = `${resDir}icons/${iconPath}`
           const node = RED.nodes.node(tuya_devices.deviceNodeId(deviceId)) || { name: cloudDevice.name }
-          ilist.push(`
-            <tr>
-              <td><input type="image" src="${shapshotUri}" name="${cloudDevice.name}" width="48" height="48" alt="${cloudDevice.name}"/></td>
-              <td><input type="text" value="${cloudDevice.name}" style="width:100%" readonly></td>
-              <td><input type="text" id="node-name-${deviceId}" value="${node.name}" style="width:100%"${node.deviceId && ' readonly' || ''}></td>
-              <td><input type="text" value="${room?.name || ''}" style="width:100%" readonly></td>
-              <td><input type="text" value="${cloudDevice.category || ''}" style="width:100%" readonly></td>
-              <td>
-                <button type="button" id="add-node-${deviceId}" ${node.deviceId && 'hidden' || 'class="red-ui-button"'}>
-                  <i class="fa fa-plus"></i>
-                </button>
-              </td>
-            </tr>
-          `)
+          fragment.appendChild(getDeviceRow(shapshotUri, cloudDevice, node, deviceId, room))
         }
-        tbody.append(ilist.join(''))
+        tbody.append(fragment)
 
         for (const deviceId in this.cloudDevices) {
           const cloudDevice = this.cloudDevices[deviceId]
@@ -437,16 +537,95 @@
         }
       }
 
+      document.querySelectorAll('#scanner-table th input').forEach(input => {
+        input.style.color = textColor
+      })
+
+      const refreshScannerDevices = (data) => {
+        const devices = data.payload
+        //console.log('-- refreshScannerDevices: ' + JSON.stringify(devices))
+        const createInputCell = (value, readOnly = true, width = '100%', id = '') => {
+          const td = document.createElement('td')
+          const input = document.createElement('input')
+          input.type = 'text'
+          input.value = value
+          input.style.width = width
+          input.readOnly = readOnly
+          input.style.color = textColor
+          if (id) input.id = id
+          td.appendChild(input)
+          return td
+        }
+        
+        const getDeviceRow = (shapshotUri, deviceName, deviceIp, version, model) => {
+          const tr = document.createElement('tr')
+
+          const td1 = document.createElement('td')
+          const inputImage = document.createElement('input')
+          inputImage.type = 'image'
+          inputImage.src = shapshotUri
+          inputImage.name = deviceName
+          inputImage.width = 48
+          inputImage.height = 48
+          inputImage.alt = deviceName
+          td1.appendChild(inputImage)
+          tr.appendChild(td1)
+
+          tr.appendChild(createInputCell(deviceName))
+          tr.appendChild(createInputCell(deviceIp))
+          tr.appendChild(createInputCell(version))
+          tr.appendChild(createInputCell(model))
+          return tr
+        }
+
+        const tbody = $('#scanner-table > tbody')
+        tbody.empty()
+        const fragment = document.createDocumentFragment()
+        const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
+
+        for (const deviceId in devices) {
+          // "bf01c66f8d3c1511e24ux8": {
+          //#required:
+          //    "ip": "192.168.193.135",
+          //    "gwId": "bf01c66f8d3c1511e24ux8",
+          //    "active": 2,
+          //    "ablilty": 0,
+          //    "encrypt": true,
+          //    "productKey": "keym557nqw3p8p7m",
+          //    "version": "3.4",
+          //#optional
+          //    "lan_cap": 500,
+          //    "lan_seq": 0,
+          //    "lan_ablilty": 1,
+          //    "token": true,
+          //    "wf_cfg": true,
+          //    "clientLink": 3
+          //  }, 
+          const device = devices[deviceId]
+          const cloudDevice = this.cloudDevices[deviceId]
+          const iconPath = cloudDevice ? (cloudDevice.icon || new URL(cloudDevice.iconUrl).pathname.substring(1)) : ''
+          const shapshotUri = iconPath ? `${resDir}icons/${iconPath}` : ''
+          const deviceName = cloudDevice?.name || ''
+          const schema = this.schemas[device.productKey]
+          const model = schema ? `${schema.category} (${schema.categoryCode})` : ''
+          fragment.appendChild(getDeviceRow(shapshotUri, deviceName, device.ip, device.version, model))
+        }
+        tbody.append(fragment)
+
+      }
+
       refresh()
+      tuya_devices.sendMsg(this, { topic: 'scannerDevices' }, (resp) => { })
 
       $('#refresh-devices').click(() => {
         refresh(true)
         this.projectNode.updateDevices(this)
       })
-      
-      $('#update-home').click(() => { tuya_devices.sendMsg(this, {topic: 'updateHome'}, (resp) => {})})
-      $('#clear-cache').click(() => { tuya_devices.sendMsg(this, {topic: 'clearCache'}, (resp) => {})})
-      $('#backup-cache').click(() => { tuya_devices.sendMsg(this, {topic: 'backupCache'}, (resp) => {})})
+
+      $('#update-home').click(() => { tuya_devices.sendMsg(this, { topic: 'updateHome' }, (resp) => { }) })
+      $('#clear-cache').click(() => { tuya_devices.sendMsg(this, { topic: 'clearCache' }, (resp) => { }) })
+      $('#backup-cache').click(() => { tuya_devices.sendMsg(this, { topic: 'backupCache' }, (resp) => { }) })
+      $('#scanner-devices').click(() => { tuya_devices.sendMsg(this, { topic: 'scannerDevices' }, (resp) => { }) })
 
       const downloadCache = () => {
         const resDir = this.projectNode.resDir && this.projectNode.resDir() || ''
@@ -459,7 +638,7 @@
         const hours = String(now.getHours()).padStart(2, '0')
         const minutes = String(now.getMinutes()).padStart(2, '0')
         const seconds = String(now.getSeconds()).padStart(2, '0')
-        const filename =  `cache_${year}${month}${day}-${hours}${minutes}${seconds}.zip`
+        const filename = `cache_${year}${month}${day}-${hours}${minutes}${seconds}.zip`
 
         const link = document.createElement('a')
         link.href = resDir + 'backup/cache.zip'
@@ -481,34 +660,37 @@
           const parts = topic.split('/')
           if (parts[1] !== this.id) return
           switch (payload?.topic) {
-          case 'updateDevices':
-            console.log('notification for updateDevices')
-            this.models = null
-            this.schemas = null
-            this.cloudDevices = null
-            this.homes = null
-            this.announcements = null
-            refresh()
-            break
-          case 'clearCache':
-            console.log('notification for clearCache')
-            break
-          case 'backupCache':
-            console.log('notification for backupCache')
-            if (payload) downloadCache()
-            break
-          case 'userId': //???
-            console.log('notification for userId')
-            if (this.projectNode?.cloud) {
-              const cloud = RED.nodes.node(this.projectNode?.cloud)
-              if (cloud && !cloud.userId) {
-                cloud.userId = payload
-                cloud.dirty(true)
+            case 'updateDevices':
+              console.log('notification for updateDevices')
+              this.models = null
+              this.schemas = null
+              this.cloudDevices = null
+              this.homes = null
+              this.announcements = null
+              refresh()
+              break
+            case 'clearCache':
+              console.log('notification for clearCache')
+              break
+            case 'backupCache':
+              console.log('notification for backupCache')
+              if (payload) downloadCache()
+              break
+            case 'scannerDevices':
+              refreshScannerDevices(payload.payload)
+              break
+            case 'userId': //???
+              console.log('notification for userId')
+              if (this.projectNode?.cloud) {
+                const cloud = RED.nodes.node(this.projectNode?.cloud)
+                if (cloud && !cloud.userId) {
+                  cloud.userId = payload
+                  cloud.dirty(true)
+                }
               }
-            }
-            break
-          default:
-            console.log('unknown notification for ' + payload?.topic)
+              break
+            default:
+              console.log('unknown notification for ' + payload?.topic)
           }
         }).bind(this)
         RED.comms.subscribe(notificationTopic, this.notificationHandler)
@@ -516,10 +698,10 @@
 
       this.subscribe()
     },
-    oneditsave: function() {
+    oneditsave: function () {
       this.unsubscribe()
     },
-    oneditcancel: function() {
+    oneditcancel: function () {
       this.unsubscribe()
     },
   })

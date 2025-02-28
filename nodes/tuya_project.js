@@ -45,7 +45,7 @@ module.exports = function (RED) {
         if (this.cloudNode?.type === 'tuya-cloud') {
           this.debug('link cloud')
           this.cloud = this.cloudNode?.cloud
-          if (!this.cloud) this.error('cloud object is ' + this.cloud)
+          if (!this.cloud && !this.cloudNode?.cloudApi) this.error('cloud object is ' + this.cloud)
           else if (config.dbgCloud) this.cloud.debug = this.cloud.log
         }
         else {

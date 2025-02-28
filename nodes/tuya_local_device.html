@@ -54,8 +54,12 @@
           <input type="text" id="node-config-input-deviceMac">
         </div>
         <div class="form-row">
+          <label for="node-config-input-staticIp"><i class="fa fa-tag"></i> Static IP</label>
+          <input type="checkbox" id="node-config-input-staticIp">
+        </div>
+        <div class="form-row">
           <label for="node-config-input-ip"><i class="fa fa-tag"></i> IP address</label>
-          <input type="text" id="node-config-input-ip">
+          <input type="text" id="node-config-input-ip" readonly>
           <a id="node-config-input-web" href="" target="_blank"> Web</a>
         </div>
         <div class="form-row">
@@ -157,6 +161,7 @@
       autoStart: { value: true, required: true },
       cacheAnnouncement: { value: true, required: true },
       deviceMac: { value: '' },
+      staticIp: { value: false },
       ip: { value: '' },
       port: { value: 6668 },
       //not configurable
@@ -311,7 +316,7 @@
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
 
-      if (!this.netType) {
+      if (!!parseInt(this.netType)) {
         //recognize device net type
         const gateway = $('#node-config-input-gateway').val()
         if (this.gateway || gateway && (gateway !== '_ADD_')) this.netType = 3 // GW client
@@ -333,7 +338,7 @@
       // show/hide config block for wifi devices
       const refreshGateway = () => {
         const gateway = $('#node-config-input-gateway').val()
-        if (this.netType == 3) { // GW client
+        if (this.netType == '3') { // GW client
           $('#tuya-wifi-device').hide()
           $('#tuya-wifi-client').show()
         }
@@ -343,6 +348,16 @@
         }
       }
       $('#node-config-input-gateway').on('change', refreshGateway)
+
+      if (this.staticIp) $('#node-config-input-ip').removeAttr('readonly')
+      $('#node-config-input-staticIp').on('change', () => {
+        if ($('#node-config-input-staticIp').is(':checked')) {
+          $('#node-config-input-ip').removeAttr('readonly')
+        }
+        else {
+          $('#node-config-input-ip').attr('readonly','readonly')
+        }
+      })
 
       const updateDpsTable = (properties) => {
         const el = $('#dps-table > tbody')
@@ -536,6 +551,7 @@
         this.deviceMac = this.deviceMac || announcement?.mac || ''
         this.deviceCategory = this.deviceCategory || ''
       })
+      if (this.staticIp === undefined) this.staticIp = false
     }
   })
 </script>

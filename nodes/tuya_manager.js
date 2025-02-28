@@ -48,21 +48,6 @@ module.exports = function (RED) {
               done()
             } catch(err) { done(err.stack || err) }
             break;
-          // case 'updateDevices':
-          //   try {
-          //     (async ()=> {
-          //       await this.project.updateCache()
-          //       this.sendToFrontend({topic: msg.topic, payload: 'update'}) // notify frontend to refresh resources
-          //       done()
-          //     })()
-          //   } 
-          //   catch(err) {
-          //     this.error(`on input ${msg.topic} error:` + err)
-          //     msg.error = err
-          //     this.sendToFrontend(msg)
-          //     done()
-          //   }
-          //   break
           case 'updateDeviceDataModel':
             msg.topic = 'updateAllModels'
             return this.tryProjectCommand(msg, send, done)
@@ -88,6 +73,7 @@ module.exports = function (RED) {
           case 'updateDevices':
           case 'backupCache':
           case 'clearCache':
+          case 'scannerDevices':
             this.sendToFrontend({topic: msg.topic, payload: msg}) // notify frontend
             break
         }
