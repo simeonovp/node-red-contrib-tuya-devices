@@ -316,7 +316,7 @@
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
 
-      if (!!parseInt(this.netType)) {
+      if (!parseInt(this.netType)) {
         //recognize device net type
         const gateway = $('#node-config-input-gateway').val()
         if (this.gateway || gateway && (gateway !== '_ADD_')) this.netType = 3 // GW client
