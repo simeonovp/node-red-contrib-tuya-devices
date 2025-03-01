@@ -49,7 +49,7 @@
           <tr id="table-head">
             <th style="text-align:left;width:40%"><input type="text" value="Model Id" style="width:100%" readonly></th>
             <th style="text-align:left;width:10%"><input type="text" value="Properties" style="width:100%" readonly></th>
-            <th style="text-align:left"><input type="text" value="Model" style="width:100%" readonly></th>
+            <th style="text-align:left"><input type="text" value="Category / Category Code" style="width:100%" readonly></th>
             <th style="width:10%"></th>
           </tr>
         </thead>
@@ -315,8 +315,8 @@
         const fragment = document.createDocumentFragment()
         if (schemas) {
           for (const schema of Object.values(schemas)) {
-            const propCount = schema.schemaInfo?.schema?.length || 0
-            const quickOpDps = schema.shortcut?.quickOpDps.length || 0
+            const propCount = Object.keys(schema.schemaInfo?.schema || {}).length || 0
+            const quickOpDps = Object.keys(schema.shortcut?.quickOpDps || {}).length || 0
             fragment.appendChild(getModelRow(schema.id, `${propCount} (${quickOpDps})`, `${schema.category} (${schema.categoryCode})`, schema.id,))
           }
         }
