@@ -1,5 +1,3 @@
-const TuyaDevice = require('tuyapi')
-
 module.exports = function (RED) {
   'use strict'
 
