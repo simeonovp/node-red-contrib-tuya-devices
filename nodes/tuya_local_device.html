@@ -205,10 +205,8 @@
               const project = RED.nodes.node(this.project)
               project.getSchemas && project.getSchemas(schemas => {
                 const schema = schemas && schemas[device.productId]?.schemaInfo?.schema
-                if (Array.isArray(schema)) {
-                  for (const prop of schema) {
-                    this._properties.push(prop)
-                  }
+                if (typeof schema === 'object') {
+                  this._properties = Object.values(schema)
                 }
               })
             }
@@ -319,7 +317,7 @@
       if (!parseInt(this.netType)) {
         //recognize device net type
         const gateway = $('#node-config-input-gateway').val()
-        if (this.gateway || gateway && (gateway !== '_ADD_')) this.netType = 3 // GW client
+        if (this.gateway || gateway && (gateway !== '_ADD_')) this.netType = '3' // GW client
         $('#node-config-input-netType').val(this.netType)
       }
       //TODO use netType
