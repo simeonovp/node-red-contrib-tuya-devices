@@ -67,9 +67,10 @@
           <tr id="table-head">
             <th style="width:10%"><input type="text" value="Icon" style="width:100%" readonly></th>
             <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
-            <th style="text-align:left;width:20%"><input type="text" value="IP address" style="width:100%" readonly></th>
+            <th style="text-align:left;width:15%"><input type="text" value="IP address" style="width:100%" readonly></th>
             <th style="text-align:left;width:10%"><input type="text" value="Version" style="width:100%" readonly></th>
-            <th style="text-align:left;width:30%"><input type="text" value="Model" style="width:100%" readonly></th>
+            <th style="text-align:left;width:20%"><input type="text" value="Model" style="width:100%" readonly></th>
+            <th style="text-align:left;width:25%"><input type="text" value="Time" style="width:100%" readonly></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -218,12 +219,14 @@
             case 0:
               devConfig.netType = 2 // Gateway
               break
-            case 1:
+            case 1: {
               devConfig.netType = 3 // Gateway client
-              devConfig.gateway = cloudDevice.meshId
+              const gwNode = addDeviceNode(cloudDevice.meshId)
+              if (gwNode) devConfig.gateway = gwNode.id
               devConfig.cid = cloudDevice.nodeId
-              addDeviceNode(gateway)
+              addDeviceNode(devConfig.gateway)
               break
+            }
             default:
               devConfig.netType = 1 // IP device
           }
@@ -235,9 +238,10 @@
           if (cloudDevice.sub) {
             if (cloudDevice.gateway_id) {
               devConfig.netType = 3 // Gateway client
-              devConfig.gateway = cloudDevice.gateway_id
+              const gwNode = addDeviceNode(cloudDevice.gateway_id)
+              if (gwNode) devConfig.gateway = gwNode.id
               devConfig.cid = cloudDevice.node_id || cloudDevice.cid || ''
-              addDeviceNode(gateway)
+              addDeviceNode(devConfig.gateway)
             }
             else if (cloudDevice) {
               devConfig.netType = 2 // Gateway
@@ -557,7 +561,7 @@
           return td
         }
         
-        const getDeviceRow = (shapshotUri, deviceName, deviceIp, version, model) => {
+        const getDeviceRow = (shapshotUri, deviceName, deviceIp, version, model, timestamp) => {
           const tr = document.createElement('tr')
 
           const td1 = document.createElement('td')
@@ -575,6 +579,7 @@
           tr.appendChild(createInputCell(deviceIp))
           tr.appendChild(createInputCell(version))
           tr.appendChild(createInputCell(model))
+          tr.appendChild(createInputCell(timestamp))
           return tr
         }
 
@@ -608,7 +613,8 @@
           const deviceName = cloudDevice?.name || ''
           const schema = this.schemas[device.productKey]
           const model = schema ? `${schema.category} (${schema.categoryCode})` : ''
-          fragment.appendChild(getDeviceRow(shapshotUri, deviceName, device.ip, device.version, model))
+          const timestamp = device.timestamp ? new Date(device.timestamp).toLocaleString() : ''
+          fragment.appendChild(getDeviceRow(shapshotUri, deviceName, device.ip, device.version, model, timestamp))
         }
         tbody.append(fragment)
 

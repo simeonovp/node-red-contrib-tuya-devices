@@ -17,10 +17,6 @@
         <input type="text" id="node-config-input-deviceId">
       </div>
       <div class="form-row">
-        <label for="node-config-input-localKey"><i class="fa fa-tag"></i> Local key</label>
-        <input type="text" id="node-config-input-localKey">
-      </div>
-      <div class="form-row">
         <label for="node-config-input-netType"><i class="fa fa-wrench"></i> Net type</label>
         <select name="node-config-input-netType" id="node-config-input-netType">
           <option value="" selected disabled hidden>Auto</option>
@@ -41,6 +37,10 @@
         </div>
       </div>
       <div id="tuya-wifi-device">
+        <div class="form-row">
+          <label for="node-config-input-localKey"><i class="fa fa-tag"></i> Local key</label>
+          <input type="text" id="node-config-input-localKey">
+        </div>
         <div class="form-row">
           <label for="node-config-input-autoStart"><i class="fa fa-tag"></i> Auto connect</label>
           <input type="checkbox" id="node-config-input-autoStart">
@@ -154,7 +154,7 @@
       name: { value: '', required: true },
       project: { type: 'tuya-project', required: true },
       deviceId: { value: '', required: true },
-      localKey: { value: '', required: true },
+      localKey: { value: '' },
       netType: { value: 0 },
       gateway: { type: 'tuya-local-device', required: false },
       cid: { value: '' },

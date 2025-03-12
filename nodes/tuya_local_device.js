@@ -15,7 +15,7 @@ module.exports = function (RED) {
       if (config.gateway) {
         this.gatewayNode = RED.nodes.getNode(config.gateway)
         if (!this.gatewayNode || ((this.gatewayNode.type !== 'tuya-local-device'))) {
-          this.error(`LocalDevice configuration is wrong or missing, please review the node settings, 
+          this.error(`LocalDevice GW configuration is wrong or missing, please review the node settings, 
             id:${config.gateway}
             node:${this.gatewayNode}
             type:${typeof this.gatewayNode?.type}`)
