@@ -1,5 +1,9 @@
 <script type="text/html" data-template-name="tuya-device">
   <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>  
+  <div class="form-row">
     <label for="node-input-device"><i class="fa fa-dot-circle-o"></i> Device</label>
     <input type="text" id="node-input-device">
     <datalist id="list-avail-devices"></datalist>
@@ -9,10 +13,6 @@
     <select id="node-input-dps" style="width:120px !important"></select>
   </div>
   <div class="form-row">
-    <label for="node-input-multiDps"><i class="fa fa-tag"></i> Multi DP messages</label>
-    <input type="checkbox" id="node-input-multiDps">
-  </div>
-  <div class="form-row">
     <label for="node-input-outputsMode"><i class="fa fa-random"></i> Outputs</label>
     <select id="node-input-outputsMode">
       <option value="" selected disabled hidden>Single output (data)</option>
@@ -20,11 +20,9 @@
       <option value="2">Use status output</option>
       <option value="3">Multi outputs (data + dps)</option>
     </select>
-  </div>  
-  <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name">
-  </div>  
+  </div>
+  <div class="form-row" id="output-selection">
+  </div>
 </script>
 
 <script type="text/html" data-help-name="tuya-device">
@@ -42,14 +40,27 @@
       outputs: { value: 1 },
       outputsMode: { value: 1 },
       outputLabelList: { value: ['data', 'status1'] },
+      outputSelList: { value: undefined },
     },
     icon: 'tuya-device.svg',
     paletteLabel: 'Device',
     inputs: 1,
     outputs: 2,
     outputLabels: function (index) {
-      return Array.isArray(this.outputLabelList) && (index < this.outputLabelList.length)
-        ? this.outputLabelList[index] : ''
+      if (!this.outputSelList || (this.outputsMode < 3)) {
+        return Array.isArray(this.outputLabelList) && (index < this.outputLabelList.length)
+          ? this.outputLabelList[index] : ''
+      }
+      if (!this._outputLabels) {
+        this._outputLabels = []
+        for (const [idx, checked] of this.outputSelList.entries()) {
+          if (checked) {
+            this._outputLabels.push(this.outputLabelList[idx])
+          }
+        }
+      }
+      return (index < this._outputLabels.length)
+        ? this._outputLabels[index] : ''
     },
     label: function () { 
       const nameFromDev = (devName) => devName && this.dps && `${devName}_${this.dps}` || devName
@@ -65,19 +76,56 @@
         fillDeviceProperties()
       }
 
+      //output-selection
+      const updateOutputSelection = (labelList) => {
+        $el = $('#output-selection')
+        $el.empty()
+        if (this.outputsMode < 3) return
+        
+        if (this.outputSelList === undefined) {
+          this.outputSelList = Array.from({ length: labelList.length }, () => true)
+          //RED.nodes.dirty(true)
+        }
+        this.outputs = 1
+        labelList.forEach((label, idx) => {
+          if (!idx) return // skip 'data' output
+          const id = `checkbox${idx}`
+          const checked = this.outputSelList[idx] || false
+          if (checked) ++this.outputs
+          $('<div>', { class: 'form-row' }).append(
+            $('<input>', { type: 'checkbox', id, value: label, checked,
+                style: 'display: inline-block; width: auto; vertical-align: top;' })
+              .on('change', (event) => { 
+                this.outputSelList[idx] = event.target.checked
+                $(event.target).prop('checked', this.outputSelList[idx])
+                setTimeout(() => {
+                  // if (RED && RED.view) RED.view.dirty(true);
+                  // else console.error("RED.view nicht verfügbar!");
+                  RED.nodes.dirty(true)
+                  updateOutputSelection(labelList)
+                }, 10)
+              }),
+            $('<label>', { 'for': id, text: label, style: 'width: auto;' })
+          ).appendTo($el)
+        })
+      }
+
       const updateOutputs = (properties, labelList) => {
-        if (this.outputsMode == '1') {
+        if (!this.outputsMode) this.outputsMode = 3
+        if (typeof this.outputsMode === 'string') this.outputsMode = parseInt(this.outputsMode)
+        if (this.outputsMode === 1) {
           this.outputs = 1
           this.outputLabelList = ['data']
         }
-        else if (this.outputsMode == '2') {
+        else if (this.outputsMode === 2) {
           this.outputs = 2
           this.outputLabelList = ['data', 'status']
         }
-        else if (this.outputsMode == '3') {
+        else if (this.outputsMode === 3) {
           this.outputs = labelList.length
           this.outputLabelList = labelList
         }
+        updateOutputSelection(labelList)
       }
 
       const updateDpsList = (properties) => {
@@ -114,17 +162,10 @@
         })
       }
 
-      if (typeof this.outputLabels !== 'function') { // dirty fix for nodes saved with v1.3.x
-        if (Array.isArray(this.outputLabels)) this.outputLabelList = this.outputLabels
-        if (this.outputLabels) {
-          const _def = RED.nodes.getType('tuya-device')
-          if (!_def) console.error(`Config node type 'tuya-device' not registered`)
-          else this.outputLabels = _def.outputLabels.bind(this)
-        }
-      }
       $('#node-input-device').change(()=>onChangeDevice())
       $('#node-input-outputsMode').change(()=>{
         this.outputsMode = $('#node-input-outputsMode').val()
+        if (typeof this.outputsMode === 'string') this.outputsMode = parseInt(this.outputsMode)
         fillDeviceProperties()
       })
       
@@ -132,7 +173,8 @@
     },
     oneditsave: function() {
       if (this.multiDps === undefined) this.multiDps = false
-      if (this.outputsMode === undefined) this.outputsMode = this.outputs
+      if (this.outputsMode === undefined) this.outputsMode = (this.outputs < 3) ? this.outputs : 3
+      if (this.outputSelList === undefined) this.outputSelList = Array.from({ length: this.outputLabelList.length }, () => true)
     }
   })
 </script>

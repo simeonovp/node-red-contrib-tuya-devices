@@ -24,6 +24,11 @@ module.exports = function (RED) {
       this.dps = /*config.dps && config.dps.includes(',') && config.dps.split(',') ||*/ config.dps
       this.multiDps = !!config.multiDps
       this.outputsMode = (config.outputsMode === undefined) ? parseInt(config.outputs) : parseInt(config.outputsMode)
+      if (this.outputsMode === 3) {
+        this.outputsCount = config.outputs
+        this.outputSelList = config.outputSelList
+        if (this.outputSelList === undefined) this.outputSelList = Array.from({ length: config.outputs }, () => true)
+      }
 
       this.deviceStatusHandler = this.onDeviceStatus.bind(this)
       this.deviceDataHandler = this.onDeviceData.bind(this)
@@ -49,13 +54,15 @@ module.exports = function (RED) {
       this.device.addListener('tuya-data', this.deviceDataHandler)
 
       if (this.outputsMode === 3) {
+        // Map dps (ability IDs) to selected outputs
         this.outputs = {}
         const properties = this.device.properties
         this.outputsCount = properties.length + 1 // index 0 is for data output
-        for (const [index, value] of properties.entries()) {
+        let index = 1
+        for (const value of properties) {
           const id = value?.id || value?.abilityId
-          if (!id) continue
-          this.outputs[id] = index + 1
+          if (!id || (index >= this.outputSelList.length) || !this.outputSelList[index]) continue
+          this.outputs[id] = index++
         }
       }
     }
@@ -187,23 +194,25 @@ module.exports = function (RED) {
         return
       }
 
-      if (this.multiDps && !Array.isArray(this.dps)) {
+      if (this.outputsMode === 3) {
+        // Fill messages array for selected outputs
         if ((typeof dps !== 'object') || Array.isArray(dps)) return
-        if (this.outputsMode === 3) {
-          const msgs = Array(this.outputsCount).fill(null)
-          msgs[0] = { payload: dps }
-          for (const [dp, val] of Object.entries(dps)) {
-            const idx = this.outputs[dp]
-            if (idx) msgs[idx] = buildDpMsg(dp, val)
-          }
-          this.send(msgs)
+        const msgs = Array(this.outputsCount).fill(null)
+        msgs[0] = { payload: dps }
+        for (const [dp, val] of Object.entries(dps)) {
+          const idx = this.outputs[dp]
+          if (idx) msgs[idx] = buildDpMsg(dp, val)
         }
-        else {
-          for (const [dp, val] of Object.entries(dps)) {
-            sendDpMsg(dp, val)
-          }
-          if (postEvents && postEvents.length) this.postMessages(postEvents)
+        this.send(msgs)
+      }
+
+      //[deprecated]
+      else if ((this.multiDps) && !Array.isArray(this.dps)) {
+        if ((typeof dps !== 'object') || Array.isArray(dps)) return
+        for (const [dp, val] of Object.entries(dps)) {
+          sendDpMsg(dp, val)
         }
+        if (postEvents && postEvents.length) this.postMessages(postEvents)
         return
       }
 

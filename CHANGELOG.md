@@ -1,3 +1,12 @@
+# v1.5.0
+- Fixed error on create slave devices (gateway clients)
+- Fixed device GUI for business data model
+- provide support for Tuya 3.5 devices (Beta)
+- Added scanner devices tab to manager GUI
+
+# v1.4.6
+- Fixed bug in the GUI on configure the device settings. After switch netType was not possible to show the old type settings again
+
 # v1.4.5
 - Fixed bug in the GUI on configure the cloud settings. After switch to business app was not possible to show the smart app settings again
 
