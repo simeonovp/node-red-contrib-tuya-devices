@@ -58,11 +58,11 @@ module.exports = function (RED) {
         this.outputs = {}
         const properties = this.device.properties
         this.outputsCount = properties.length + 1 // index 0 is for data output
-        let index = 1
-        for (const value of properties) {
+        let output = 1
+        for (const [index, value] of properties.entries()) {
           const id = value?.id || value?.abilityId
           if (!id || (index >= this.outputSelList.length) || !this.outputSelList[index]) continue
-          this.outputs[id] = index++
+          this.outputs[id] = output++
         }
       }
     }
@@ -215,9 +215,10 @@ module.exports = function (RED) {
         if (postEvents && postEvents.length) this.postMessages(postEvents)
         return
       }
-
-      this.send({ payload })
-      if (postEvents && postEvents.length) this.postMessages(postEvents)
+      else {
+        this.send({ payload })
+        if (postEvents && postEvents.length) this.postMessages(postEvents)
+      }
     }
 
     postMessages(postEvents) {

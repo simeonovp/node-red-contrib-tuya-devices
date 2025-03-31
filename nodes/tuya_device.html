@@ -123,10 +123,10 @@
           this.outputSelList = Array.from({ length: labelList.length }, () => true)
           RED.nodes.dirty(true)
         }
-        
+
         this.outputs = 1
         for (const [idx, prop] of properties.entries()) {
-          if (!this.outputs) continue // skip 'data' output
+          const output = idx + 1 // index 0 is reserved for 'data' output
 
           const data = {
             id: prop.id || prop.abilityId,
@@ -136,7 +136,7 @@
             mode: prop.mode || prop.accessMode,
           }
 
-          const checked = this.outputSelList[idx] || false
+          const checked = this.outputSelList[output] || false
           if (checked) ++this.outputs
 
           $tbody.append(
@@ -144,8 +144,8 @@
               $('<td>', { css: { textAlign: 'left', width: '5%' } }).append(
                 $('<input>', { type: 'checkbox', checked, style: 'display: inline-block;' })
                   .on('change', (event) => { 
-                    this.outputSelList[idx] = event.target.checked
-                    $(event.target).prop('checked', this.outputSelList[idx])
+                    this.outputSelList[output] = event.target.checked
+                    $(event.target).prop('checked', this.outputSelList[output])
                     setTimeout(() => {
                       RED.nodes.dirty(true)
                       updateOutputSelection(properties, labelList)
