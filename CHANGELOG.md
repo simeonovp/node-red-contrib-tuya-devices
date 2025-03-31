@@ -1,3 +1,7 @@
+# v1.5.1
+- Make possible to select device node outputs
+- Fixed error (in v1.5.0) on recogniye device properties
+
 # v1.5.0
 - Fixed error on create slave devices (gateway clients)
 - Fixed device GUI for business data model

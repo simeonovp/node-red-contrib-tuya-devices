@@ -76,38 +76,101 @@
         fillDeviceProperties()
       }
 
+      
+      const createOutputTable = ($el) => {
+        const $table = $('<table>', {
+          id: 'output-table',
+          class: 'table table-hover',
+          css: {
+            border: '1px solid',
+            borderCollapse: 'collapse',
+            width: '100%'
+          }
+        })
+
+        const $thead = $('<thead>')
+        const $headerRow = $('<tr>', { id: 'table-head' })
+
+        const headers = [
+          { text: '', width: '5%' },
+          { text: 'Id', width: '10%' },
+          { text: 'Code', width: '30%' },
+          { text: 'Name', width: '' },
+          { text: 'Type', width: '20%' },
+          { text: 'Mode', width: '10%' }
+        ]
+        for(const header of headers) {
+          $headerRow.append($('<th>', { css: { textAlign: 'left', width: header.width }})
+            .append($('<input>', { type: 'text', val: header.text, css: { width: '100%' }, readonly: true }))
+          )
+        }
+
+        const $tbody = $('<tbody>')
+        $table.append($thead.append($headerRow), $tbody)
+        $el.append($table)
+        return $tbody
+      }
+
       //output-selection
-      const updateOutputSelection = (labelList) => {
+      const updateOutputSelection = (properties, labelList) => {
         $el = $('#output-selection')
         $el.empty()
         if (this.outputsMode < 3) return
         
+        const $tbody = createOutputTable($el)
+        
         if (this.outputSelList === undefined) {
           this.outputSelList = Array.from({ length: labelList.length }, () => true)
-          //RED.nodes.dirty(true)
+          RED.nodes.dirty(true)
         }
+        
         this.outputs = 1
-        labelList.forEach((label, idx) => {
-          if (!idx) return // skip 'data' output
-          const id = `checkbox${idx}`
+        for (const [idx, prop] of properties.entries()) {
+          if (!this.outputs) continue // skip 'data' output
+
+          const data = {
+            id: prop.id || prop.abilityId,
+            code: prop.code,
+            name: prop._custom_name || prop.name,
+            type: prop.property?.type || prop.typeSpec?.type,
+            mode: prop.mode || prop.accessMode,
+          }
+
           const checked = this.outputSelList[idx] || false
           if (checked) ++this.outputs
-          $('<div>', { class: 'form-row' }).append(
-            $('<input>', { type: 'checkbox', id, value: label, checked,
-                style: 'display: inline-block; width: auto; vertical-align: top;' })
-              .on('change', (event) => { 
-                this.outputSelList[idx] = event.target.checked
-                $(event.target).prop('checked', this.outputSelList[idx])
-                setTimeout(() => {
-                  // if (RED && RED.view) RED.view.dirty(true);
-                  // else console.error("RED.view nicht verfügbar!");
-                  RED.nodes.dirty(true)
-                  updateOutputSelection(labelList)
-                }, 10)
-              }),
-            $('<label>', { 'for': id, text: label, style: 'width: auto;' })
-          ).appendTo($el)
-        })
+
+          $tbody.append(
+            $('<tr>').append(
+              $('<td>', { css: { textAlign: 'left', width: '5%' } }).append(
+                $('<input>', { type: 'checkbox', checked, style: 'display: inline-block;' })
+                  .on('change', (event) => { 
+                    this.outputSelList[idx] = event.target.checked
+                    $(event.target).prop('checked', this.outputSelList[idx])
+                    setTimeout(() => {
+                      RED.nodes.dirty(true)
+                      updateOutputSelection(properties, labelList)
+                    }, 10)
+                  }
+                ),
+              ),
+              $('<td>', { css: { textAlign: 'left', width: '10%' } }).append(
+                $('<input>', { type: 'text', val: data.id, readonly: true, css: { width: '100%' } })
+              ),
+              $('<td>', { css: { textAlign: 'left', width: '30%' } }).append(
+                $('<input>', { type: 'text', val: data.code, readonly: true, css: { width: '100%' } })
+              ),
+              $('<td>', { css: { textAlign: 'left' } }).append(
+                $('<input>', { type: 'text', val: data.name, readonly: true, css: { width: '100%' } })
+              ),
+              $('<td>', { css: { width: '20%' } }).append(
+                $('<input>', { type: 'text', val: data.type, readonly: true, css: { width: '100%' } })
+              ),
+              $('<td>', { css: { width: '10%' } }).append(
+                $('<input>', { type: 'text', val: data.mode, readonly: true, css: { width: '100%' } })
+              )
+            )
+          )
+        }
       }
 
       const updateOutputs = (properties, labelList) => {
@@ -125,7 +188,7 @@
           this.outputs = labelList.length
           this.outputLabelList = labelList
         }
-        updateOutputSelection(labelList)
+        updateOutputSelection(properties, labelList)
       }
 
       const updateDpsList = (properties) => {
