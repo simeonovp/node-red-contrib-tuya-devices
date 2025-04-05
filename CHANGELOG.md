@@ -1,3 +1,7 @@
+# v1.5.2
+- Fixed error in output selection
+- Make multi outputs mode as default for new devices
+
 # v1.5.1
 - Make possible to select device node outputs
 - Fixed error (in v1.5.0) on recogniye device properties

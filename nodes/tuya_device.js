@@ -61,7 +61,7 @@ module.exports = function (RED) {
         let output = 1
         for (const [index, value] of properties.entries()) {
           const id = value?.id || value?.abilityId
-          if (!id || (index >= this.outputSelList.length) || !this.outputSelList[index]) continue
+          if (!id || ((index + 1) >= this.outputSelList.length) || !this.outputSelList[index + 1]) continue
           this.outputs[id] = output++
         }
       }
