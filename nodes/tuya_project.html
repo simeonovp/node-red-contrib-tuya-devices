@@ -18,7 +18,24 @@
         <label for="node-config-input-translate"><i class="fa fa-tag"></i> Auto translate</label>
         <input type="checkbox" id="node-config-input-translate">
       </div>
+      <div id="translate-config">
+        <div class="form-row">
+          <label for="node-config-input-language"><i class="fa fa-tag"></i> Language</label>
+          <select id="node-config-input-language" style="width:120px !important">
+            <option value="">(default)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="node-config-input-translator"><i class="fa fa-tag"></i> Ext. translator</label>
+          <select id="node-config-input-translator" style="width:120px !important">
+            <option value="">(not used)</option>
+            <option value="myMemory">MyMemory</option>
+          </select>
+        </div>
+      </div>
       <div class="form-row">
+        <i class="fa fa-link"></i>
         <a id="tuya-explorer-url" href="" target="_blank">Tuya cache explorer</a>
       </div>
     </div>
@@ -103,7 +120,7 @@
       const resDir = tuya_devices.resDir(project)
       const url = resDir + (tuya_devices.cacheTables[table] || (table + '.json'))
       //console.log(`loadCacheTable fetch, resDir:${resDir}, url:${url}`)
-      fetch(url).then(r=>r.json().then(data=>{
+      fetch(url).then(r => r.json().then(data => {
         //console.log(`loadCacheTable received table:${table}`)
         cache[table] = data
         callback?.(data)
@@ -112,11 +129,11 @@
     clearCache: (project) => { tuya_devices.cache[project || 'default'] = {} },
     updateCache: (project) => {
       tuya_devices.clearCache(project)
-      for(const table of Object.keys(tuya_devices.cacheTables)) tuya_devices.loadCacheTable(project, table)
+      for (const table of Object.keys(tuya_devices.cacheTables)) tuya_devices.loadCacheTable(project, table)
     },
     deviceNodeId: (deviceId) => ('tyd_' + deviceId),
     modelNodeId: (modelId) => ('tym_' + modelId),
-    addTuyaModel:  (obj) => {
+    addTuyaModel: (obj) => {
       if (!obj.modelId) return
       const id = tuya_devices.modelNodeId(obj.modelId) //'tym_' + obj.modelId
       const model = RED.nodes.node(id)
@@ -128,7 +145,7 @@
       for (let o in y, _def.defaults) {
         _def.defaults[o].value && (y[o] = JSON.parse(JSON.stringify(_def.defaults[o].value)))
       }
-      const e = obj ? {...y, ...obj} : y
+      const e = obj ? { ...y, ...obj } : y
       RED.nodes.add(e)
       RED.nodes.dirty(true)
     },
@@ -143,7 +160,7 @@
       for (let o in y, _def.defaults) {
         _def.defaults[o].value && (y[o] = JSON.parse(JSON.stringify(_def.defaults[o].value)))
       }
-      const e = obj ? {...y, ...obj} : y
+      const e = obj ? { ...y, ...obj } : y
       RED.nodes.add(e)
       RED.nodes.dirty(true)
     },
@@ -195,6 +212,9 @@
       name: { value: '' },
       dbUri: { value: '' },
       translate: { value: true },
+      language: { value: 'en' },
+      translator: { value: '' },
+      translatorKey: { value: '' },
       // Cloud tab
       cloud: { type: 'tuya-cloud', required: false },
       home: { value: '' },
@@ -202,7 +222,6 @@
       // not configurable
       network: { value: '' },
       version: { value: 1 },
-      language: { value: 'en' },
       // MQTT tab
       broker: { type: 'tuya-mqtt-broker', required: false },
       fullTopic: { value: 'tuya/%topic%/%prefix%' },
@@ -214,7 +233,7 @@
       dbgMqtt: { value: false },
       dbgScanner: { value: false },
     },
-    label: function() {
+    label: function () {
       // use label callback to perform init
       const init = () => {
         this.resDir = () => tuya_devices.resDir(this.name)
@@ -230,7 +249,7 @@
 
         this.updateDevices = (node) => {
           tuya_devices.clearCache(this.name)
-          tuya_devices.sendMsg(node, {topic: 'updateDevices'}, (resp) => {})
+          tuya_devices.sendMsg(node, { topic: 'updateDevices' }, (resp) => { })
         }
         tuya_devices.updateCache(this.name)
 
@@ -242,7 +261,7 @@
         this.init = true
       }
       if (!this.init) init()
-      return this.name || 'Tuya Project' 
+      return this.name || 'Tuya Project'
     },
     oneditprepare: function () {
       const tabs = RED.tabs.create({
@@ -258,6 +277,13 @@
       tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
       $('#tuya-explorer-url').attr('href', `/resources/node-red-contrib-tuya-devices/${this.name || 'index'}.html`)
 
+      const refreshTranslate = () => {
+        if ($('#node-config-input-translate').is(':checked')) $('#translate-config').show()
+        else $('#translate-config').hide()
+      }
+      refreshTranslate()
+      $('#node-config-input-translate').on('change', () => refreshTranslate())
+
       const refreshHomes = (homes) => {
         //this.homes = homes
         $elHome = $('#project-home')
@@ -266,10 +292,10 @@
         $elRoom = $('#project-room')
         $elRoom.empty()
         $elRoom.append($('<option></option>').attr('value', '').text('all'))
-        if(homes) {
+        if (homes) {
           for (const home in homes) {
             $elHome.append($('<option></option>').attr('value', home).text(homes[home].name))
-            if(homes[home].rooms) {
+            if (homes[home].rooms) {
               for (const room in homes[home].rooms) {
                 $elRoom.append($('<option></option>').attr('value', room).text(homes[home].rooms[room].name))
               }
@@ -307,7 +333,7 @@
         }
       })
     },
-    oneditsave: function() {
+    oneditsave: function () {
       if (this.home === undefined) this.home = ''
       if (this.room === undefined) this.room = ''
 

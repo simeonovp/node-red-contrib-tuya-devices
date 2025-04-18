@@ -29,30 +29,14 @@
           </button>
         </div>
         <table id="device-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
-          <thead>
-            <tr id="table-head">
-              <th style="width:10%"><input type="text" value="Icon" style="width:100%" readonly></th>
-              <th style="text-align:left;width:25%"><input type="text" value="Cloud name" style="width:100%" readonly></th>
-              <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
-              <th style="text-align:left;width:20%"><input type="text" value="Space" style="width:100%" readonly></th>
-              <th style="text-align:left;width:10%"><input type="text" value="Cat." style="width:100%" readonly></th>
-              <th style="width:10%"></th>
-            </tr>
-          </thead>
+          <thead></thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
     <div id="tuya-manager-models-tab" style="display:none">
       <table id="model-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
-        <thead>
-          <tr id="table-head">
-            <th style="text-align:left;width:40%"><input type="text" value="Model Id" style="width:100%" readonly></th>
-            <th style="text-align:left;width:10%"><input type="text" value="Properties" style="width:100%" readonly></th>
-            <th style="text-align:left"><input type="text" value="Category / Category Code" style="width:100%" readonly></th>
-            <th style="width:10%"></th>
-          </tr>
-        </thead>
+        <thead></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -63,16 +47,7 @@
         </button>
       </div>
       <table id="scanner-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
-        <thead>
-          <tr id="table-head">
-            <th style="width:10%"><input type="text" value="Icon" style="width:100%" readonly></th>
-            <th style="text-align:left"><input type="text" value="Node name" style="width:100%" readonly></th>
-            <th style="text-align:left;width:15%"><input type="text" value="IP address" style="width:100%" readonly></th>
-            <th style="text-align:left;width:10%"><input type="text" value="Version" style="width:100%" readonly></th>
-            <th style="text-align:left;width:20%"><input type="text" value="Model" style="width:100%" readonly></th>
-            <th style="text-align:left;width:25%"><input type="text" value="Time" style="width:100%" readonly></th>
-          </tr>
-        </thead>
+        <thead></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -262,9 +237,35 @@
       const textColor = window.getComputedStyle(tempInput).color
       document.body.removeChild(tempInput)
 
-      document.querySelectorAll('#model-table thinput').forEach(input => {
-        input.style.color = textColor
-      })
+      const refreshTableHeaders = (name, headers = []) => {
+        const $tr = $('<tr>')
+
+        headers.forEach(header => {
+          const $input = $('<input>', {
+            type: 'text',
+            value: header.text,
+            readonly: true,
+            css: {
+              width: '100%',
+              color: textColor
+            }
+          })
+
+          const $th = $('<th>').append($input)
+          if (header.width) $th.css('width', header.width)
+          if (header.textAlign) $th.css('text-align', header.textAlign)
+
+          $tr.append($th)
+        })
+          
+        $(`#${name} thead`).empty().append($tr)
+      }
+
+      refreshTableHeaders('model-table', [
+        { text: "Model Id", width: "40%", textAlign: "left" },
+        { text: "Properties", width: "10%", textAlign: "left" },
+        { text: "Category / Category Code", textAlign: "left" },
+      ])
 
       const refreshModels = () => {
         const models = this.models
@@ -345,42 +346,14 @@
         this.modelsDirty = false
       }
 
-      const refreshDevicesHeaders = () => {
-        $('#device-table thead th').remove() // remove all headers
-        const $headers = $('#device-table thead th')
-        const headers = [
-          { text: "Icon", width: "10%" },
-          { text: "Cloud name", width: "30%", textAlign: "left" },
-          { text: "Node name", textAlign: "left" },
-          { text: "Space", width: "20%", textAlign: "left" },
-          { text: "", width: "10%" }
-        ]
-
-        const tr = document.createElement('tr')
-        const addHeader = (header) => {
-          const th = document.createElement('th')
-
-          if (header.width) th.style.width = header.width
-          if (header.textAlign) th.style.textAlign = header.textAlign
-
-          const input = document.createElement('input')
-          input.type = 'text'
-          input.value = header.text
-          input.style.width = '100%'
-          input.readOnly = true
-          input.style.color = textColor
-
-          th.appendChild(input)
-          tr.appendChild(th)
-        }
-        headers.forEach(header => addHeader(header))
-
-        $headers.appendChild(tr)
-      }
-
-      document.querySelectorAll('#device-table th input').forEach(input => {
-        input.style.color = textColor
-      })
+      refreshTableHeaders('device-table', [
+        { text: "Icon", width: "10%" },
+        { text: "Cloud name", width: "30%", textAlign: "left" },
+        { text: "Node name", textAlign: "left" },
+        { text: "Space", width: "20%", textAlign: "left" },
+        { text: "Cat.", width: "10%", textAlign: "left" },
+        { text: "Add", width: "5%" },
+      ])
 
       const refreshDevices = () => {
         this.devicesDirty = false
@@ -541,13 +514,17 @@
         }
       }
 
-      document.querySelectorAll('#scanner-table th input').forEach(input => {
-        input.style.color = textColor
-      })
+      refreshTableHeaders('scanner-table', [
+        { text: "Icon", width: "10%" },
+        { text: "Node name", textAlign: "left" },
+        { text: "IP address", width: "15%", textAlign: "left" },
+        { text: "Version", width: "10%", textAlign: "left" },
+        { text: "Model", width: "20%", textAlign: "left" },
+        { text: "Time", width: "25%", textAlign: "left" },
+      ])
 
       const refreshScannerDevices = (data) => {
         const devices = data.payload
-        //console.log('-- refreshScannerDevices: ' + JSON.stringify(devices))
         const createInputCell = (value, readOnly = true, width = '100%', id = '') => {
           const td = document.createElement('td')
           const input = document.createElement('input')

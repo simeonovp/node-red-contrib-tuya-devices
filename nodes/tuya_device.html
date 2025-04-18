@@ -73,6 +73,11 @@
         fillDeviceProperties()
       }
 
+      // recognize text color for not readonly
+      const tempInput = document.createElement('input')
+      document.body.appendChild(tempInput)
+      const textColor = window.getComputedStyle(tempInput).color
+      document.body.removeChild(tempInput)
       
       const createOutputTable = ($el) => {
         const $table = $('<table>', {
@@ -97,7 +102,7 @@
           { text: 'Mode', width: '10%' }
         ]
         for(const header of headers) {
-          $headerRow.append($('<th>', { css: { textAlign: 'left', width: header.width }})
+          $headerRow.append($('<th>', { css: { textAlign: 'left', width: header.width, color: textColor }})
             .append($('<input>', { type: 'text', val: header.text, css: { width: '100%' }, readonly: true }))
           )
         }
@@ -136,10 +141,11 @@
           const checked = this.outputSelList[output] || false
           if (checked) ++this.outputs
 
+          const color = checked ? { color: textColor } : {}
           $tbody.append(
             $('<tr>').append(
               $('<td>', { css: { textAlign: 'left', width: '5%' } }).append(
-                $('<input>', { type: 'checkbox', checked, style: 'display: inline-block;' })
+                $('<input>', { type: 'checkbox', checked, css: { display: 'inline-block', ...color } })
                   .on('change', (event) => { 
                     this.outputSelList[output] = event.target.checked
                     $(event.target).prop('checked', this.outputSelList[output])
@@ -151,19 +157,19 @@
                 ),
               ),
               $('<td>', { css: { textAlign: 'left', width: '10%' } }).append(
-                $('<input>', { type: 'text', val: data.id, readonly: true, css: { width: '100%' } })
+                $('<input>', { type: 'text', val: data.id, readonly: true, css: { width: '100%', ...color } })
               ),
               $('<td>', { css: { textAlign: 'left', width: '30%' } }).append(
-                $('<input>', { type: 'text', val: data.code, readonly: true, css: { width: '100%' } })
+                $('<input>', { type: 'text', val: data.code, readonly: true, css: { width: '100%', ...color } })
               ),
               $('<td>', { css: { textAlign: 'left' } }).append(
-                $('<input>', { type: 'text', val: data.name, readonly: true, css: { width: '100%' } })
+                $('<input>', { type: 'text', val: data.name, readonly: true, css: { width: '100%', ...color } })
               ),
               $('<td>', { css: { width: '20%' } }).append(
-                $('<input>', { type: 'text', val: data.type, readonly: true, css: { width: '100%' } })
+                $('<input>', { type: 'text', val: data.type, readonly: true, css: { width: '100%', ...color } })
               ),
               $('<td>', { css: { width: '10%' } }).append(
-                $('<input>', { type: 'text', val: data.mode, readonly: true, css: { width: '100%' } })
+                $('<input>', { type: 'text', val: data.mode, readonly: true, css: { width: '100%', ...color } })
               )
             )
           )
@@ -220,7 +226,7 @@
       const fillDeviceProperties = () => {
         if (!device) return
         device.getCloudDevice(cloudDevice => {
-          if (!cloudDevice) return console.error('[device] device not found')
+          if (!cloudDevice) return console.error('[device] device not found ' + device.deviceId)
           updateWidgets()
         })
       }

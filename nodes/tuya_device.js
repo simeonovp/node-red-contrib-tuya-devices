@@ -198,7 +198,7 @@ module.exports = function (RED) {
         // Fill messages array for selected outputs
         if ((typeof dps !== 'object') || Array.isArray(dps)) return
         const msgs = Array(this.outputsCount).fill(null)
-        msgs[0] = { payload: dps }
+        msgs[0] = { payload: dps, device: this.name }
         for (const [dp, val] of Object.entries(dps)) {
           const idx = this.outputs[dp]
           if (idx) msgs[idx] = buildDpMsg(dp, val)
@@ -217,8 +217,8 @@ module.exports = function (RED) {
       }
       else {
         this.send({ payload })
-        if (postEvents && postEvents.length) this.postMessages(postEvents)
       }
+      if (postEvents && postEvents.length) this.postMessages(postEvents)
     }
 
     postMessages(postEvents) {

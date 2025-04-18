@@ -1,3 +1,8 @@
+# v1.5.3
+- Persist local cache on update node version
+- Improve config GUI table look
+- Added support for external (using internet access) translator
+
 # v1.5.2
 - Fixed error in output selection
 - Make multi outputs mode as default for new devices

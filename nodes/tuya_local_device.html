@@ -192,6 +192,9 @@
           project.getCloudDevices && project.getCloudDevices(cloudDevices => {
             if (!cloudDevices) return console.error('download devices failed')
             this._device = cloudDevices[this.deviceId]
+            if (!this._device) {
+              console.error(`Cloud device not found ${this.deviceId}, available: ${Object.keys(cloudDevices)}`)
+            }
             callback(this._device)
           })
         })

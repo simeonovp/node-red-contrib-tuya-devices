@@ -1,0 +1,1 @@
+require('./migrate_cache').backupCache()
