@@ -1,3 +1,8 @@
+# v1.5.4
+- #32 Fixed error in device (TypeError: Assignment to constant variable)
+- #33 Fixed error in cipher (md5hash.subarray is not a function)
+- #33 Fixed error in device (ReferenceError: val is nor defined)
+
 # v1.5.3
 - Persist local cache on update node version
 - Improve config GUI table look
