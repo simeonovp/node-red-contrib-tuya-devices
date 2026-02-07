@@ -177,7 +177,7 @@ module.exports = function (RED) {
           else {
             msg.options = []
             for (const [val, name] of Object.entries(options)) {
-              msg.options.push({[name]: val})
+              msg.options.push(name)
             }
           }
         }
