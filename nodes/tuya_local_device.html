@@ -121,6 +121,10 @@
         <label for="node-config-input-reinitOnLost"><i class="fa fa-wrench"></i> Reinit on lost connection</label>
         <input type="checkbox" id="node-config-input-reinitOnLost">
       </div>
+      <div class="form-row">
+        <label for="node-config-input-watchdogTimeout"><i class="fa fa-wrench"></i> Ping interval (s)</label>
+        <input type="text" id="node-config-input-watchdogTimeout">
+      </div>
     </div>
     <div id="tuya-project-misc-tab" style="display:none">
       <fieldset>
@@ -143,6 +147,150 @@
 </script>
 
 <script type="text/html" data-help-name="tuya-local-device">
+  <p>
+    This configuration node defines a local Tuya device and its connection
+    parameters. It is shared by all Tuya nodes that reference the same device.
+  </p>
+
+  <h3>General settings</h3>
+  <dl class="message-properties">
+    <dt>Name <span class="property-type">string</span></dt>
+    <dd>
+      A human-readable name for this Tuya device configuration.
+    </dd>
+
+    <dt>Project <span class="property-type">config node</span></dt>
+    <dd>
+      Reference to the Tuya project configuration used for this device.
+    </dd>
+
+    <dt>Device ID <span class="property-type">string</span></dt>
+    <dd>
+      The unique Tuya device identifier.
+    </dd>
+
+    <dt>Net type <span class="property-type">number</span></dt>
+    <dd>
+      Defines how the device is connected:
+      <ul>
+        <li><b>Auto</b>: Automatically detect device type</li>
+        <li><b>IP device</b>: Direct WiFi device</li>
+        <li><b>Gateway</b>: Tuya gateway</li>
+        <li><b>GW Client</b>: Sub-device behind a gateway</li>
+      </ul>
+    </dd>
+  </dl>
+
+  <h3>WiFi device settings</h3>
+  <dl class="message-properties">
+    <dt>Local key <span class="property-type">string</span></dt>
+    <dd>
+      The local encryption key used for communicating with the device.
+    </dd>
+
+    <dt>Auto connect <span class="property-type">boolean</span></dt>
+    <dd>
+      Automatically connect to the device when Node-RED starts.
+    </dd>
+
+    <dt>Cache announcement <span class="property-type">boolean</span></dt>
+    <dd>
+      Cache device broadcast announcements to speed up reconnects.
+    </dd>
+
+    <dt>MAC address <span class="property-type">string</span></dt>
+    <dd>
+      Optional MAC address used for device identification.
+    </dd>
+
+    <dt>Static IP <span class="property-type">boolean</span></dt>
+    <dd>
+      Enables static IP handling for the device.
+    </dd>
+
+    <dt>IP address <span class="property-type">string</span></dt>
+    <dd>
+      The current or detected IP address of the device.
+    </dd>
+
+    <dt>Port <span class="property-type">number</span></dt>
+    <dd>
+      TCP port used for local Tuya communication (default: 6668).
+    </dd>
+  </dl>
+
+  <h3>Gateway / sub-device settings</h3>
+  <dl class="message-properties">
+    <dt>Gateway <span class="property-type">config node</span></dt>
+    <dd>
+      Reference to the gateway device when operating as a gateway client.
+    </dd>
+
+    <dt>Node UUID <span class="property-type">string</span></dt>
+    <dd>
+      Unique identifier of the sub-device behind a gateway.
+    </dd>
+  </dl>
+
+  <h3>Advanced settings</h3>
+  <dl class="message-properties">
+    <dt>Device category <span class="property-type">string</span></dt>
+    <dd>
+      Tuya device category identifier.
+    </dd>
+
+    <dt>Tuya protocol version <span class="property-type">string</span></dt>
+    <dd>
+      Explicit Tuya protocol version to use.
+    </dd>
+
+    <dt>Retry timeout <span class="property-type">number</span></dt>
+    <dd>
+      Time in milliseconds before retrying a failed request.
+    </dd>
+
+    <dt>Find timeout <span class="property-type">number</span></dt>
+    <dd>
+      Maximum time in milliseconds to wait while discovering the device.
+    </dd>
+
+    <dt>Event mode <span class="property-type">string</span></dt>
+    <dd>
+      Defines which Tuya events are processed:
+      <ul>
+        <li><b>Data Event</b></li>
+        <li><b>DP-Refresh Event</b></li>
+        <li><b>Both Events</b></li>
+      </ul>
+    </dd>
+
+    <dt>Reinit on lost connection <span class="property-type">boolean</span></dt>
+    <dd>
+      Reinitialize the device connection if the connection is lost.
+    </dd>
+
+    <dt>Ping interval <span class="property-type">number</span></dt>
+    <dd>
+      Watchdog interval in seconds used to monitor device connectivity.
+    </dd>
+  </dl>
+
+  <h3>Debug options</h3>
+  <dl class="message-properties">
+    <dt>Device</dt>
+    <dd>Enable debug output for device logic.</dd>
+
+    <dt>Device extension</dt>
+    <dd>Enable debug output for device extensions.</dd>
+
+    <dt>Local connection</dt>
+    <dd>Enable debug output for local Tuya communication.</dd>
+  </dl>
+
+  <p>
+    <b>Note:</b> Changes to this configuration node affect all nodes that
+    reference it.
+  </p>
 </script>
 
 <script type="text/javascript">
@@ -173,6 +321,7 @@
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
       reinitOnLost: { value: false },
+      watchdogTimeout: { value: 60 },
       eventMode: { value: 'event-both', required: true },
       // MISC tab
       dbgDevice: { value: false },

@@ -1,3 +1,9 @@
+# TODO
+- Support custom icon paths (https://github.com/simeonovp/node-red-contrib-tuya-devices/issues/28)
+  
+# v1.5.5
+- #41 Added device connection watchdog (thanks to tuzovvlad)
+
 # v1.5.4
 - #32 Fixed error in device (TypeError: Assignment to constant variable)
 - #33 Fixed error in cipher (md5hash.subarray is not a function)
