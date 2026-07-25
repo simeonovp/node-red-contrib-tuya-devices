@@ -71,6 +71,13 @@
     outputs: 1,
     label: function () { return this.name || 'Tuya Manager' },
     oneditprepare: function () {
+      const normalizeMac = (mac) => {
+        if (!mac) return ''
+        const cleaned = String(mac).replace(/[^0-9a-fA-F]/g, '')
+        if (cleaned.length !== 12) return ''
+        return cleaned.match(/.{1,2}/g).join(':').toUpperCase()
+      }
+
       const tabs = RED.tabs.create({
         id: 'tuya-manager-tabs',
         onchange: function (tab) {
@@ -184,7 +191,7 @@
           cid: '',
           name: cloudDevice.name || '',
           cloudDevice: null,
-          mac: this.announcements?.[deviceId]?.mac || '',
+          deviceMac: normalizeMac(cloudDevice.mac || this.announcements?.[deviceId]?.mac || ''),
         }
 
         if (isBusinessModel) {
@@ -205,7 +212,7 @@
             default:
               devConfig.netType = 1 // IP device
           }
-          devConfig.mac = cloudDevice.mac
+          devConfig.deviceMac = normalizeMac(cloudDevice.mac || devConfig.deviceMac)
         }
         else {
           devConfig.deviceId = cloudDevice.id

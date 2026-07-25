@@ -294,6 +294,16 @@
 </script>
 
 <script type="text/javascript">
+  const normalizeMac = (mac) => {
+    if (!mac) return ''
+    const cleaned = String(mac).replace(/[^0-9a-fA-F]/g, '')
+    if (cleaned.length !== 12) return ''
+    return cleaned.match(/.{1,2}/g).join(':').toUpperCase()
+  }
+
+  // cloud module firmware "pv" (e.g. "2.2") to local Tuya protocol version (e.g. "3.2")
+  const pvToTuyaVersion = (pv) => pv ? String(pv).replace(/^2\./, '3.') : ''
+
   RED.nodes.registerType('tuya-local-device', {
     category: 'config',
     defaults: {
@@ -677,15 +687,29 @@
       const project = RED.nodes.node(this.project)
       this.deviceMac && this.tuyaVersion || project?.getAnnouncements(announcements => {
         const announcement = announcements?.[this.deviceId]
-        this.deviceMac = this.deviceMac || announcement?.mac || ''
+        this.deviceMac = normalizeMac(this.deviceMac || announcement?.mac || '')
         this.tuyaVersion = announcement?.version || this.tuyaVersion|| ''
+        if (!this.deviceMac) {
+          // workaround: local network announcement has no mac, fall back to the cloud device data
+          this.getCloudDevice(cloudDevice => {
+            this.deviceMac = this.deviceMac || normalizeMac(cloudDevice?.mac || '')
+            $('#node-config-input-deviceMac').val(this.deviceMac)
+          })
+        }
+        if (!this.tuyaVersion) {
+          // workaround: local network announcement has no version, fall back to the cloud device data
+          this.getCloudDevice(cloudDevice => {
+            this.tuyaVersion = this.tuyaVersion || pvToTuyaVersion(cloudDevice?.moduleMap?.wifi?.pv)
+            $('#node-config-input-tuyaVersion').val(this.tuyaVersion)
+          })
+        }
         $('#node-config-input-deviceMac').val(this.deviceMac)
         $('#node-config-input-tuyaVersion').val(this.tuyaVersion)
         this.ip = announcement?.ip || this.ip || ''
         $('#node-config-input-ip').val(this.ip)
         if (this.ip) $('#node-config-input-web').show()
         else $('#node-config-input-web').hide()
-        $('#node-config-input-web').attr('href', this.ip && ('http://' + this.ip) || '') 
+        $('#node-config-input-web').attr('href', this.ip && ('http://' + this.ip) || '')
       })
     },
     oneditsave: function() {
@@ -696,11 +720,7 @@
       if (this.cacheAnnouncement === undefined) this.cacheAnnouncement = true
       if (this.tuyaVersion === undefined) this.tuyaVersion = ''
       if (this.deviceMac === undefined) this.deviceMac = ''
-      this.deviceMac && this.tuyaVersion || project?.getAnnouncements(announcements => {
-        const announcement = announcements?.[this.deviceId]
-        this.deviceMac = this.deviceMac || announcement?.mac || ''
-        this.deviceCategory = this.deviceCategory || ''
-      })
+      this.deviceMac = normalizeMac(this.deviceMac)
       if (this.staticIp === undefined) this.staticIp = false
     }
   })

@@ -1,6 +1,10 @@
 # TODO
 - Support custom icon paths (https://github.com/simeonovp/node-red-contrib-tuya-devices/issues/28)
-  
+
+# v1.5.6
+- Added support for devices using Tuya v3.5, wich not send announcements
+- Make possible to translate schemas (bussiness API)
+
 # v1.5.5
 - #41 Added device connection watchdog (thanks to tuzovvlad)
 
