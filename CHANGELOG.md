@@ -1,6 +1,12 @@
 # TODO
 - Support custom icon paths (https://github.com/simeonovp/node-red-contrib-tuya-devices/issues/28)
 
+# v1.5.7
+- Fixed crash on startup for device nodes with per-DP outputs when the device was already connected
+- Fixed MQTT broker node (undefined mqttOptions on TLS, credentials never forwarded to the broker)
+- Fixed device GET command being silently ignored when sent without a payload
+- Fixed manager node not forwarding the userId status to the frontend
+
 # v1.5.6
 - Added support for devices using Tuya v3.5, wich not send announcements
 - Make possible to translate schemas (bussiness API)

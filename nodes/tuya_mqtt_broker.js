@@ -12,12 +12,17 @@ module.exports = function (RED) {
       this.debug = DEBUG ? this.log.bind(this) : (() => {})
       this.debug('config:' + JSON.stringify(config))
 
-      this.mqttBroker = new MQTTBroker(config, this)
-      // Setup secure connection if requested
+      // Resolve secure connection options if requested (Node-RED specific wiring)
       if (config.useTls && config.tls) {
         const tlsNode = RED.nodes.getNode(config.tls)
-        if (tlsNode) tlsNode.addTLSOptions(mqttOptions)
+        if (tlsNode) {
+          config.tlsOptions = {}
+          tlsNode.addTLSOptions(config.tlsOptions)
+        }
+        else this.warn('TLS configuration is wrong or missing, please review the node settings')
       }
+
+      this.mqttBroker = new MQTTBroker(config, this.credentials, this)
 
       this.on('close', (done) => {
         this.mqttBroker.deinit()
