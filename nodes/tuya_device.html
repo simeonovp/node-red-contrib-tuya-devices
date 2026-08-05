@@ -182,7 +182,7 @@
 
       //output-selection
       const updateOutputSelection = (properties, labelList) => {
-        $el = $('#output-selection')
+        const $el = $('#output-selection')
         $el.empty()
         if (this.outputsMode < 3) return
         
@@ -265,7 +265,7 @@
       }
 
       const updateDpsList = (properties) => {
-        $el = $('#node-input-dps')
+        const $el = $('#node-input-dps')
         $el.empty()
         $el.append($('<option></option>').attr('value', '').text('all'))
         if (!Array.isArray(properties)) return
