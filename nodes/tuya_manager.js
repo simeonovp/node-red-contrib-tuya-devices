@@ -87,14 +87,13 @@ module.exports = function (RED) {
     }
 
     onCloudStatus(userId) {
+      if (userId) {
+        this.sendToFrontend({topic: 'userId', payload: userId})
+      }
       const state = userId && 'Online' || 'Offline'
       switch (state) {
         case 'Online': return this.status({ fill: 'green', text: state, shape: 'dot' })
         case 'Offline': return this.status({ fill: 'red', text: 'offline', shape: 'ring' })
-      }
-      if (userId) {
-        //-- this.log(`-- sendToFrontend userId ${userId}`)
-        this.sendToFrontend({topic: 'userId', payload: userId})
       }
     }
 

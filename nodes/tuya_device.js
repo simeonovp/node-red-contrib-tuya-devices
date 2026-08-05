@@ -41,9 +41,6 @@ module.exports = function (RED) {
 
       this.on('input', this.onInput)
 
-      this.onDeviceStatus(this.device.deviceStatus)
-      if (this.device.deviceStatus === 'connected') this.onDeviceData('last-data', this.device.lastData)
-      
       process.nextTick(this.init.bind(this))
     }
 
@@ -65,6 +62,10 @@ module.exports = function (RED) {
           this.outputs[id] = output++
         }
       }
+
+      // Report initial state now that this.outputs (if any) is ready
+      this.onDeviceStatus(this.device.deviceStatus)
+      if (this.device.deviceStatus === 'connected') this.onDeviceData('last-data', this.device.lastData)
     }
 
     deinit() {
@@ -113,10 +114,16 @@ module.exports = function (RED) {
         case 'REFRESH':
           this.device.tuyaRefresh(msg.payload)
           break
-        case 'GET':
-          if (typeof msg.payload === 'object') this.device.tuyaGet(msg.payload)
-          else if (typeof msg.payload === 'number') this.device.tuyaGet({ dps: msg.payload })
+        case 'GET': {
+          if ((typeof msg.payload === 'object') && (msg.payload !== null)) {
+            this.device.tuyaGet(msg.payload)
+          }
+          else {
+            const dps = (typeof msg.payload === 'number') ? msg.payload : (msg.dps || msg.topic || this.dps)
+            this.device.tuyaGet((dps !== undefined) ? { dps } : {})
+          }
           break
+        }
         case 'CONTROL':
           this.device.tuyaControl(msg.payload.action, msg.payload.value)
           break
