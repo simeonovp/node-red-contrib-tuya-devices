@@ -26,6 +26,73 @@
 </script>
 
 <script type="text/html" data-help-name="tuya-device">
+  <p>
+    Represents a local Tuya device, or (depending on the <b>Data point</b>
+    selected in the config screen) a single data point of it. References a
+    <code>tuya-local-device</code> config node.
+  </p>
+
+  <h3>Input</h3>
+  <dl class="message-properties">
+    <dt>operation <span class="property-type">string</span></dt>
+    <dd>
+      <code>msg.operation</code> (or <code>msg.payload.operation</code>):
+      <code>SET</code>, <code>GET</code>, <code>REFRESH</code> or
+      <code>CONTROL</code>. Defaults to <code>SET</code>, unless
+      <code>msg.topic</code> is used as a device sub-command (see below).
+    </dd>
+
+    <dt>payload <span class="property-type">object | number | any</span></dt>
+    <dd>
+      <b>SET</b>: an object of <code>{dp: value}</code> to set multiple data
+      points at once, or any other value to set the single data point given
+      by <code>msg.dps</code>, <code>msg.topic</code> or the node's configured
+      Data point.<br>
+      <b>GET</b>: an object (e.g. <code>{dps: [...]}</code>) or a data point
+      number/code to request; if omitted, falls back to
+      <code>msg.dps</code>, <code>msg.topic</code> or the node's configured
+      Data point, or requests all data points when none of those are set.<br>
+      <b>CONTROL</b>: <code>{action, value}</code> passed to a device-specific
+      control command.
+    </dd>
+
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>
+      A data point code/id to target, or - when no recognized operation is
+      set - the name of a device command to dispatch directly (sub-command).
+    </dd>
+  </dl>
+
+  <h3>Output</h3>
+  <p>What is sent depends on the <b>Outputs</b> mode chosen in the config screen:</p>
+  <dl class="message-properties">
+    <dt>Single output (data)</dt>
+    <dd>
+      One message on the first output with <code>msg.payload</code> set to
+      the raw device data, or the value of the single configured Data point.
+    </dd>
+
+    <dt>Use status output</dt>
+    <dd>
+      As above, plus a second output reporting the device connection status
+      (<code>msg.payload.state</code>).
+    </dd>
+
+    <dt>Multi outputs (data + dps)</dt>
+    <dd>
+      The first output carries the full raw data
+      (<code>msg.payload</code> = all data points). Each further output
+      corresponds to one selected data point, with <code>msg.topic</code>
+      set to its code and <code>msg.payload</code> to its current value.
+    </dd>
+  </dl>
+
+  <h3>Details</h3>
+  <p>
+    The node status reflects the underlying device connection: green
+    (connected), yellow (connecting/searching), gray (disabled/disconnected)
+    or red (error, or device not connected while an operation was requested).
+  </p>
 </script>
 
 <script type="text/javascript">

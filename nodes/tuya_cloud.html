@@ -61,6 +61,49 @@
 </script>
 
 <script type="text/html" data-help-name="tuya-cloud">
+  <p>
+    Configuration node for accessing the Tuya Cloud API. It is used to look
+    up devices, data models and local keys, and (depending on the app type)
+    to resolve the current cloud user. It has no input/output of its own and
+    is referenced by a <code>tuya-project</code> node.
+  </p>
+
+  <h3>Settings</h3>
+  <dl class="message-properties">
+    <dt>Region <span class="property-type">string</span></dt>
+    <dd>
+      The Tuya Cloud data center the account belongs to (EU, USA, China, India).
+    </dd>
+
+    <dt>App type <span class="property-type">string</span></dt>
+    <dd>
+      <ul>
+        <li><b>Smart</b>: Tuya IoT Platform project, authenticated with an Access ID / Access Key.</li>
+        <li><b>Business</b>: Tuya IoT Business API, authenticated with an email/password login plus a secret key and certificate.</li>
+      </ul>
+    </dd>
+
+    <dt>AccessId / AccessKey <span class="property-type">string</span></dt>
+    <dd>
+      Smart app only. Project credentials from the Tuya IoT Platform.
+    </dd>
+
+    <dt>UserId (optional) <span class="property-type">string</span></dt>
+    <dd>
+      Smart app only. Overrides automatic resolution of the cloud user id.
+    </dd>
+
+    <dt>Any deviceId <span class="property-type">string</span></dt>
+    <dd>
+      Smart app only. A device id belonging to the account, used to resolve
+      the UserId when it is not set explicitly.
+    </dd>
+
+    <dt>Secret key / Certificate / User (email) / Password <span class="property-type">string</span></dt>
+    <dd>
+      Business app only. Login credentials for the Tuya Business API.
+    </dd>
+  </dl>
 </script>
 
 <script type="text/javascript">

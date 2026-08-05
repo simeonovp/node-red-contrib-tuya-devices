@@ -98,6 +98,88 @@
 </script>
 
 <script type="text/html" data-help-name="tuya-project">
+  <p>
+    Central configuration for a Tuya project: cloud access, device cache,
+    MQTT topic bridging, translation and debug settings. Other Tuya nodes
+    (<code>tuya-manager</code>, <code>tuya-local-device</code>) reference one
+    project node, and every device/model node created from the editor is
+    stored under this project's local cache folder.
+  </p>
+
+  <h3>Settings tab</h3>
+  <dl class="message-properties">
+    <dt>Name <span class="property-type">string</span></dt>
+    <dd>
+      Also used as the resource folder name (<code>resources/&lt;name&gt;</code>)
+      for this project's local cache (users, homes, devices, models, schemas).
+    </dd>
+
+    <dt>DB url (optional) <span class="property-type">string</span></dt>
+    <dd>
+      URL to an existing project cache, used to bootstrap this project
+      without cloud access.
+    </dd>
+
+    <dt>Auto translate <span class="property-type">boolean</span></dt>
+    <dd>Automatically translate device and data point texts.</dd>
+
+    <dt>Language / Ext. translator <span class="property-type">string</span></dt>
+    <dd>
+      Target language, and optionally an external (internet-based)
+      translation service to use for texts not already translated.
+    </dd>
+  </dl>
+
+  <h3>Cloud tab</h3>
+  <dl class="message-properties">
+    <dt>Cloud access <span class="property-type">config node</span></dt>
+    <dd>
+      Reference to a <code>tuya-cloud</code> config node, used to query
+      devices, models and local keys.
+    </dd>
+
+    <dt>Home / Room <span class="property-type">string</span></dt>
+    <dd>
+      Restrict the devices shown/managed by this project to a single home
+      and/or room.
+    </dd>
+  </dl>
+
+  <h3>Mqtt tab</h3>
+  <dl class="message-properties">
+    <dt>MQTT broker <span class="property-type">config node</span></dt>
+    <dd>
+      Reference to a <code>tuya-mqtt-broker</code> config node. When set,
+      local devices additionally publish their data points and accept
+      commands over MQTT.
+    </dd>
+
+    <dt>Full topic <span class="property-type">string</span></dt>
+    <dd>
+      Topic pattern used for MQTT, e.g. <code>tuya/%topic%/%prefix%</code>,
+      where <code>%topic%</code> is replaced by the device id and
+      <code>%prefix%</code> by <code>cmnd</code>/<code>stat</code>/<code>tele</code>
+      (Tasmota-style topic scheme).
+    </dd>
+  </dl>
+
+  <h3>MISC tab</h3>
+  <dl class="message-properties">
+    <dt>Disable ARP <span class="property-type">boolean</span></dt>
+    <dd>
+      Disable ARP lookups otherwise used to resolve a device's IP address
+      from its MAC address.
+    </dd>
+
+    <dt>Debug output in terminal <span class="property-type">boolean</span></dt>
+    <dd>
+      Enable verbose logging per subsystem: Project, Local cache, Cloud
+      connection, MQTT broker connection, Device scanner.
+    </dd>
+  </dl>
+
+  <h3>Details</h3>
+  <p>This is a configuration node with no input/output of its own.</p>
 </script>
 
 <script type="text/javascript">

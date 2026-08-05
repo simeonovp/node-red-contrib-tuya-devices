@@ -38,6 +38,41 @@
 </script>
 
 <script type="text/html" data-help-name="tuya-mqtt-broker">
+  <p>Configuration for a connection to an MQTT broker.</p>
+  <p>
+    This configuration creates a single connection to the broker, shared by
+    the <code>tuya-project</code> node it is attached to. When set, local
+    devices publish their data points and accept commands over MQTT, using
+    a Tasmota-style <code>cmnd</code>/<code>stat</code>/<code>tele</code>
+    topic scheme (configured via the project's <b>Full topic</b> setting).
+  </p>
+
+  <h4>Address</h4>
+  <p>
+    Can be an ip address (e.g. 192.168.1.170), a name (e.g. localhost) or a
+    full url (e.g. mqtt://example.com:1883).
+  </p>
+
+  <h4>Client ID</h4>
+  <p>
+    Leave blank to auto-generate one. If <b>Use clean session</b> is
+    unchecked, a fixed Client ID must be given.
+  </p>
+
+  <h4>Secure connection (SSL/TLS)</h4>
+  <p>
+    Enable to connect via <code>mqtts://</code> and select a TLS
+    configuration node providing the certificate/CA options.
+  </p>
+
+  <h4>Username / Password</h4>
+  <p>Optional broker login credentials.</p>
+
+  <h3>Details</h3>
+  <p>
+    The connection is only opened once at least one local device using this
+    project is registered, and closed again once none are left.
+  </p>
 </script>
 
 <script type="text/javascript">

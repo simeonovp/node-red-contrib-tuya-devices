@@ -55,6 +55,47 @@
 </script>
 
 <script type="text/html" data-help-name="tuya-manager">
+  <p>
+    Administrative node for a <code>tuya-project</code>: forwards commands to
+    the project (device scan, cache management, model translation, ...) and
+    reports device-discovery events from the scanner. Its config screen
+    (Devices / Models / Scanner tabs) is also how new
+    <code>tuya-local-device</code> and <code>tuya-model</code> nodes are
+    added to a flow.
+  </p>
+
+  <h3>Input</h3>
+  <dl class="message-properties">
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>
+      Command to run:
+      <ul>
+        <li><code>restartNodeRed</code>: restart the Node-RED service (requires a matching NOPASSWD sudoers rule for <code>systemctl restart nodered.service</code>).</li>
+        <li><code>updateDeviceDataModel</code>: re-fetch/update all device data models from the cloud.</li>
+        <li><code>translateDeviceModels</code>: (re-)translate device/schema texts.</li>
+        <li>any other project method name (e.g. <code>updateDevices</code>, <code>backupCache</code>, <code>clearCache</code>, <code>scannerDevices</code>): forwarded as-is to the underlying project.</li>
+      </ul>
+    </dd>
+
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>Passed through to the project command.</dd>
+  </dl>
+
+  <h3>Output</h3>
+  <dl class="message-properties">
+    <dt>topic <span class="property-type">"deviceEvent"</span></dt>
+    <dd>Emitted whenever the device scanner finds or updates a device on the network.</dd>
+
+    <dt>scannerId, name, data</dt>
+    <dd>Details of the scanner event.</dd>
+  </dl>
+  <p>
+    In addition, project commands other than <code>restartNodeRed</code> pass
+    the (possibly modified) input message through to the output on success.
+  </p>
+
+  <h3>Details</h3>
+  <p>The node status reflects the Tuya Cloud connection (green: online, red: offline).</p>
 </script>
 
 <script type="text/javascript">

@@ -85,6 +85,32 @@
 </script>
 
 <script type="text/html" data-help-name="tuya-model">
+  <p>
+    Represents the data model (services, properties, actions and events) of
+    a Tuya device category/product - i.e. the definition of its data points,
+    not a specific device. These nodes are created automatically from the
+    <code>tuya-manager</code> config screen's Models tab, and are shared by
+    every local device that uses the same model.
+  </p>
+
+  <h3>Settings</h3>
+  <dl class="message-properties">
+    <dt>ID <span class="property-type">string</span></dt>
+    <dd>
+      The Tuya productId (Business API) or dataModel id (Smart API) this
+      model was generated from.
+    </dd>
+
+    <dt>Name <span class="property-type">string</span></dt>
+    <dd>Optional display name.</dd>
+  </dl>
+  <p>
+    The Services / Properties / Actions / Events tabs are read-only, filled
+    from the cached device schema for inspection only.
+  </p>
+
+  <h3>Details</h3>
+  <p>This is a configuration node with no input/output of its own.</p>
 </script>
 
 <script type="text/javascript">
