@@ -6,6 +6,8 @@
 - Fixed MQTT broker node (undefined mqttOptions on TLS, credentials never forwarded to the broker)
 - Fixed device GET command being silently ignored when sent without a payload
 - Fixed manager node not forwarding the userId status to the frontend
+- Fixed device node config screen always resetting the selected Data point back to "all" on reopen
+- Fixed crash (and resulting reboot loop) when a device received a command over MQTT (tuya-devices dependency bump required)
 
 # v1.5.6
 - Added support for devices using Tuya v3.5, wich not send announcements
