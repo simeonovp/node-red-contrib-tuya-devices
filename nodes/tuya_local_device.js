@@ -36,25 +36,52 @@ module.exports = function (RED) {
         this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
       }
 
+      if (!config.deviceId) {
+        this.error('LocalDevice configuration is wrong or missing: deviceId is required, please review the node settings')
+        this.status({ fill: 'red', shape: 'dot', text: 'Wrong config' })
+      }
+
       this.device = new Device(this.gateway, this.project, config, this)
 
       this.on('close', (done) => {
-        this.device.deinit()
+        try {
+          this.device.deinit()
+        }
+        catch (err) {
+          this.error('deinit() failed: ' + (err.message || err))
+        }
         done()
       })
-  
+
       // Initial state
-      process.nextTick(() => this.device.initStatus())
+      process.nextTick(() => {
+        try {
+          this.device.initStatus()
+        }
+        catch (err) {
+          this.error('initStatus() failed: ' + (err.message || err))
+        }
+      })
     }
 
     enableNode() {
       this.log('enableNode(): enabling the node ' + this.id)
-      if (this.device.autoStart) this.device.startComm()
+      try {
+        if (this.device.autoStart) this.device.startComm()
+      }
+      catch (err) {
+        this.error('enableNode() failed: ' + (err.message || err))
+      }
     }
 
     disableNode() {
       this.log('disableNode(): disabling the node ' + this.id)
-      this.device.closeComm()
+      try {
+        this.device.closeComm()
+      }
+      catch (err) {
+        this.error('disableNode() failed: ' + (err.message || err))
+      }
     }
   }
 

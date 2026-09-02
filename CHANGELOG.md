@@ -1,6 +1,10 @@
 # TODO
 - Support custom icon paths (https://github.com/simeonovp/node-red-contrib-tuya-devices/issues/28)
 
+# v1.5.8
+- Bumped tuya-devices to 1.3.7 (decodes 'raw' typed data points by default instead of publishing them as base64 over MQTT, fixes #45)
+- Added "Publish raw values as base64" option (rawAsCoded) to the local device Advanced tab to opt back into the previous behaviour
+
 # v1.5.7
 - Fixed crash on startup for device nodes with per-DP outputs when the device was already connected
 - Fixed MQTT broker node (undefined mqttOptions on TLS, credentials never forwarded to the broker)
@@ -8,6 +12,7 @@
 - Fixed manager node not forwarding the userId status to the frontend
 - Fixed device node config screen always resetting the selected Data point back to "all" on reopen
 - Fixed crash (and resulting reboot loop) when a device received a command over MQTT (tuya-devices dependency bump required)
+- Fixed crash (and resulting reboot loop) on deploy when a local device config node was left with an empty deviceId, e.g. from an imported example flow (tuya-devices dependency bump required)
 
 # v1.5.6
 - Added support for devices using Tuya v3.5, wich not send announcements

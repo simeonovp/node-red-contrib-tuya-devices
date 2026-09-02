@@ -125,6 +125,10 @@
         <label for="node-config-input-watchdogTimeout"><i class="fa fa-wrench"></i> Ping interval (s)</label>
         <input type="text" id="node-config-input-watchdogTimeout">
       </div>
+      <div class="form-row">
+        <label for="node-config-input-rawAsCoded"><i class="fa fa-wrench"></i> Publish raw values as base64</label>
+        <input type="checkbox" id="node-config-input-rawAsCoded">
+      </div>
     </div>
     <div id="tuya-project-misc-tab" style="display:none">
       <fieldset>
@@ -273,6 +277,15 @@
     <dd>
       Watchdog interval in seconds used to monitor device connectivity.
     </dd>
+
+    <dt>Publish raw values as base64 <span class="property-type">boolean</span></dt>
+    <dd>
+      Only affects MQTT publishing (when the project has an MQTT broker
+      configured). By default, <code>raw</code> typed data points are
+      decoded from base64 into a byte array before being published. Enable
+      this to instead publish the untouched base64-encoded string and
+      handle the decoding yourself.
+    </dd>
   </dl>
 
   <h3>Debug options</h3>
@@ -333,6 +346,7 @@
       reinitOnLost: { value: false },
       watchdogTimeout: { value: 60 },
       eventMode: { value: 'event-both', required: true },
+      rawAsCoded: { value: false },
       // MISC tab
       dbgDevice: { value: false },
       dbgDeviceExtension: { value: false },
