@@ -12,6 +12,7 @@ module.exports = function (RED) {
 
       const cloudStatusHandler = this.onCloudStatus.bind(this)
       const deviceFindHandler = this.onDeviceEvent.bind(this)
+      const deviceStateHandler = this.onDeviceState.bind(this)
 
       this.projectNode = RED.nodes.getNode(config.project)
       if (this.projectNode?.type === 'tuya-project') {
@@ -19,6 +20,7 @@ module.exports = function (RED) {
         if (this.project) {
           this.project.addListener('cloud-status', cloudStatusHandler)
           this.project.addListener('device-find', deviceFindHandler)
+          this.project.addListener('device-state', deviceStateHandler)
         }
         else this.error('Project object is ' + this.project)
       }
@@ -27,6 +29,7 @@ module.exports = function (RED) {
         if (this.project) {
           this.project.removeListener('cloud-status', cloudStatusHandler)
           this.project.removeListener('device-find', deviceFindHandler)
+          this.project.removeListener('device-state', deviceStateHandler)
         }
         done()
       })
@@ -74,6 +77,7 @@ module.exports = function (RED) {
           case 'backupCache':
           case 'clearCache':
           case 'scannerDevices':
+          case 'deviceStates':
             this.sendToFrontend({topic: msg.topic, payload: msg}) // notify frontend
             break
         }
@@ -99,6 +103,10 @@ module.exports = function (RED) {
 
     onDeviceEvent(scannerId, name, data) {
       this.send({ topic: 'deviceEvent', scannerId, name, data })
+    }
+
+    onDeviceState(deviceId, state) {
+      this.sendToFrontend({ topic: 'deviceState', payload: { deviceId, state } })
     }
 
     sendToFrontend(payload) {

@@ -152,6 +152,9 @@ module.exports = function (RED) {
         case 'disabled':
           this.status({ fill: 'gray', shape: 'ring', text: state })
           break
+        case 'paused':
+          this.status({ fill: 'blue', shape: 'ring', text: state })
+          break
         case 'search':
           this.status({ fill: 'yellow', shape: 'ring', text: state })
           break

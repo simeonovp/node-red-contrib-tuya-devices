@@ -17,6 +17,10 @@
         <input type="text" id="node-config-input-deviceId">
       </div>
       <div class="form-row">
+        <label for="node-config-input-enabled"><i class="fa fa-power-off"></i> Enabled</label>
+        <input type="checkbox" id="node-config-input-enabled">
+      </div>
+      <div class="form-row">
         <label for="node-config-input-netType"><i class="fa fa-wrench"></i> Net type</label>
         <select name="node-config-input-netType" id="node-config-input-netType">
           <option value="" selected disabled hidden>Auto</option>
@@ -126,6 +130,10 @@
         <input type="text" id="node-config-input-watchdogTimeout">
       </div>
       <div class="form-row">
+        <label for="node-config-input-pauseTimeout"><i class="fa fa-wrench"></i> Pause when offline (min)</label>
+        <input type="number" id="node-config-input-pauseTimeout" min="0">
+      </div>
+      <div class="form-row">
         <label for="node-config-input-rawAsCoded"><i class="fa fa-wrench"></i> Publish raw values as base64</label>
         <input type="checkbox" id="node-config-input-rawAsCoded">
       </div>
@@ -171,6 +179,12 @@
     <dt>Device ID <span class="property-type">string</span></dt>
     <dd>
       The unique Tuya device identifier.
+    </dd>
+
+    <dt>Enabled <span class="property-type">boolean</span></dt>
+    <dd>
+      A disabled device stays configured, but does not connect.
+      Nodes using it report the state <code>disabled</code>.
     </dd>
 
     <dt>Net type <span class="property-type">number</span></dt>
@@ -278,6 +292,13 @@
       Watchdog interval in seconds used to monitor device connectivity.
     </dd>
 
+    <dt>Pause when offline <span class="property-type">number</span></dt>
+    <dd>
+      Minutes a device may stay offline before its connection attempts are
+      paused to avoid load. A paused device resumes on its next network
+      announcement or manually in the manager. 0 (default) never pauses.
+    </dd>
+
     <dt>Publish raw values as base64 <span class="property-type">boolean</span></dt>
     <dd>
       Only affects MQTT publishing (when the project has an MQTT broker
@@ -325,6 +346,7 @@
       name: { value: '', required: true },
       project: { type: 'tuya-project', required: true },
       deviceId: { value: '', required: true },
+      enabled: { value: true },
       localKey: { value: '' },
       netType: { value: 0 },
       gateway: { type: 'tuya-local-device', required: false },
@@ -345,6 +367,7 @@
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
       reinitOnLost: { value: false },
       watchdogTimeout: { value: 60 },
+      pauseTimeout: { value: 0 },
       eventMode: { value: 'event-both', required: true },
       rawAsCoded: { value: false },
       // MISC tab
@@ -489,6 +512,8 @@
 
       if (!this.retryTimeout) $('#node-config-input-retryTimeout').val(1000)
       if (!this.findTimeout) $('#node-config-input-findTimeout').val(10000)
+      if (this.enabled === undefined) $('#node-config-input-enabled').prop('checked', true)
+      if (this.pauseTimeout === undefined) $('#node-config-input-pauseTimeout').val(0)
 
       if (!parseInt(this.netType)) {
         //recognize device net type

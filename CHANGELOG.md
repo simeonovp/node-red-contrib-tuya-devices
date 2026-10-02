@@ -1,5 +1,17 @@
 # TODO
-- Support custom icon paths (https://github.com/simeonovp/node-red-contrib-tuya-devices/issues/28)
+- Add receive buffering across TCP chunks in CommChannel/MessageParser: a Tuya packet split across two TCP segments (or one that just hasn't fully arrived yet) is currently parsed in isolation per socket 'data' event and fails with "Packet missing payload" instead of being buffered and completed by the next chunk. Caught internally (no crash, see v1.5.10), but the update for that moment is silently dropped. Needs a persistent partial-packet buffer in CommChannel that prepends leftover bytes to the next chunk before parsing.
+
+# v1.5.9
+- Fixed message parser occasionally dropping/failing to parse an otherwise valid, complete packet: parsePacketPre35() located the packet end by scanning for the raw '0000AA55' suffix bytes, which can occur by chance inside the encrypted payload and cause a premature/incorrect split. Now computed from the header's own length field instead. Bug has been present since the parser was first introduced (2025-03-01), not a recent regression (tuya-devices dependency bump required)
+- Fixed #28 "Can not translate X" being logged (and the translation dropped) even when a translation was found; also fixed downloadIconAsync() silently swallowing the real error text and hanging forever on file errors (tuya-devices dependency bump required)
+- Added #28 support for custom device icons served from an absolute URL (previously only Tuya's relative CDN icon paths worked); also fixed a crash in updateDeviceIcons() (missing `this.`) found along the way (tuya-devices dependency bump required)
+- Added device state to the manager Devices tab: the "Add" column is now "Action" and shows the state by button and color (+: not added, gray play: disabled, yellow stop: offline, green stop: online, red stop: paused). Stop disables a device, play enables it again, both take effect after deploy (tuya-devices dependency bump required)
+- Added "Enabled" option to the local device Settings tab: a disabled device stays configured, but does not connect (tuya-devices dependency bump required)
+- Added "Pause when offline (min)" option to the local device Advanced tab: a device offline longer than this stops its connection attempts to avoid load and resumes on its next network announcement; 0 (default) never pauses, so existing devices behave as before (tuya-devices dependency bump required)
+- Fixed network watchdog ("Reinit on lost connection") failing on its first check, `ping` was never required (tuya-devices dependency bump required)
+- Fixed device models never being released when their last device was removed (tuya-devices dependency bump required)
+- Fixed category overloads (e.g. value ranges) never being applied to device models (tuya-devices dependency bump required)
+- Bumped tuya-devices to 1.3.8
 
 # v1.5.8
 - Bumped tuya-devices to 1.3.7 (decodes 'raw' typed data points by default instead of publishing them as base64 over MQTT, fixes #45)

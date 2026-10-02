@@ -45,10 +45,10 @@ module.exports = function (RED) {
 
       this.on('close', (done) => {
         try {
-          this.device.deinit()
+          this.device.dispose()
         }
         catch (err) {
-          this.error('deinit() failed: ' + (err.message || err))
+          this.error('dispose() failed: ' + (err.message || err))
         }
         done()
       })

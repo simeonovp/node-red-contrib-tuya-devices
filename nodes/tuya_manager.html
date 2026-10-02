@@ -96,6 +96,25 @@
 
   <h3>Details</h3>
   <p>The node status reflects the Tuya Cloud connection (green: online, red: offline).</p>
+  <p>
+    The <b>Action</b> column of the Devices tab shows the state of each device,
+    as reported by the deployed project, and changes its configuration:
+  </p>
+  <ul>
+    <li><i>+</i> (<code>none</code>): not added to the project, click to add it.</li>
+    <li>gray <i>play</i> (<code>disabled</code>): added, but disabled, click to enable it.</li>
+    <li>yellow <i>stop</i> (<code>offline</code>): enabled, but not connected, click to disable it.</li>
+    <li>green <i>stop</i> (<code>online</code>): connected, click to disable it.</li>
+    <li>
+      red <i>stop</i> (<code>paused</code>): offline longer than the configured pause
+      time, connection attempts are stopped until the device announces itself again
+      in the network. Click to disable it.
+    </li>
+  </ul>
+  <p>
+    Enabling and disabling take effect after deploy, until then the button is
+    marked with <i>*</i>.
+  </p>
 </script>
 
 <script type="text/javascript">
@@ -277,6 +296,7 @@
 
         tuya_devices.addLocalDevice(devConfig)
         this.devicesDirty = true
+        renderDeviceState(deviceId)
       }
 
       // recognize text color for not readonly
@@ -394,13 +414,73 @@
         this.modelsDirty = false
       }
 
+      const stateColors = { online: 'green', offline: 'gold', paused: 'red', disabled: 'gray' }
+
+      // Enabling or disabling changes the device node config, it takes effect after deploy
+      const setDeviceEnabled = (deviceId, enabled) => {
+        const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
+        if (!devNode || ((devNode.enabled !== false) === enabled)) return
+        RED.history.push({
+          t: 'edit',
+          node: devNode,
+          changes: { enabled: devNode.enabled },
+          changed: devNode.changed,
+          dirty: RED.nodes.dirty()
+        })
+        devNode.enabled = enabled
+        devNode.changed = true
+        devNode.dirty = true
+        RED.nodes.dirty(true)
+        renderDeviceState(deviceId)
+      }
+
+      const createActionButton = (icon, color, title, onClick) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.title = title
+        button.classList.add('red-ui-button')
+        const i = document.createElement('i')
+        i.classList.add('fa', icon)
+        if (color) i.style.color = color
+        button.appendChild(i)
+        button.addEventListener('click', onClick)
+        return button
+      }
+
+      // The button follows the editor config (stop: enabled, play: disabled),
+      // its color shows the runtime state. Nodes without device node keep the + button.
+      const renderDeviceState = (deviceId) => {
+        const actionSpan = document.getElementById(`device-action-${deviceId}`)
+        if (!actionSpan) return
+        actionSpan.replaceChildren()
+        const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
+        if (!devNode) return
+        const enabled = devNode.enabled !== false
+        const state = this.deviceStates?.[deviceId] || ''
+        const pending = !!state && (enabled ? ['none', 'disabled'].includes(state) : (state !== 'disabled'))
+        const title = `${state}${pending ? ' (deploy pending)' : ''}, click to ${enabled ? 'disable' : 'enable'}`
+        actionSpan.appendChild(enabled
+          ? createActionButton('fa-stop', stateColors[state], title, () => setDeviceEnabled(deviceId, false))
+          : createActionButton('fa-play', stateColors[state], title, () => setDeviceEnabled(deviceId, true)))
+        if (pending) {
+          const mark = document.createElement('span')
+          mark.textContent = '*'
+          mark.title = 'deploy pending'
+          actionSpan.appendChild(mark)
+        }
+      }
+
+      const renderDeviceStates = () => {
+        for (const deviceId in this.cloudDevices || {}) renderDeviceState(deviceId)
+      }
+
       refreshTableHeaders('device-table', [
         { text: "Icon", width: "10%" },
         { text: "Cloud name", width: "30%", textAlign: "left" },
         { text: "Node name", textAlign: "left" },
         { text: "Space", width: "20%", textAlign: "left" },
         { text: "Cat.", width: "10%", textAlign: "left" },
-        { text: "Add", width: "5%" },
+        { text: 'Action', width: '5%' },
       ])
 
       const refreshDevices = () => {
@@ -465,6 +545,9 @@
           icon.classList.add('fa', 'fa-plus')
           button.appendChild(icon)
           td6.appendChild(button)
+          const actionSpan = document.createElement('span')
+          actionSpan.id = `device-action-${deviceId}`
+          td6.appendChild(actionSpan)
           tr.appendChild(td6)
 
           return tr
@@ -496,6 +579,7 @@
           }
           else $(`#add-node-${deviceId}`).click(() => addDeviceNode(deviceId))
         }
+        renderDeviceStates()
       }
 
       const refresh = (cleanup) => {
@@ -647,6 +731,7 @@
 
       refresh()
       tuya_devices.sendMsg(this, { topic: 'scannerDevices' }, (resp) => { })
+      tuya_devices.sendMsg(this, { topic: 'deviceStates' }, (resp) => { })
 
       $('#refresh-devices').click(() => {
         refresh(true)
@@ -710,6 +795,18 @@
             case 'scannerDevices':
               refreshScannerDevices(payload.payload)
               break
+            case 'deviceStates':
+              this.deviceStates = payload.payload?.payload || {}
+              renderDeviceStates()
+              break
+            case 'deviceState': {
+              const deviceId = payload.payload?.deviceId
+              if (!deviceId) break
+              if (!this.deviceStates) this.deviceStates = {}
+              this.deviceStates[deviceId] = payload.payload.state
+              renderDeviceState(deviceId)
+              break
+            }
             case 'userId': //???
               console.log('notification for userId')
               if (this.projectNode?.cloud) {
