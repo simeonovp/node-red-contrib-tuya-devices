@@ -150,6 +150,7 @@ module.exports = function (RED) {
       (this.outputsMode === 2) && data && this.send([null, { payload: { state, ...data } }])
       switch (state) {
         case 'disabled':
+        case 'stopped':
           this.status({ fill: 'gray', shape: 'ring', text: state })
           break
         case 'paused':

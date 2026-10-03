@@ -102,17 +102,17 @@
   </p>
   <ul>
     <li><i>+</i> (<code>none</code>): not added to the project, click to add it.</li>
-    <li>gray <i>play</i> (<code>disabled</code>): added, but disabled, click to enable it.</li>
-    <li>yellow <i>stop</i> (<code>offline</code>): enabled, but not connected, click to disable it.</li>
-    <li>green <i>stop</i> (<code>online</code>): connected, click to disable it.</li>
+    <li>gray <i>play</i> (<code>stopped</code>): added, but stopped, click to start it.</li>
+    <li>yellow <i>stop</i> (<code>offline</code>): not connected, click to stop it.</li>
+    <li>green <i>stop</i> (<code>online</code>): connected, click to stop it.</li>
     <li>
       red <i>stop</i> (<code>paused</code>): offline longer than the configured pause
-      time, connection attempts are stopped until the device announces itself again
-      in the network. Click to disable it.
+      time, connection attempts are paused until the device announces itself again
+      in the network. Click to stop it.
     </li>
   </ul>
   <p>
-    Enabling and disabling take effect after deploy, until then the button is
+    Starting and stopping take effect after deploy, until then the button is
     marked with <i>*</i>.
   </p>
 </script>
@@ -414,20 +414,21 @@
         this.modelsDirty = false
       }
 
-      const stateColors = { online: 'green', offline: 'gold', paused: 'red', disabled: 'gray' }
+      const stateColors = { online: 'green', offline: 'gold', paused: 'red', stopped: 'gray' }
 
-      // Enabling or disabling changes the device node config, it takes effect after deploy
-      const setDeviceEnabled = (deviceId, enabled) => {
+      // Starting or stopping changes the device node config, it takes effect after deploy
+      const setDeviceStopped = (deviceId, stopped) => {
         const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
-        if (!devNode || ((devNode.enabled !== false) === enabled)) return
+        if (!devNode || ((devNode.stopped === true) === stopped)) return
+        console.log(`tuya-manager: ${stopped ? 'stop' : 'start'} device ${devNode.name || deviceId}, takes effect after deploy`)
         RED.history.push({
           t: 'edit',
           node: devNode,
-          changes: { enabled: devNode.enabled },
+          changes: { stopped: devNode.stopped },
           changed: devNode.changed,
           dirty: RED.nodes.dirty()
         })
-        devNode.enabled = enabled
+        devNode.stopped = stopped
         devNode.changed = true
         devNode.dirty = true
         RED.nodes.dirty(true)
@@ -447,21 +448,22 @@
         return button
       }
 
-      // The button follows the editor config (stop: enabled, play: disabled),
-      // its color shows the runtime state. Nodes without device node keep the + button.
+      // The button follows the editor config (stop: running, play: stopped), its color
+      // shows the runtime state, a stopped device is gray at once, even before deploy.
+      // Nodes without device node keep the + button.
       const renderDeviceState = (deviceId) => {
         const actionSpan = document.getElementById(`device-action-${deviceId}`)
         if (!actionSpan) return
         actionSpan.replaceChildren()
         const devNode = RED.nodes.node(tuya_devices.deviceNodeId(deviceId))
         if (!devNode) return
-        const enabled = devNode.enabled !== false
+        const stopped = devNode.stopped === true
         const state = this.deviceStates?.[deviceId] || ''
-        const pending = !!state && (enabled ? ['none', 'disabled'].includes(state) : (state !== 'disabled'))
-        const title = `${state}${pending ? ' (deploy pending)' : ''}, click to ${enabled ? 'disable' : 'enable'}`
-        actionSpan.appendChild(enabled
-          ? createActionButton('fa-stop', stateColors[state], title, () => setDeviceEnabled(deviceId, false))
-          : createActionButton('fa-play', stateColors[state], title, () => setDeviceEnabled(deviceId, true)))
+        const pending = !!state && (stopped ? (state !== 'stopped') : ['none', 'stopped'].includes(state))
+        const title = `${state}${pending ? ' (deploy pending)' : ''}, click to ${stopped ? 'start' : 'stop'}`
+        actionSpan.appendChild(stopped
+          ? createActionButton('fa-play', stateColors.stopped, title, () => setDeviceStopped(deviceId, false))
+          : createActionButton('fa-stop', stateColors[state], title, () => setDeviceStopped(deviceId, true)))
         if (pending) {
           const mark = document.createElement('span')
           mark.textContent = '*'
