@@ -33,6 +33,8 @@ In the manager config form:
 If the cloud configuration is correct and the manager node has received at least once a message with topic 'updateDevices' all mapped devices will be listed in the config. The device capabilities will be cached localy. With the plus button can be added a config node for every local device. This config nodes contains all setting nedded to use the device localy and can be selected in the configuration of the Tuya device nodes. 
 The device nodes can be easy connected to dashboard ui nodes (see example below). For this the single DP must be selected or a topic must be used to select a rigth DP, e.g by using of switch node. If device capabilites exists in local cache (e.g. after once successfully loaded from cloud) the device commands can be requestet by message usung topic 'dispatchCommands' (as in examle). A whole data model for the device can be requested by message with topic 'getDataModel'. 
 
+The Tuya protocol version of a local device (Advanced tab) can be left on `auto`: the first answer of the device verifies the version, it is stored in the local cache and shown as verified in the config dialog. To force a new detection, e.g. after a firmware update, select another version or `auto` and deploy, or send a message with topic `resetProtocolVersion` to a device node.
+
 ## Examples
 - [Step by step with pictures](./doc/step_by_step.md)
 - [Tuya power device flow examle](./img/power_dev.json)

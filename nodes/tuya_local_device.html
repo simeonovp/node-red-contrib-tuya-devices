@@ -102,7 +102,14 @@
       </div>
       <div class="form-row">
         <label for="node-config-input-tuyaVersion"><i class="fa fa-wrench"></i> Tuya protocol version</label>
-        <input type="text" id="node-config-input-tuyaVersion">
+        <select id="node-config-input-tuyaVersion" style="width:100px">
+          <option value="auto">auto</option>
+          <option value="3.1">3.1</option>
+          <option value="3.3">3.3</option>
+          <option value="3.4">3.4</option>
+          <option value="3.5">3.5</option>
+        </select>
+        <span id="tuya-version-state" style="margin-left:8px"></span>
       </div>
       <div class="form-row">
         <label for="node-config-input-retryTimeout"><i class="fa fa-wrench"></i> Retry timeout (ms)</label>
@@ -259,7 +266,13 @@
 
     <dt>Tuya protocol version <span class="property-type">string</span></dt>
     <dd>
-      Explicit Tuya protocol version to use.
+      Tuya protocol version of the local connection. <code>auto</code>: not confirmed,
+      the runtime starts with the version of the device announcement (else 3.4) and
+      detects it. The first answer of the device verifies the version, it is stored in
+      the device entry of the cache and selected here when the dialog opens
+      (shown as <i>verified</i>). Selecting another value than the verified one
+      (also <code>auto</code>) removes the verification on the next deploy and
+      triggers a new detection; a fixed version is then used first.
     </dd>
 
     <dt>Retry timeout <span class="property-type">number</span></dt>
@@ -335,8 +348,6 @@
     return cleaned.match(/.{1,2}/g).join(':').toUpperCase()
   }
 
-  // cloud module firmware "pv" (e.g. "2.2") to local Tuya protocol version (e.g. "3.2")
-  const pvToTuyaVersion = (pv) => pv ? String(pv).replace(/^2\./, '3.') : ''
 
   RED.nodes.registerType('tuya-local-device', {
     category: 'config',
@@ -362,7 +373,8 @@
       room: { value: '' },
       // Advanced tab
       deviceCategory: { value: '' },
-      tuyaVersion: { value: '' },
+      tuyaVersion: { value: 'auto' },
+      protocolResetAt: { value: 0 }, // set by the editor when the verified version is deselected
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
       findTimeout: { value: 10000, required: true }, // validate: RED.validators.number() },
       reinitOnLost: { value: false },
@@ -716,17 +728,28 @@
             this.deviceCategory = cloudDevice.category
             $('#node-config-input-deviceCategory').val(this.deviceCategory)
           }
+          // protocol version verified by an answer of the device, stored by the runtime
+          this._verifiedVersion = cloudDevice.protocolVersion || ''
+          if (this._verifiedVersion) {
+            $('#node-config-input-tuyaVersion').val(this._verifiedVersion)
+            const at = cloudDevice.protocolVerifiedAt ? new Date(cloudDevice.protocolVerifiedAt).toLocaleString() : ''
+            $('#tuya-version-state').text(`verified ${at}`)
+          }
+          else $('#tuya-version-state').text('not verified')
           updateWidgets()
         })
       }
 
+      // older configs have an empty version, that means auto
+      if (!this.tuyaVersion) $('#node-config-input-tuyaVersion').val('auto')
+
       //refreshGateway()
       fillDeviceProperties()
       const project = RED.nodes.node(this.project)
-      this.deviceMac && this.tuyaVersion || project?.getAnnouncements(announcements => {
+      // the version is not filled from the announcement, 'auto' uses it at runtime
+      this.deviceMac || project?.getAnnouncements(announcements => {
         const announcement = announcements?.[this.deviceId]
         this.deviceMac = normalizeMac(this.deviceMac || announcement?.mac || '')
-        this.tuyaVersion = announcement?.version || this.tuyaVersion|| ''
         if (!this.deviceMac) {
           // workaround: local network announcement has no mac, fall back to the cloud device data
           this.getCloudDevice(cloudDevice => {
@@ -734,15 +757,7 @@
             $('#node-config-input-deviceMac').val(this.deviceMac)
           })
         }
-        if (!this.tuyaVersion) {
-          // workaround: local network announcement has no version, fall back to the cloud device data
-          this.getCloudDevice(cloudDevice => {
-            this.tuyaVersion = this.tuyaVersion || pvToTuyaVersion(cloudDevice?.moduleMap?.wifi?.pv)
-            $('#node-config-input-tuyaVersion').val(this.tuyaVersion)
-          })
-        }
         $('#node-config-input-deviceMac').val(this.deviceMac)
-        $('#node-config-input-tuyaVersion').val(this.tuyaVersion)
         this.ip = announcement?.ip || this.ip || ''
         $('#node-config-input-ip').val(this.ip)
         if (this.ip) $('#node-config-input-web').show()
@@ -756,7 +771,11 @@
       if (this.home === undefined) this.home = project?.home || ''
       if (this.room === undefined) this.room = project?.room || ''
       if (this.cacheAnnouncement === undefined) this.cacheAnnouncement = true
-      if (this.tuyaVersion === undefined) this.tuyaVersion = ''
+      if (this.tuyaVersion === undefined) this.tuyaVersion = 'auto'
+      // the user selected another value than the verified version: the runtime removes
+      // the verification once (protocolResetAt newer than protocolVerifiedAt)
+      const selectedVersion = $('#node-config-input-tuyaVersion').val()
+      if (this._verifiedVersion && (selectedVersion !== this._verifiedVersion)) this.protocolResetAt = Date.now()
       if (this.deviceMac === undefined) this.deviceMac = ''
       this.deviceMac = normalizeMac(this.deviceMac)
       if (this.staticIp === undefined) this.staticIp = false
