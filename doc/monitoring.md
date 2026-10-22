@@ -67,12 +67,24 @@ Regeln werten die Momentaufnahme aus und liefern einen Befund mit Hinweis
 
 | Befund | Erkennung | Hinweis |
 |---|---|---|
-| nicht im Netz | MAC nicht in ARP, kein Rundruf | WLAN bzw. Stromversorgung des Geräts prüfen |
-| Adresse gewechselt | verwendete IP ≠ ARP-IP bzw. Rundruf-IP | IP wird neu ermittelt |
-| Gerät hängt | Rundruf kommt, TCP antwortet nicht; Herzschlag-Lücke vor dem Abbruch | Neustart des Geräts |
-| Verbindung abgelehnt | `ECONNREFUSED` | anderer lokaler Client verbunden? |
-| Protokoll unsicher | nicht verifiziert bzw. Durchprobieren | Protokollversion prüfen |
-| unbekannt | keine Regel trifft | Momentaufnahme liegt bei |
+Umgesetzt in `tuya-devices/lib/diagnosis.js`; die Regeln gelten in dieser Reihenfolge,
+die erste passende liefert den Befund (`finding`):
+
+| Befund (`finding`) | Erkennung | Hinweis |
+|---|---|---|
+| nicht im Netz (`not-in-network`) | Fehler `EHOSTUNREACH` / `ENETUNREACH` | WLAN bzw. Stromversorgung des Geräts prüfen |
+| Verbindung abgelehnt (`connection-refused`) | `ECONNREFUSED` | anderer lokaler Client verbunden? |
+| Adresse gewechselt (`address-changed`) | verwendete IP ≠ Rundruf-IP | IP wird neu ermittelt; ggf. feste IP |
+| Protokoll unsicher (`protocol-uncertain`) | nicht verifiziert bzw. Durchprobieren | Protokollversion prüfen |
+| Gerät hängt (`device-hangs`) | offline/pausiert, aber Rundruf jünger als 2 min | Neustart des Geräts |
+| nicht erreichbar (`unreachable`) | offline/pausiert, kein aktueller Rundruf | WLAN bzw. Stromversorgung prüfen |
+| antwortet nicht (`not-answering`) | verbunden, keine Antwort (Herzschlag oder Daten) | bei Wiederholung Neustart |
+| instabil (`unstable`) | häufige Abbrüche | WLAN-Empfang am Gerät prüfen |
+| unbekannt (`unknown`) | keine Regel trifft | Momentaufnahme liegt bei |
+
+Ist das Gerät wieder ok, ist `diagnosis` `null`. Die Momentaufnahme enthält dafür neu
+`address.announcementAt` (Zeitpunkt des letzten Rundrufs). Die ARP-Prüfung ist nicht
+Teil der Regeln, weil sie asynchron ist; sie bleibt in der protokollierten Momentaufnahme.
 
 ## 3. Selbstheilung
 
@@ -125,7 +137,8 @@ Jeder Schritt einzeln, testgetrieben, einzeln committbar:
 2. Abweichungen je Gerät im Geräte-Editor. – **Umgesetzt 2026-10-22** (Reiter „Monitoring“:
    wie Projekt / an / aus, eigene Schwellen, Wichtigkeit als `priority` in der Meldung – ändert
    keine Schwellen; „an“ wirkt auch bei ausgeschaltetem Projekt-Monitor).
-3. Diagnose-Regeln.
+3. Diagnose-Regeln. – **Umgesetzt 2026-10-22** (`tuya-devices`: `lib/diagnosis.js`, Tests
+   `test/diagnosis_tests.js`; Feld `diagnosis` in der Meldung `deviceHealth`).
 4. Selbstheilung Stufe 2 und 3.
 5. Stufe 4 mit Schaltgerät – danach können Ausfallmeldung und Neustart-Wächter aus
    anwendungsspezifischen Flows (z. B. „Alarm2“) entfallen.

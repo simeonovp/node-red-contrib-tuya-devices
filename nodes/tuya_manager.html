@@ -99,7 +99,13 @@
     <dd>
       <code>deviceId</code>, <code>name</code>, <code>health</code> (<code>ok</code>,
       <code>degraded</code>, <code>failed</code>), <code>previous</code>, <code>reason</code>,
-      <code>since</code> and <code>diagnostics</code> (connection snapshot of the device).
+      <code>priority</code> (<code>normal</code>, <code>critical</code>), <code>since</code>,
+      <code>diagnosis</code> and <code>diagnostics</code> (connection snapshot of the device).
+      <code>diagnosis</code> is the probable cause as <code>{ finding, text, hint }</code>, e.g.
+      <code>not-in-network</code>, <code>connection-refused</code>, <code>address-changed</code>,
+      <code>protocol-uncertain</code>, <code>device-hangs</code> (announces itself, but no
+      connection), <code>unreachable</code>, <code>not-answering</code>, <code>unstable</code>
+      or <code>unknown</code>; <code>null</code> when the device is ok again.
     </dd>
   </dl>
   <p>
