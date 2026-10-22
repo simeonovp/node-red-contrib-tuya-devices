@@ -88,6 +88,19 @@
 
     <dt>scannerId, name, data</dt>
     <dd>Details of the scanner event.</dd>
+
+    <dt>topic <span class="property-type">"deviceHealth"</span></dt>
+    <dd>
+      Emitted by the device monitor when the health of a device changes (enable it in the
+      Monitoring tab of the project node).
+    </dd>
+
+    <dt>payload <span class="property-type">object</span></dt>
+    <dd>
+      <code>deviceId</code>, <code>name</code>, <code>health</code> (<code>ok</code>,
+      <code>degraded</code>, <code>failed</code>), <code>previous</code>, <code>reason</code>,
+      <code>since</code> and <code>diagnostics</code> (connection snapshot of the device).
+    </dd>
   </dl>
   <p>
     In addition, project commands other than <code>restartNodeRed</code> pass

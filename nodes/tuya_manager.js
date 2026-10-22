@@ -13,6 +13,7 @@ module.exports = function (RED) {
       const cloudStatusHandler = this.onCloudStatus.bind(this)
       const deviceFindHandler = this.onDeviceEvent.bind(this)
       const deviceStateHandler = this.onDeviceState.bind(this)
+      const deviceHealthHandler = this.onDeviceHealth.bind(this)
 
       this.projectNode = RED.nodes.getNode(config.project)
       if (this.projectNode?.type === 'tuya-project') {
@@ -21,6 +22,7 @@ module.exports = function (RED) {
           this.project.addListener('cloud-status', cloudStatusHandler)
           this.project.addListener('device-find', deviceFindHandler)
           this.project.addListener('device-state', deviceStateHandler)
+          this.project.addListener('device-health', deviceHealthHandler)
         }
         else this.error('Project object is ' + this.project)
       }
@@ -30,6 +32,7 @@ module.exports = function (RED) {
           this.project.removeListener('cloud-status', cloudStatusHandler)
           this.project.removeListener('device-find', deviceFindHandler)
           this.project.removeListener('device-state', deviceStateHandler)
+          this.project.removeListener('device-health', deviceHealthHandler)
         }
         done()
       })
@@ -107,6 +110,11 @@ module.exports = function (RED) {
 
     onDeviceState(deviceId, state) {
       this.sendToFrontend({ topic: 'deviceState', payload: { deviceId, state } })
+    }
+
+    // device monitor of the project (monitoring tab of the project node)
+    onDeviceHealth(payload) {
+      this.send({ topic: 'deviceHealth', payload })
     }
 
     sendToFrontend(payload) {

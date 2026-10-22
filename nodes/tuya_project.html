@@ -65,6 +65,28 @@
         <input type="text" id="node-config-input-fullTopic" placeholder="Leave blank for auto generated">
       </div>
     </div>
+    <div id="tuya-project-monitor-tab" style="display:none">
+      <div class="form-row">
+        <input type="checkbox" id="node-config-input-monitorEnabled" style="display: inline-block; width: auto; vertical-align: top;">
+        <label for="node-config-input-monitorEnabled" style="width: auto">Monitor the devices of this project</label>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorOfflineMinutes"><i class="fa fa-clock-o"></i> Offline</label>
+        <input type="number" id="node-config-input-monitorOfflineMinutes" min="1" style="width:100px"> min
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorDropsCount"><i class="fa fa-clock-o"></i> Connection losses</label>
+        <input type="number" id="node-config-input-monitorDropsCount" min="1" style="width:100px"> times
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorDropsWindowMinutes"><i class="fa fa-clock-o"></i> within</label>
+        <input type="number" id="node-config-input-monitorDropsWindowMinutes" min="1" style="width:100px"> min
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorHeartbeatSeconds"><i class="fa fa-clock-o"></i> No heartbeat</label>
+        <input type="number" id="node-config-input-monitorHeartbeatSeconds" min="1" style="width:100px"> s
+      </div>
+    </div>
     <div id="tuya-project-misc-tab" style="display:none">
       <div class="form-row">
         <input type="checkbox" id="node-config-input-disableArp" style="display: inline-block; width: auto; vertical-align: top;">
@@ -160,6 +182,29 @@
       where <code>%topic%</code> is replaced by the device id and
       <code>%prefix%</code> by <code>cmnd</code>/<code>stat</code>/<code>tele</code>
       (Tasmota-style topic scheme).
+    </dd>
+  </dl>
+
+  <h3>Monitoring tab</h3>
+  <p>
+    The device monitor checks the configured devices of the project and reports a
+    change of a device health on the output of the <code>tuya-manager</code> node
+    (<code>msg.topic = 'deviceHealth'</code>). Off by default.
+  </p>
+  <dl class="message-properties">
+    <dt>Monitor the devices <span class="property-type">boolean</span></dt>
+    <dd>Enables the monitor.</dd>
+    <dt>Offline <span class="property-type">number</span></dt>
+    <dd>Minutes without connection until a device is reported as <i>failed</i> (default 5).</dd>
+    <dt>Connection losses / within <span class="property-type">number</span></dt>
+    <dd>
+      A connected device with this number of connection losses within the given minutes
+      is reported as <i>degraded</i> (default 5 within 60 min).
+    </dd>
+    <dt>No heartbeat <span class="property-type">number</span></dt>
+    <dd>
+      Seconds without an answer to the heartbeat until a connected device is reported as
+      <i>degraded</i> (default 60). Only for devices that answer the heartbeat.
     </dd>
   </dl>
 
@@ -307,6 +352,12 @@
       // MQTT tab
       broker: { type: 'tuya-mqtt-broker', required: false },
       fullTopic: { value: 'tuya/%topic%/%prefix%' },
+      // Monitoring tab
+      monitorEnabled: { value: false },
+      monitorOfflineMinutes: { value: 5 },
+      monitorDropsCount: { value: 5 },
+      monitorDropsWindowMinutes: { value: 60 },
+      monitorHeartbeatSeconds: { value: 60 },
       // MISC tab
       disableArp: { value: false },
       dbgProject: { value: false },
@@ -356,6 +407,7 @@
       tabs.addTab({ id: 'tuya-project-settings-tab', label: 'Settings' })
       tabs.addTab({ id: 'tuya-project-cloud-tab', label: 'Cloud' })
       tabs.addTab({ id: 'tuya-project-mqtt-tab', label: 'Mqtt' })
+      tabs.addTab({ id: 'tuya-project-monitor-tab', label: 'Monitoring' })
       tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
       $('#tuya-explorer-url').attr('href', `/resources/node-red-contrib-tuya-devices/${this.name || 'index'}.html`)
 
