@@ -139,7 +139,20 @@ Jeder Schritt einzeln, testgetrieben, einzeln committbar:
    keine Schwellen; „an“ wirkt auch bei ausgeschaltetem Projekt-Monitor).
 3. Diagnose-Regeln. – **Umgesetzt 2026-10-22** (`tuya-devices`: `lib/diagnosis.js`, Tests
    `test/diagnosis_tests.js`; Feld `diagnosis` in der Meldung `deviceHealth`).
-4. Selbstheilung Stufe 2 und 3.
+4. Selbstheilung Stufe 2 und 3. – **Umgesetzt 2026-10-22** (`tuya-devices`: `lib/monitor.js`
+   `heal()`, `Device.rebuildConnection()`, `Device.activeSearch()`, `Scanner.probe()`, Tests
+   `test/healing_tests.js`; Projekt-Node: Selbstheilung an/aus, höchste Stufe, Aktionen pro
+   Stunde, Probelauf; Geräte-Node: „Healing up to“; Manager-Ausgang `deviceHealing`).
+   Ablauf: ab „gestört“ wechseln die Stufen 2 → 3 → 2 … bis zur höchsten Stufe; Wartezeit
+   60 s, nach jeder Aktion verdoppelt, höchstens 60 min; zurückgesetzt, sobald das Gerät
+   nicht mehr gestört ist. Obergrenze 10 Aktionen pro Stunde im Projekt; das am längsten
+   nicht geheilte Gerät kommt zuerst; eine Sperre durch die Obergrenze wird einmal gemeldet
+   (`skipped`). Gateway: nur Stufe 3 (seine Clients teilen den Kanal); Gateway-Clients: keine
+   Aktion; gestoppte Geräte: keine Aktion; pausierte Geräte werden geheilt (Stufe 2 hebt die
+   Pause auf, Stufe 3 führt über den Rundruf zum Fortsetzen). Die aktive Suche sendet den
+   Rundruf des Scanners sofort; darauf antworten v3.5-Geräte, ältere melden sich ohnehin
+   selbst alle paar Sekunden – für sie wirkt Stufe 3 vor allem über das Vergessen des letzten
+   Rundrufs.
 5. Stufe 4 mit Schaltgerät – danach können Ausfallmeldung und Neustart-Wächter aus
    anwendungsspezifischen Flows (z. B. „Alarm2“) entfallen.
 6. Manager, Reiter „Devices“: Spalte Gesundheit und letzte Diagnose, Knöpfe

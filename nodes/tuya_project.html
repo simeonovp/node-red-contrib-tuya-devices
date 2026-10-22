@@ -86,6 +86,25 @@
         <label for="node-config-input-monitorHeartbeatSeconds"><i class="fa fa-clock-o"></i> No answer</label>
         <input type="number" id="node-config-input-monitorHeartbeatSeconds" min="1" style="width:100px"> s
       </div>
+      <div class="form-row">
+        <input type="checkbox" id="node-config-input-monitorHealing" style="display: inline-block; width: auto; vertical-align: top;">
+        <label for="node-config-input-monitorHealing" style="width: auto">Self-healing of failed devices</label>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorHealingMaxLevel"><i class="fa fa-medkit"></i> Highest level</label>
+        <select id="node-config-input-monitorHealingMaxLevel" style="width:200px">
+          <option value="2">2: rebuild connection</option>
+          <option value="3">3: active search</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorHealingMaxPerHour"><i class="fa fa-medkit"></i> Actions</label>
+        <input type="number" id="node-config-input-monitorHealingMaxPerHour" min="1" style="width:100px"> per hour
+      </div>
+      <div class="form-row">
+        <input type="checkbox" id="node-config-input-monitorHealingDryRun" style="display: inline-block; width: auto; vertical-align: top;">
+        <label for="node-config-input-monitorHealingDryRun" style="width: auto">Dry run: report only</label>
+      </div>
     </div>
     <div id="tuya-project-misc-tab" style="display:none">
       <div class="form-row">
@@ -208,7 +227,29 @@
     </dd>
   </dl>
   <p>
-    The limits can be changed per device in the Monitoring tab of the local device node.
+    Self-healing (off by default): the monitor tries to bring a <i>failed</i> device back.
+    Level 1, reconnecting, is always done by the device itself. Level 2 rebuilds the
+    connection (new channel, IP determined again from ARP or the announcement), level 3
+    starts an active search (discovery broadcast, the next announcement is reported again).
+    The levels alternate up to the highest level; the wait after an action starts with 60 s
+    and is doubled after each further action, up to 60 min. A gateway gets level 3 only,
+    devices behind a gateway are healed by their gateway; a stopped device is never touched.
+    Each action is reported on the output of the <code>tuya-manager</code> node
+    (<code>msg.topic = 'deviceHealing'</code>).
+  </p>
+  <dl class="message-properties">
+    <dt>Self-healing <span class="property-type">boolean</span></dt>
+    <dd>Enables the self-healing.</dd>
+    <dt>Highest level <span class="property-type">select</span></dt>
+    <dd>Highest level the monitor uses (default 3).</dd>
+    <dt>Actions per hour <span class="property-type">number</span></dt>
+    <dd>Limit for the whole project (default 10).</dd>
+    <dt>Dry run <span class="property-type">boolean</span></dt>
+    <dd>Reports what the monitor would do, without doing it.</dd>
+  </dl>
+  <p>
+    The limits and the highest level can be changed per device in the Monitoring tab of the
+    local device node.
   </p>
   <dl class="message-properties">
   </dl>
@@ -363,6 +404,10 @@
       monitorDropsCount: { value: 5 },
       monitorDropsWindowMinutes: { value: 60 },
       monitorHeartbeatSeconds: { value: 60 },
+      monitorHealing: { value: false },
+      monitorHealingMaxLevel: { value: '3' },
+      monitorHealingMaxPerHour: { value: 10 },
+      monitorHealingDryRun: { value: false },
       // MISC tab
       disableArp: { value: false },
       dbgProject: { value: false },

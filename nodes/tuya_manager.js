@@ -14,6 +14,7 @@ module.exports = function (RED) {
       const deviceFindHandler = this.onDeviceEvent.bind(this)
       const deviceStateHandler = this.onDeviceState.bind(this)
       const deviceHealthHandler = this.onDeviceHealth.bind(this)
+      const deviceHealingHandler = this.onDeviceHealing.bind(this)
 
       this.projectNode = RED.nodes.getNode(config.project)
       if (this.projectNode?.type === 'tuya-project') {
@@ -23,6 +24,7 @@ module.exports = function (RED) {
           this.project.addListener('device-find', deviceFindHandler)
           this.project.addListener('device-state', deviceStateHandler)
           this.project.addListener('device-health', deviceHealthHandler)
+          this.project.addListener('device-healing', deviceHealingHandler)
         }
         else this.error('Project object is ' + this.project)
       }
@@ -33,6 +35,7 @@ module.exports = function (RED) {
           this.project.removeListener('device-find', deviceFindHandler)
           this.project.removeListener('device-state', deviceStateHandler)
           this.project.removeListener('device-health', deviceHealthHandler)
+          this.project.removeListener('device-healing', deviceHealingHandler)
         }
         done()
       })
@@ -115,6 +118,11 @@ module.exports = function (RED) {
     // device monitor of the project (monitoring tab of the project node)
     onDeviceHealth(payload) {
       this.send({ topic: 'deviceHealth', payload })
+    }
+
+    // self-healing action of the device monitor
+    onDeviceHealing(payload) {
+      this.send({ topic: 'deviceHealing', payload })
     }
 
     sendToFrontend(payload) {

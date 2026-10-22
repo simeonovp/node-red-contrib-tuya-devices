@@ -107,6 +107,22 @@
       connection), <code>unreachable</code>, <code>not-answering</code>, <code>unstable</code>
       or <code>unknown</code>; <code>null</code> when the device is ok again.
     </dd>
+
+    <dt>topic <span class="property-type">"deviceHealing"</span></dt>
+    <dd>
+      Emitted by the device monitor for each self-healing action (enable it in the
+      Monitoring tab of the project node).
+    </dd>
+
+    <dt>payload <span class="property-type">object</span></dt>
+    <dd>
+      <code>deviceId</code>, <code>name</code>, <code>priority</code>, <code>since</code>,
+      <code>level</code> (<code>2</code> rebuild connection, <code>3</code> active search),
+      <code>action</code> (<code>rebuild</code>, <code>search</code>), <code>attempt</code>,
+      <code>done</code>, <code>dryRun</code>, <code>waitSeconds</code> and <code>nextAt</code>
+      (earliest next action) and <code>diagnosis</code>. If the hourly limit blocks an action,
+      only <code>skipped</code> (reason) is set, once until the next action.
+    </dd>
   </dl>
   <p>
     In addition, project commands other than <code>restartNodeRed</code> pass

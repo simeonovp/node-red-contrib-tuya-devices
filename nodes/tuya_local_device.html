@@ -177,6 +177,15 @@
         <label for="node-config-input-monitorHeartbeatSeconds"><i class="fa fa-clock-o"></i> No answer</label>
         <input type="number" id="node-config-input-monitorHeartbeatSeconds" min="1" style="width:100px" placeholder="project"> s
       </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorHealingMaxLevel"><i class="fa fa-medkit"></i> Healing up to</label>
+        <select id="node-config-input-monitorHealingMaxLevel" style="width:200px">
+          <option value="">as project</option>
+          <option value="1">1: no action of the monitor</option>
+          <option value="2">2: rebuild connection</option>
+          <option value="3">3: active search</option>
+        </select>
+      </div>
     </div>
     <div id="tuya-project-misc-tab" style="display:none">
       <fieldset>
@@ -378,6 +387,13 @@
       connection losses within the minutes until <i>degraded</i>; seconds without any answer
       (heartbeat or data) until <i>degraded</i> (only for devices that answer the heartbeat).
     </dd>
+    <dt>Healing up to <span class="property-type">select</span></dt>
+    <dd>
+      Highest self-healing level for this device: <code>as project</code> (default),
+      <code>1</code> (only the own reconnecting, no action of the monitor), <code>2</code>
+      (rebuild connection) or <code>3</code> (active search). Self-healing must be enabled in
+      the project node.
+    </dd>
   </dl>
 
   <h3>Debug options</h3>
@@ -447,6 +463,7 @@
       monitorDropsCount: { value: '' },
       monitorDropsWindowMinutes: { value: '' },
       monitorHeartbeatSeconds: { value: '' },
+      monitorHealingMaxLevel: { value: '' },
       // MISC tab
       dbgDevice: { value: false },
       dbgDeviceExtension: { value: false },
