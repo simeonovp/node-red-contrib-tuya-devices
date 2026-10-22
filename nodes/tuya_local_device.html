@@ -184,7 +184,24 @@
           <option value="1">1: no action of the monitor</option>
           <option value="2">2: rebuild connection</option>
           <option value="3">3: active search</option>
+          <option value="4">4: power cycle</option>
         </select>
+      </div>
+      <div id="tuya-monitor-power-rows">
+      <div class="form-row">
+        <label for="node-config-input-monitorPowerSwitch"><i class="fa fa-power-off"></i> Power switch</label>
+        <select id="node-config-input-monitorPowerSwitch" style="width:200px">
+          <option value="">none</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorPowerDps"><i class="fa fa-power-off"></i> Switch DP</label>
+        <input type="text" id="node-config-input-monitorPowerDps" style="width:100px" placeholder="1">
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorPowerOffSeconds"><i class="fa fa-clock-o"></i> Power off</label>
+        <input type="number" id="node-config-input-monitorPowerOffSeconds" min="1" style="width:100px" placeholder="10"> s
+      </div>
       </div>
     </div>
     <div id="tuya-project-misc-tab" style="display:none">
@@ -391,8 +408,19 @@
     <dd>
       Highest self-healing level for this device: <code>as project</code> (default),
       <code>1</code> (only the own reconnecting, no action of the monitor), <code>2</code>
-      (rebuild connection) or <code>3</code> (active search). Self-healing must be enabled in
-      the project node.
+      (rebuild connection), <code>3</code> (active search) or <code>4</code> (power cycle).
+      Self-healing must be enabled in the project node. Level 4 needs a power switch; it follows
+      a level 3 whose checks recommend a power cycle (the device answers the ping only, or is
+      not in the network).
+    </dd>
+    <dt>Power switch, Switch DP, Power off <span class="property-type">select, string, number</span></dt>
+    <dd>
+      Local device of the same project that supplies this device with power, its switch data
+      point (default <code>1</code>) and the time the power stays off (default 10 s). Shown only
+      if level 4 is possible: <i>Healing up to</i> is 4, or <i>as project</i> and the highest
+      level of the project is 4. The monitor
+      switches only if the power switch is connected; switching on is tried 3 times. Do not
+      use other power cycle automations for the same device at the same time.
     </dd>
   </dl>
 
@@ -464,6 +492,9 @@
       monitorDropsWindowMinutes: { value: '' },
       monitorHeartbeatSeconds: { value: '' },
       monitorHealingMaxLevel: { value: '' },
+      monitorPowerSwitch: { value: '' },
+      monitorPowerDps: { value: '' },
+      monitorPowerOffSeconds: { value: '' },
       // MISC tab
       dbgDevice: { value: false },
       dbgDeviceExtension: { value: false },
@@ -602,6 +633,28 @@
       tabs.addTab({ id: 'tuya-dps-tab', label: 'DataPoints' })
       tabs.addTab({ id: 'tuya-advanced-tab', label: 'Advanced' })
       tabs.addTab({ id: 'tuya-monitor-tab', label: 'Monitoring' })
+
+      // power switch: other local devices of the same project, value is the device id
+      const node = this
+      const powerSwitch = $('#node-config-input-monitorPowerSwitch')
+      RED.nodes.eachConfig((other) => {
+        if ((other.type !== 'tuya-local-device') || (other.id === node.id) || !other.deviceId) return
+        if (node.project && (other.project !== node.project)) return
+        powerSwitch.append($('<option></option>').val(other.deviceId).text(other.name || other.deviceId))
+      })
+      powerSwitch.val(node.monitorPowerSwitch || '')
+
+      // power switch settings only where level 4 is possible: 'Healing up to' is 4, or
+      // 'as project' and the highest level of the project is 4 (default)
+      const updatePowerRows = () => {
+        const level = $('#node-config-input-monitorHealingMaxLevel').val()
+        const project = RED.nodes.node($('#node-config-input-project').val())
+        const projectLevel = String(project?.monitorHealingMaxLevel || '4')
+        $('#tuya-monitor-power-rows').toggle((level === '4') || (!level && (projectLevel === '4')))
+      }
+      $('#node-config-input-monitorHealingMaxLevel').on('change', updatePowerRows)
+      $('#node-config-input-project').on('change', updatePowerRows)
+      updatePowerRows()
       tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
       let tabExtensionExists = false
 

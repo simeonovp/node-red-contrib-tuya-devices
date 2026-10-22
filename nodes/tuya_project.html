@@ -95,6 +95,7 @@
         <select id="node-config-input-monitorHealingMaxLevel" style="width:200px">
           <option value="2">2: rebuild connection</option>
           <option value="3">3: active search</option>
+          <option value="4">4: power cycle</option>
         </select>
       </div>
       <div class="form-row">
@@ -233,7 +234,9 @@
     checks whether the device is in the network and connects at once if so: a recent
     announcement or another IP from ARP leads to a connection, else a ping tells a hanging
     device from one out of the network and a power cycle is recommended (only reported).
-    It also sends the discovery broadcast, answered by v3.5 devices only.
+    It also sends the discovery broadcast, answered by v3.5 devices only. Level 4 switches the
+    power of the device off and on by its power switch (set in the local device node), directly
+    after a level 3 that recommended it.
     The levels alternate up to the highest level; the wait after an action starts with 60 s
     and is doubled after each further action, up to 60 min. A gateway gets level 3 only,
     devices behind a gateway are healed by their gateway; a stopped device is never touched.
@@ -244,7 +247,7 @@
     <dt>Self-healing <span class="property-type">boolean</span></dt>
     <dd>Enables the self-healing.</dd>
     <dt>Highest level <span class="property-type">select</span></dt>
-    <dd>Highest level the monitor uses (default 3).</dd>
+    <dd>Highest level the monitor uses (default 4; level 4 only for devices with a power switch).</dd>
     <dt>Actions per hour <span class="property-type">number</span></dt>
     <dd>Limit for the whole project (default 10).</dd>
     <dt>Dry run <span class="property-type">boolean</span></dt>
@@ -408,7 +411,7 @@
       monitorDropsWindowMinutes: { value: 60 },
       monitorHeartbeatSeconds: { value: 60 },
       monitorHealing: { value: false },
-      monitorHealingMaxLevel: { value: '3' },
+      monitorHealingMaxLevel: { value: '4' },
       monitorHealingMaxPerHour: { value: 10 },
       monitorHealingDryRun: { value: false },
       // MISC tab

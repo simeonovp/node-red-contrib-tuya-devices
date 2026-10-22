@@ -108,6 +108,9 @@ Schutzregeln:
 
 Jede Heilaktion wird gemeldet (`topic: 'deviceHealing'`, mit Stufe und nächster Wartezeit).
 
+Umgesetzt (Stand Schritt 5): Stufen 2, 3 und 4; Stufe 5 (Aufgeben) nicht – die Wartezeit
+wächst bis 60 min, die Obergrenze pro Stunde begrenzt die Aktionen.
+
 ## 4. Konfiguration
 
 **Projekt-Node** (`tuya-project`), gilt für alle Geräte:
@@ -158,7 +161,16 @@ Jeder Schritt einzeln, testgetrieben, einzeln committbar:
    `device-hangs`, keine Antwort → `unreachable`, in beiden Fällen Empfehlung `power-cycle`
    (nur gemeldet, geschaltet wird erst mit Stufe 4). Ergebnis als `probe` in `deviceHealing`.
 5. Stufe 4 mit Schaltgerät – danach können Ausfallmeldung und Neustart-Wächter aus
-   anwendungsspezifischen Flows (z. B. „Alarm2“) entfallen.
+   anwendungsspezifischen Flows (z. B. „Alarm2“) entfallen. – **Umgesetzt 2026-10-22**
+   (`tuya-devices`: `Monitor.powerCycle()`, Tests `test/healing_tests.js`; Geräte-Node:
+   Schaltgerät (lokales Gerät desselben Projekts, gespeichert als Geräte-ID), Schalt-DP
+   (Standard `1`), Aus-Zeit (Standard 10 s), „Healing up to“ bis 4; Projekt: höchste Stufe
+   Standard 4 – wirkt nur bei Geräten mit Schaltgerät). Ablauf: Stufe 4 direkt nach einer
+   Stufe 3, deren Prüfung `power-cycle` empfiehlt (Gerät antwortet nur auf Ping, oder nicht im
+   Netz); danach wieder Stufe 2. Schaltgerät nicht verbunden → nichts geschaltet, Meldung;
+   Einschalten bis zu 3 Versuche, sonst Meldung „device stays off“. Probelauf: Stufe 3 prüft
+   nur (ohne Aktion), Stufe 4 wird nur gemeldet. Ein Gerät schaltet sich nicht selbst.
+   Gleichzeitig keine anderen Neustart-Automatiken für dasselbe Gerät betreiben.
 6. Manager, Reiter „Devices“: Spalte Gesundheit und letzte Diagnose, Knöpfe
    „Diagnose jetzt“ und „Heilen jetzt“.
 
