@@ -151,8 +151,12 @@ Jeder Schritt einzeln, testgetrieben, einzeln committbar:
    Aktion; gestoppte Geräte: keine Aktion; pausierte Geräte werden geheilt (Stufe 2 hebt die
    Pause auf, Stufe 3 führt über den Rundruf zum Fortsetzen). Die aktive Suche sendet den
    Rundruf des Scanners sofort; darauf antworten v3.5-Geräte, ältere melden sich ohnehin
-   selbst alle paar Sekunden – für sie wirkt Stufe 3 vor allem über das Vergessen des letzten
-   Rundrufs.
+   selbst alle paar Sekunden.
+   **Ergänzt 2026-10-22 (4b):** Stufe 3 prüft die Erreichbarkeit selbst und verbindet sofort,
+   unabhängig vom Verbindungszustand: Rundruf jünger als 2 min → mit dessen IP verbinden;
+   sonst ARP über die MAC liefert eine andere IP → mit ihr verbinden; sonst Ping: antwortet →
+   `device-hangs`, keine Antwort → `unreachable`, in beiden Fällen Empfehlung `power-cycle`
+   (nur gemeldet, geschaltet wird erst mit Stufe 4). Ergebnis als `probe` in `deviceHealing`.
 5. Stufe 4 mit Schaltgerät – danach können Ausfallmeldung und Neustart-Wächter aus
    anwendungsspezifischen Flows (z. B. „Alarm2“) entfallen.
 6. Manager, Reiter „Devices“: Spalte Gesundheit und letzte Diagnose, Knöpfe

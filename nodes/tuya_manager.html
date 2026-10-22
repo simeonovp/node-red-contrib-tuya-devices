@@ -120,7 +120,12 @@
       <code>level</code> (<code>2</code> rebuild connection, <code>3</code> active search),
       <code>action</code> (<code>rebuild</code>, <code>search</code>), <code>attempt</code>,
       <code>done</code>, <code>dryRun</code>, <code>waitSeconds</code> and <code>nextAt</code>
-      (earliest next action) and <code>diagnosis</code>. If the hourly limit blocks an action,
+      (earliest next action), <code>diagnosis</code> and for level 3 <code>probe</code>, the
+      result of the checks: <code>announced</code> (recent announcement), <code>arpIp</code>,
+      <code>ipChanged</code>, <code>ping</code>, <code>action</code> (<code>connect</code> or
+      <code>none</code>), <code>finding</code> (<code>device-hangs</code>: answers the ping
+      only; <code>unreachable</code>) and <code>recommendation</code> (<code>power-cycle</code>,
+      nothing is switched). If the hourly limit blocks an action,
       only <code>skipped</code> (reason) is set, once until the next action.
     </dd>
   </dl>
