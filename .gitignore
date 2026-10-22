@@ -130,3 +130,5 @@ dist
 .pnp.*
 resources/*
 /package-lock.json
+/.claude
+/npm

@@ -83,7 +83,7 @@
         <input type="number" id="node-config-input-monitorDropsWindowMinutes" min="1" style="width:100px"> min
       </div>
       <div class="form-row">
-        <label for="node-config-input-monitorHeartbeatSeconds"><i class="fa fa-clock-o"></i> No heartbeat</label>
+        <label for="node-config-input-monitorHeartbeatSeconds"><i class="fa fa-clock-o"></i> No answer</label>
         <input type="number" id="node-config-input-monitorHeartbeatSeconds" min="1" style="width:100px"> s
       </div>
     </div>
@@ -201,11 +201,16 @@
       A connected device with this number of connection losses within the given minutes
       is reported as <i>degraded</i> (default 5 within 60 min).
     </dd>
-    <dt>No heartbeat <span class="property-type">number</span></dt>
+    <dt>No answer <span class="property-type">number</span></dt>
     <dd>
-      Seconds without an answer to the heartbeat until a connected device is reported as
-      <i>degraded</i> (default 60). Only for devices that answer the heartbeat.
+      Seconds without any answer (heartbeat answer or data) until a connected device is
+      reported as <i>degraded</i> (default 60). Only for devices that answer the heartbeat.
     </dd>
+  </dl>
+  <p>
+    The limits can be changed per device in the Monitoring tab of the local device node.
+  </p>
+  <dl class="message-properties">
   </dl>
 
   <h3>MISC tab</h3>

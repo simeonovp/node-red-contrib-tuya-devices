@@ -1,0 +1,4 @@
+#local-device GUI (bussines)
+- "Node name" ignored on create node
+- Advanced: Tuya protocol version is empty on new device
+- IP address is empty

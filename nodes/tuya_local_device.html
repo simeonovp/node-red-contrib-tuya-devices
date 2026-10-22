@@ -145,6 +145,39 @@
         <input type="checkbox" id="node-config-input-rawAsCoded">
       </div>
     </div>
+    <div id="tuya-monitor-tab" style="display:none">
+      <div class="form-row">
+        <label for="node-config-input-monitorMode"><i class="fa fa-heartbeat"></i> Monitor</label>
+        <select id="node-config-input-monitorMode" style="width:200px">
+          <option value="inherit">as project</option>
+          <option value="on">on</option>
+          <option value="off">off</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorPriority"><i class="fa fa-exclamation"></i> Priority</label>
+        <select id="node-config-input-monitorPriority" style="width:200px">
+          <option value="normal">normal</option>
+          <option value="critical">critical</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorOfflineMinutes"><i class="fa fa-clock-o"></i> Offline</label>
+        <input type="number" id="node-config-input-monitorOfflineMinutes" min="1" style="width:100px" placeholder="project"> min
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorDropsCount"><i class="fa fa-clock-o"></i> Connection losses</label>
+        <input type="number" id="node-config-input-monitorDropsCount" min="1" style="width:100px" placeholder="project"> times
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorDropsWindowMinutes"><i class="fa fa-clock-o"></i> within</label>
+        <input type="number" id="node-config-input-monitorDropsWindowMinutes" min="1" style="width:100px" placeholder="project"> min
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-monitorHeartbeatSeconds"><i class="fa fa-clock-o"></i> No answer</label>
+        <input type="number" id="node-config-input-monitorHeartbeatSeconds" min="1" style="width:100px" placeholder="project"> s
+      </div>
+    </div>
     <div id="tuya-project-misc-tab" style="display:none">
       <fieldset>
         <legend>Debug output in terminal</legend>
@@ -322,6 +355,31 @@
     </dd>
   </dl>
 
+  <h3>Monitoring settings</h3>
+  <p>
+    Settings of the device monitor of the project (see the Monitoring tab of the project
+    node). Empty fields use the project values.
+  </p>
+  <dl class="message-properties">
+    <dt>Monitor <span class="property-type">select</span></dt>
+    <dd>
+      <code>as project</code> (default), <code>on</code> (also if the monitor of the project is
+      off) or <code>off</code>.
+    </dd>
+    <dt>Priority <span class="property-type">select</span></dt>
+    <dd>
+      <code>normal</code> or <code>critical</code>; passed as <code>priority</code> in the
+      <code>deviceHealth</code> message of the manager, e.g. to route critical devices differently.
+      It does not change the limits.
+    </dd>
+    <dt>Offline, Connection losses / within, No answer <span class="property-type">number</span></dt>
+    <dd>
+      Limits for this device: minutes without connection until <i>failed</i>; number of
+      connection losses within the minutes until <i>degraded</i>; seconds without any answer
+      (heartbeat or data) until <i>degraded</i> (only for devices that answer the heartbeat).
+    </dd>
+  </dl>
+
   <h3>Debug options</h3>
   <dl class="message-properties">
     <dt>Device</dt>
@@ -382,6 +440,13 @@
       pauseTimeout: { value: 0 },
       eventMode: { value: 'event-both', required: true },
       rawAsCoded: { value: false },
+      // Monitoring tab, empty number = project value
+      monitorMode: { value: 'inherit' },
+      monitorPriority: { value: 'normal' },
+      monitorOfflineMinutes: { value: '' },
+      monitorDropsCount: { value: '' },
+      monitorDropsWindowMinutes: { value: '' },
+      monitorHeartbeatSeconds: { value: '' },
       // MISC tab
       dbgDevice: { value: false },
       dbgDeviceExtension: { value: false },
@@ -519,6 +584,7 @@
       tabs.addTab({ id: 'tuya-settings-tab', label: 'Settings' })
       tabs.addTab({ id: 'tuya-dps-tab', label: 'DataPoints' })
       tabs.addTab({ id: 'tuya-advanced-tab', label: 'Advanced' })
+      tabs.addTab({ id: 'tuya-monitor-tab', label: 'Monitoring' })
       tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
       let tabExtensionExists = false
 
