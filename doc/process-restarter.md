@@ -1,11 +1,11 @@
-# Neustart von Node-RED aus dem Tuya Manager
+# Restarting Node-RED from the Tuya Manager
 
-Analyse der bestehenden Neustart-Funktion (`process-restarter` 1.0.2) und Vorschlag für eine
-Überarbeitung. Stand: 2026-10-03. Noch nichts davon ist umgesetzt.
+Analysis of the existing restart function (`process-restarter` 1.0.2) and a proposal for a
+rework. As of 2026-10-03. None of this is implemented yet.
 
-## Wie es heute funktioniert
+## How it works today
 
-Der Manager-Node erzeugt beim Start einen `Restarter`
+On start, the manager node creates a `Restarter`
 ([nodes/tuya_manager.js](../nodes/tuya_manager.js)):
 
 ```js
@@ -13,63 +13,64 @@ this.restarer = new Restarter('nodered.service', 'node-red',
   path.join(os.homedir(), '.node-red', 'start-nodered.sh'))
 ```
 
-Ausgelöst wird der Neustart über eine Nachricht an den Manager-Node mit
-`msg.topic = 'restartNodeRed'`. `Restarter.restart()` prüft dann mit
-`systemctl is-active nodered.service`, ob Node-RED als systemd-Dienst läuft:
+The restart is triggered by a message to the manager node with
+`msg.topic = 'restartNodeRed'`. `Restarter.restart()` then uses
+`systemctl is-active nodered.service` to check whether Node-RED runs as a systemd service:
 
-- **aktiv:** `sudo systemctl restart nodered.service`
-- **nicht aktiv (Fallback):** Datei `/tmp/restart_node-red` anlegen und `pkill -f node-red`
-  ausführen. Ein Überwachungsskript `~/.node-red/start-nodered.sh` soll Node-RED dann neu
-  starten. Das Skript wird beim Erzeugen des Restarters angelegt, falls es fehlt, aber von
-  niemandem gestartet.
+- **active:** `sudo systemctl restart nodered.service`
+- **not active (fallback):** create the file `/tmp/restart_node-red` and run `pkill -f node-red`.
+  A watchdog script `~/.node-red/start-nodered.sh` is then supposed to start Node-RED again.
+  The script is created when the Restarter is created, if it is missing, but nobody starts
+  it.
 
-Für den systemd-Weg braucht der Benutzer, unter dem Node-RED läuft, eine sudoers-Regel ohne
-Passwort. Laut Kommentar im Code:
+For the systemd path, the user that runs Node-RED needs a sudoers rule without a password.
+According to a comment in the code:
 
 ```
 user ALL=(ALL) NOPASSWD: /bin/systemctl restart nodered.service
 ```
 
-## Bewertung
+## Assessment
 
-### systemd-Weg: passt als Konzept
+### systemd path: sound as a concept
 
-Ein Neustart über `systemctl` ist sauber: Node-RED fährt geordnet herunter und systemd startet
-es wieder. Das funktioniert auch, wenn Node-RED den Befehl selbst auslöst, weil systemd den
-Auftrag übernimmt, bevor der aufrufende Prozess beendet wird.
+A restart via `systemctl` is clean: Node-RED shuts down in an orderly way and systemd starts
+it again. This also works when Node-RED itself triggers the command, because systemd takes
+over the job before the calling process ends.
 
-Schwächen:
+Weaknesses:
 
-1. **Kein `sudo -n`.** Fehlt die sudoers-Regel, wartet `sudo` auf ein Passwort, das nie kommt.
-   Mit `-n` schlägt es sofort mit klarer Meldung fehl.
-2. **Pfad in der sudoers-Regel.** Der Kommentar nennt `/bin/systemctl`. Auf aktuellen
-   Raspberry Pi OS liegt es unter `/usr/bin/systemctl`, `/bin` ist nur ein Link. Ob sudo die
-   Regel trotzdem anwendet, ist nicht geprüft (Vermutung). Prüfung siehe unten.
-3. **Kein Ergebnis in Node-RED.** Der Manager ruft `done()` sofort auf; Fehler gehen nur per
-   `console.error` ins Journal. Im Node-RED-Log stehen weder Aktion noch Ergebnis.
+1. **No `sudo -n`.** If the sudoers rule is missing, `sudo` waits for a password that never
+   comes. With `-n` it fails at once with a clear message.
+2. **Path in the sudoers rule.** The comment names `/bin/systemctl`. On current
+   Raspberry Pi OS it is located at `/usr/bin/systemctl`; `/bin` is only a link. Whether sudo
+   still applies the rule is not verified (assumption). See below for how to check.
+3. **No result in Node-RED.** The manager calls `done()` at once; errors only go to the
+   journal via `console.error`. The Node-RED log shows neither the action nor the result.
 
-### Fallback ohne systemd: fehlerhaft und gefährlich
+### Fallback without systemd: faulty and dangerous
 
-Befunde aus dem Code, nicht auf einem Gerät ausgeführt:
+Findings from the code, not run on a device:
 
-4. **Beendet Node-RED ohne Neustart.** Der Fallback greift immer, wenn `systemctl is-active`
-   nicht „active“ meldet, z. B. bei anderem Dienstnamen, Docker oder pm2. Dann läuft
-   `pkill -f node-red`. Läuft das Überwachungsskript nicht, ist Node-RED einfach aus.
-5. **`pkill -f node-red` trifft zu viel.** Es beendet jeden Prozess, dessen Befehlszeile
-   „node-red“ enthält. Dazu gehört auch das Überwachungsskript selbst, denn sein Pfad
-   `~/.node-red/start-nodered.sh` enthält „node-red“.
-6. **Das Skript erkennt sich vermutlich selbst.** `pgrep -f "node-red"` im Skript findet aus
-   demselben Grund wohl immer einen Treffer, z. B. eine Subshell des Skripts. `grep -v $$`
-   filtert nur die Haupt-PID, und zwar als Textstück, also auch PIDs, die diese Ziffern nur
-   enthalten. Das Skript würde dann nie neu starten (Vermutung).
+4. **Stops Node-RED without restarting it.** The fallback applies whenever
+   `systemctl is-active` does not report "active", e.g. with a different service name, Docker
+   or pm2. Then `pkill -f node-red` runs. If the watchdog script is not running, Node-RED is
+   simply off.
+5. **`pkill -f node-red` hits too much.** It stops every process whose command line contains
+   "node-red". This includes the watchdog script itself, because its path
+   `~/.node-red/start-nodered.sh` contains "node-red".
+6. **The script probably detects itself.** For the same reason, `pgrep -f "node-red"` in the
+   script probably always finds a match, e.g. a subshell of the script. `grep -v $$` only
+   filters the main PID, and does so as a text fragment, so it also removes PIDs that merely
+   contain these digits. The script would then never restart (assumption).
 
-### Kleinere Punkte
+### Minor points
 
-7. `"child_process": "^1.0.2"` im `package.json` von `process-restarter` ist überflüssig.
-   `child_process` ist in Node eingebaut; das npm-Paket dieses Namens ist nur ein Platzhalter.
-8. Das Shell-Skript wird bei jedem Erzeugen eines Manager-Nodes angelegt, auch unter Windows.
+7. `"child_process": "^1.0.2"` in the `package.json` of `process-restarter` is not needed.
+   `child_process` is built into Node; the npm package of that name is only a placeholder.
+8. The shell script is created every time a manager node is created, also on Windows.
 
-## Prüfen auf dem Pi
+## Checking on the Pi
 
 ```sh
 # which user runs Node-RED
@@ -80,92 +81,91 @@ sudo -n systemctl is-active nodered.service && echo "sudo rule works"
 sudo -l
 ```
 
-Der Test mit `is-active` klappt nur, wenn die Regel `systemctl` allgemein erlaubt. Ist sie auf
-`systemctl restart nodered.service` beschränkt, schlägt er fehl, obwohl der Neustart
-funktionieren würde. Maßgeblich ist dann die Ausgabe von `sudo -l`.
+The test with `is-active` only works if the rule allows `systemctl` in general. If the rule
+is limited to `systemctl restart nodered.service`, the test fails even though the restart
+would work. In that case the output of `sudo -l` is what counts.
 
-## Vorschläge
+## Proposals
 
-### Hintergrund
+### Background
 
-`process-restarter` ist entstanden, weil Node-RED keinen Neustart des eigenen Prozesses
-mitbringt. Das Deploy-Menü bietet nur „Restart Flows“: Das startet die Flows neu, nicht den
-Prozess, und lädt deshalb keine neuen Paketstände (z. B. nach `git pull`).
+`process-restarter` was created because Node-RED has no built-in restart of its own process.
+The Deploy menu only offers "Restart Flows": this restarts the flows, not the process, and so
+does not load new package versions (e.g. after `git pull`).
 
-Vor der Entscheidung prüfen: Gibt es in der aktuellen Node-RED-Version inzwischen einen
-Prozess-Neustart (Release Notes, Editor-Menü, Admin-API)? Stand der Analyse: nein, aber nicht
-gegen die aktuelle Version geprüft.
+Check before deciding: does the current Node-RED version have a process restart by now
+(release notes, editor menu, Admin API)? State of this analysis: no, but not verified against
+the current version.
 
-### Alternative A: Neustart direkt im Tuya Manager
+### Alternative A: restart directly in the Tuya Manager
 
-Neustart direkt in `tuya_manager.js` umsetzen und `process-restarter` als Abhängigkeit
-streichen:
+Implement the restart directly in `tuya_manager.js` and drop `process-restarter` as a
+dependency:
 
-- **Nur der systemd-Weg**, mit `sudo -n systemctl restart nodered.service`.
-- **Aktion und Ergebnis im Node-RED-Log**; Fehler über `done(err)`, damit sie im Debug-Panel
-  erscheinen.
-- **Kein `pkill`-Fallback.** Ohne systemd gibt es eine klare Fehlermeldung statt eines
-  beendeten Node-RED.
-- **Optional ein Button „Restart Node-RED“** im Manager-Dialog, damit kein Inject-Node nötig
-  ist.
+- **systemd path only**, with `sudo -n systemctl restart nodered.service`.
+- **Action and result in the Node-RED log**; errors via `done(err)` so that they show up in
+  the debug panel.
+- **No `pkill` fallback.** Without systemd there is a clear error message instead of a
+  stopped Node-RED.
+- **Optionally a "Restart Node-RED" button** in the manager dialog, so that no Inject node is
+  needed.
 
-Nachteil: Der Neustart ist eine allgemeine Node-RED-Funktion und gehört fachlich nicht in ein
-Tuya-Paket.
+Drawback: the restart is a general Node-RED function and does not belong in a Tuya package.
 
-### Alternative B: eigenes Paket `node-red-contrib-process-restarter`
+### Alternative B: separate package `node-red-contrib-process-restarter`
 
-Gilt, falls Node-RED den Prozess-Neustart weiterhin nicht mitbringt.
+Applies if Node-RED still has no built-in process restart.
 
-Aus `process-restarter` wird ein eigenständiges Node-RED-Paket mit einem Node „Restart“, den
-man in einen Flow zieht (z. B. hinter einen Inject- oder Dashboard-Button). Der Tuya Manager
-verliert die Funktion `restartNodeRed`, und `process-restarter` fliegt aus den Abhängigkeiten
-von `node-red-contrib-tuya-devices`.
+`process-restarter` becomes a standalone Node-RED package with a "Restart" node that you
+drag into a flow (e.g. after an Inject node or a dashboard button). The Tuya Manager loses
+the `restartNodeRed` function, and `process-restarter` is removed from the dependencies of
+`node-red-contrib-tuya-devices`.
 
-Vorschlag für den Node:
+Proposal for the node:
 
-- **Eingang:** jede Nachricht löst den Neustart aus.
-- **Konfiguration:** Name des systemd-Dienstes (Default `nodered.service`).
-- **Ablauf:** `sudo -n systemctl restart <dienst>`. Kein `pkill`-Fallback.
-- **Status und Log:** Aktion und Ergebnis im Node-RED-Log; Node-Status vor dem Neustart
-  („restarting…“); Fehler (z. B. fehlende sudoers-Regel) über `done(err)` im Debug-Panel.
-- **Ausgang:** keiner nötig. Bei Erfolg endet der Prozess; ein Fehler kommt über `done(err)`
-  und lässt sich mit einem Catch-Node abfangen.
-- **Hilfetext:** sudoers-Regel und die Prüfbefehle von oben.
+- **Input:** every message triggers the restart.
+- **Configuration:** name of the systemd service (default `nodered.service`).
+- **Procedure:** `sudo -n systemctl restart <service>`. No `pkill` fallback.
+- **Status and log:** action and result in the Node-RED log; node status before the restart
+  ("restarting…"); errors (e.g. missing sudoers rule) via `done(err)` in the debug panel.
+- **Output:** none needed. On success the process ends; an error comes via `done(err)` and
+  can be caught with a Catch node.
+- **Help text:** the sudoers rule and the check commands from above.
 
-Schritte:
+Steps:
 
-1. Prüfen, dass Node-RED keinen eigenen Prozess-Neustart hat (siehe Hintergrund).
-2. Neues Paket `node-red-contrib-process-restarter` mit Node `restart` anlegen; die Logik aus
-   `process-restarter` übernehmen und dabei die Punkte 1, 3 bis 8 beheben.
-3. In `node-red-contrib-tuya-devices`: `restartNodeRed` aus dem Manager, den `Restarter` und die
-   Abhängigkeit `process-restarter` entfernen; CHANGELOG-Hinweis, dass der Neustart jetzt über
-   das neue Paket läuft (Breaking Change für Flows, die `restartNodeRed` senden).
-4. `process-restarter` als npm-Paket als veraltet markieren (`npm deprecate`) oder als reine
-   Bibliothek des neuen Pakets weiterführen.
+1. Verify that Node-RED has no process restart of its own (see Background).
+2. Create a new package `node-red-contrib-process-restarter` with a `restart` node; take over
+   the logic from `process-restarter` and fix points 1 and 3 to 8 along the way.
+3. In `node-red-contrib-tuya-devices`: remove `restartNodeRed` from the manager, the
+   `Restarter` and the dependency `process-restarter`; add a CHANGELOG note that the restart
+   now works via the new package (breaking change for flows that send `restartNodeRed`).
+4. Mark `process-restarter` as deprecated on npm (`npm deprecate`), or keep it as a plain
+   library of the new package.
 
-Vorteile: Die Funktion steht allen Flows zur Verfügung, unabhängig von Tuya; das Tuya-Paket wird
-schlanker.
+Advantages: the function is available to all flows, independent of Tuya; the Tuya package
+gets smaller.
 
-Nachteil: ein weiteres Paket, das gepflegt und veröffentlicht werden muss.
+Drawback: one more package that has to be maintained and published.
 
-### Zum Vergleich: Exec-Node von Node-RED
+### For comparison: the Node-RED Exec node
 
-Ohne eigenes Paket geht es auch mit dem eingebauten Exec-Node und dem Befehl
-`sudo -n systemctl restart nodered.service`. Voraussetzung ist dieselbe sudoers-Regel. Ein
-eigener Node lohnt sich vor allem für die bessere Bedienung: feste Konfiguration statt
-Befehlszeile, Hilfetext, Status, verständliche Fehlermeldung.
+It also works without a separate package, using the built-in Exec node and the command
+`sudo -n systemctl restart nodered.service`. It needs the same sudoers rule. A dedicated node
+is worth it mainly for better usability: fixed configuration instead of a command line, help
+text, status, an understandable error message.
 
-### Alternative C: `process-restarter` selbst reparieren
+### Alternative C: fix `process-restarter` itself
 
-Falls es noch anderswo als Bibliothek verwendet wird: `sudo -n`, Ergebnis per Callback oder
-Promise zurückgeben, Fallback entfernen oder nur auf ausdrücklichen Wunsch, die Abhängigkeit
-`child_process` streichen.
+In case it is still used as a library elsewhere: `sudo -n`, return the result via callback
+or Promise, remove the fallback or only use it when explicitly requested, drop the
+`child_process` dependency.
 
-## Zusammenspiel mit der Source-Installation
+## Interaction with the source installation
 
-Bei einer Installation aus dem Git-Checkout (siehe `test_tuya_install.md`) reichen für neue
-Stände in der Regel `git pull` in beiden Repos und ein Neustart. Ausnahmen:
+With an installation from the Git checkout (see `test_tuya_install.md`), new versions usually
+only need `git pull` in both repos and a restart. Exceptions:
 
-- geänderte Abhängigkeiten in einem `package.json`: vorher `npm install --omit=dev` im
-  betroffenen Checkout, bei `node-red-contrib-tuya-devices` mit `--no-save ../tuya-devices`
-- geänderte Editor-Dateien (`.html`): nach dem Neustart den Editor im Browser neu laden
+- changed dependencies in a `package.json`: first run `npm install --omit=dev` in the
+  affected checkout, for `node-red-contrib-tuya-devices` with `--no-save ../tuya-devices`
+- changed editor files (`.html`): after the restart, reload the editor in the browser

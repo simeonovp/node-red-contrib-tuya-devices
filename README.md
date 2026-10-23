@@ -35,6 +35,12 @@ The device nodes can be easy connected to dashboard ui nodes (see example below)
 
 The Tuya protocol version of a local device (Advanced tab) can be left on `auto`: the first answer of the device verifies the version, it is stored in the local cache and shown as verified in the config dialog. To force a new detection, e.g. after a firmware update, select another version or `auto` and deploy, or send a message with topic `resetProtocolVersion` to a device node.
 
+## Device monitor
+The project can monitor its local devices and report when a device is degraded or has failed. The monitor is off by default; enable it in the Monitoring tab of the project node, or per device in the Monitoring tab of the local device node. Only devices used by a device node are monitored. A change of the health is sent on the output of the manager node with topic `deviceHealth`, including a diagnosis of the probable cause. Optional self-healing rebuilds the connection, searches the device in the network and can switch its power off and on by a power switch device; each action is reported with topic `deviceHealing`. For details see [Device monitor](./doc/monitoring.md).
+
+## Alarm hub: known faults
+For an alarm hub (category `mal`), an alarm whose message (DP 26) matches the fault pattern (default `batter`, e.g. a low battery of a sensor) is a known fault, not an intrusion. Each fault is kept as an open point in the hub context and reported as new only the first time. The device node sends `alarmEvent` (`kind` `intrusion` or `fault`, `sensor`, `message`, for faults also `first` and `count`), `openPoints` and, if an automatic acknowledge was not confirmed, `faultAckFailed`; the commands `getOpenPoints` and `resetOpenPoints` read and clear the open points. Known faults can be acknowledged at the hub automatically, an intrusion never. The settings are in the Extension tab of the local device node, shown only for devices with this extension.
+
 ## Examples
 - [Step by step with pictures](./doc/step_by_step.md)
 - [Tuya power device flow examle](./img/power_dev.json)

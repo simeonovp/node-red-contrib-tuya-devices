@@ -226,7 +226,8 @@
     <dt>No answer <span class="property-type">number</span></dt>
     <dd>
       Seconds without any answer (heartbeat answer or data) until a connected device is
-      reported as <i>degraded</i> (default 60). Only for devices that answer the heartbeat.
+      reported as <i>degraded</i> (default 30). Only for devices that answer the heartbeat. An
+      early warning: the library closes the connection of such a device after 60 s without answer.
     </dd>
   </dl>
   <p>
@@ -415,7 +416,7 @@
       monitorOfflineMinutes: { value: 5 },
       monitorDropsCount: { value: 5 },
       monitorDropsWindowMinutes: { value: 60 },
-      monitorHeartbeatSeconds: { value: 60 },
+      monitorHeartbeatSeconds: { value: 30 },
       monitorHealing: { value: false },
       monitorHealingMaxLevel: { value: '4' },
       monitorHealingMaxPerHour: { value: 10 },
