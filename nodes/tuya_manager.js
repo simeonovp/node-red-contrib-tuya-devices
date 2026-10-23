@@ -84,6 +84,7 @@ module.exports = function (RED) {
           case 'clearCache':
           case 'scannerDevices':
           case 'deviceStates':
+          case 'deviceAddresses':
             this.sendToFrontend({topic: msg.topic, payload: msg}) // notify frontend
             break
         }
@@ -111,8 +112,9 @@ module.exports = function (RED) {
       this.send({ topic: 'deviceEvent', scannerId, name, data })
     }
 
-    onDeviceState(deviceId, state) {
-      this.sendToFrontend({ topic: 'deviceState', payload: { deviceId, state } })
+    // address: { ip, current } of a configured device, for the IP column of the editor
+    onDeviceState(deviceId, state, address) {
+      this.sendToFrontend({ topic: 'deviceState', payload: { deviceId, state, address } })
     }
 
     // device monitor of the project (monitoring tab of the project node)

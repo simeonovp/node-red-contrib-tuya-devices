@@ -520,12 +520,27 @@
         for (const deviceId in this.cloudDevices || {}) renderDeviceState(deviceId)
       }
 
+      // IP column: the address of the connection (current), else the last known one in gray
+      const renderDeviceAddress = (deviceId) => {
+        const input = document.getElementById(`device-ip-${deviceId}`)
+        if (!input) return
+        const address = this.deviceAddresses?.[deviceId]
+        input.value = address?.ip || '–'
+        input.style.color = address?.current ? textColor : 'gray'
+        input.title = address?.current ? 'current address' : (address?.ip ? 'last known address' : 'address unknown')
+      }
+
+      const renderDeviceAddresses = () => {
+        for (const deviceId in this.cloudDevices || {}) renderDeviceAddress(deviceId)
+      }
+
       refreshTableHeaders('device-table', [
         { text: "Icon", width: "10%" },
         { text: "Cloud name", width: "30%", textAlign: "left" },
         { text: "Node name", textAlign: "left" },
         { text: "Space", width: "20%", textAlign: "left" },
         { text: "Cat.", width: "10%", textAlign: "left" },
+        { text: 'IP', width: '13%', textAlign: 'left' },
         { text: 'Action', width: '5%' },
       ])
 
@@ -576,6 +591,7 @@
           tr.appendChild(createInputCell(node.name, node.deviceId ? true : false, '100%', `node-name-${deviceId}`))
           tr.appendChild(createInputCell(room?.name || '', true))
           tr.appendChild(createInputCell(cloudDevice.category || '', true))
+          tr.appendChild(createInputCell('', true, '100%', `device-ip-${deviceId}`))
 
           const td6 = document.createElement('td')
           const button = document.createElement('button')
@@ -626,6 +642,7 @@
           else $(`#add-node-${deviceId}`).click(() => addDeviceNode(deviceId))
         }
         renderDeviceStates()
+        renderDeviceAddresses()
       }
 
       const refresh = (cleanup) => {
@@ -778,6 +795,7 @@
       refresh()
       tuya_devices.sendMsg(this, { topic: 'scannerDevices' }, (resp) => { })
       tuya_devices.sendMsg(this, { topic: 'deviceStates' }, (resp) => { })
+      tuya_devices.sendMsg(this, { topic: 'deviceAddresses' }, (resp) => { })
 
       $('#refresh-devices').click(() => {
         refresh(true)
@@ -851,8 +869,17 @@
               if (!this.deviceStates) this.deviceStates = {}
               this.deviceStates[deviceId] = payload.payload.state
               renderDeviceState(deviceId)
+              if (payload.payload.address) {
+                if (!this.deviceAddresses) this.deviceAddresses = {}
+                this.deviceAddresses[deviceId] = payload.payload.address
+                renderDeviceAddress(deviceId)
+              }
               break
             }
+            case 'deviceAddresses':
+              this.deviceAddresses = payload.payload?.payload || {}
+              renderDeviceAddresses()
+              break
             case 'userId': //???
               console.log('notification for userId')
               if (this.projectNode?.cloud) {
