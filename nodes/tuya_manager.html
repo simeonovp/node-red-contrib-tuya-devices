@@ -27,6 +27,9 @@
           <button type="button" id="backup-cache" class="red-ui-button">
             <i class="fa fa-download"></i> Save cache
           </button>
+          <button type="button" id="find-devices" class="red-ui-button" title="Finds the devices of the DB in the local network, result at the output of the manager">
+            <i class="fa fa-search"></i> Find devices
+          </button>
         </div>
         <table id="device-table" class="table table-hover" style="border:1px solid;border-collapse:collapse;width:100%">
           <thead></thead>
@@ -73,6 +76,15 @@
         <li><code>restartNodeRed</code>: restart the Node-RED service (requires a matching NOPASSWD sudoers rule for <code>systemctl restart nodered.service</code>).</li>
         <li><code>updateDeviceDataModel</code>: re-fetch/update all device data models from the cloud.</li>
         <li><code>translateDeviceModels</code>: (re-)translate device/schema texts.</li>
+        <li><code>findDevices</code>: device finder, also the button "Find devices" in the Devices
+          tab. Matches the devices of the DB with the local network: by announcement (device id),
+          by MAC (ARP table and DHCP leases of the host, after a ping of all addresses of the
+          "Device network" of the project) and by the local key at unknown addresses with an open
+          Tuya port. Runs only on request, about 1 min. Options in <code>msg.payload</code>:
+          <code>seconds</code> (listen time, default 30), <code>sweep</code>, <code>probeKeys</code>
+          (default true). Result at the output, see below. Nothing is changed in the DB or the
+          flows; enter a found MAC in the local device node. Learning a device by plugging it in:
+          command line <code>node node_modules/tuya-devices/bin/find-devices.js</code>.</li>
         <li>any other project method name (e.g. <code>updateDevices</code>, <code>backupCache</code>, <code>clearCache</code>, <code>scannerDevices</code>): forwarded as-is to the underlying project.</li>
       </ul>
     </dd>
@@ -88,6 +100,20 @@
 
     <dt>scannerId, name, data</dt>
     <dd>Details of the scanner event.</dd>
+
+    <dt>topic <span class="property-type">"findDevices"</span></dt>
+    <dd>Result of the device finder.</dd>
+
+    <dt>payload <span class="property-type">object</span></dt>
+    <dd>
+      <code>time</code>, <code>network</code>, <code>rows</code> (per device of the DB:
+      <code>id</code>, <code>name</code>, <code>category</code>, <code>ip</code>, <code>mac</code>,
+      <code>version</code>, <code>method</code>: <code>id</code>, <code>mac</code>,
+      <code>dhcp</code>, <code>key</code>, <code>gateway</code> or empty if not found, and
+      <code>hint</code>), <code>unknownMacs</code> (in the network, not matched) and
+      <code>unknownAnnouncements</code> (Tuya devices not in the DB). Contains IP and MAC
+      addresses, no local keys.
+    </dd>
 
     <dt>topic <span class="property-type">"deviceHealth"</span></dt>
     <dd>
@@ -805,6 +831,10 @@
       $('#update-home').click(() => { tuya_devices.sendMsg(this, { topic: 'updateHome' }, (resp) => { }) })
       $('#clear-cache').click(() => { tuya_devices.sendMsg(this, { topic: 'clearCache' }, (resp) => { }) })
       $('#backup-cache').click(() => { tuya_devices.sendMsg(this, { topic: 'backupCache' }, (resp) => { }) })
+      $('#find-devices').click(() => {
+        tuya_devices.sendMsg(this, { topic: 'findDevices' }, (resp) => { })
+        RED.notify('Device finder started (about 1 min), the result comes at the output of the manager', 'success')
+      })
       $('#scanner-devices').click(() => { tuya_devices.sendMsg(this, { topic: 'scannerDevices' }, (resp) => { }) })
 
       const downloadCache = () => {

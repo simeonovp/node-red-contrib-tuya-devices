@@ -15,6 +15,13 @@
         URL to project DBs storage. Used for initial project setup without cloud access.
       </div>
       <div class="form-row">
+        <label for="node-config-input-scannerNetwork"><i class="fa fa-sitemap"></i> Device network</label>
+        <input type="text" id="node-config-input-scannerNetwork" placeholder="all networks">
+        <br>
+        Optional. Network of the devices as address/prefix, e.g. <code>192.168.1.0/24</code> for
+        192.168.1.0 to 192.168.1.255 (see <code>ip -4 addr</code> on the host). Empty: all networks.
+      </div>
+      <div class="form-row">
         <label for="node-config-input-translate"><i class="fa fa-tag"></i> Auto translate</label>
         <input type="checkbox" id="node-config-input-translate">
       </div>
@@ -112,10 +119,6 @@
         <input type="checkbox" id="node-config-input-disableArp" style="display: inline-block; width: auto; vertical-align: top;">
         <label for="node-config-input-disableArp"><i class="fa fa-tag"></i> Disable ARP</label>
       </div>
-      <div class="form-row">
-        <label for="node-config-input-scannerNetwork"><i class="fa fa-sitemap"></i> Device network</label>
-        <input type="text" id="node-config-input-scannerNetwork" placeholder="all networks">
-      </div>
       <fieldset>
         <legend>Debug output in terminal</legend>
         <div class="form-row">
@@ -164,6 +167,14 @@
     <dd>
       URL to an existing project cache, used to bootstrap this project
       without cloud access.
+    </dd>
+
+    <dt>Device network <span class="property-type">string</span></dt>
+    <dd>
+      Optional network of the devices in CIDR notation, e.g. <code>192.168.1.0/24</code>. If set,
+      the scanner takes only announcements of devices in this network and sends the discovery
+      broadcast only on the local interface in it, useful if the host is connected to more than
+      one network. Empty (default): all networks of the host, as before.
     </dd>
 
     <dt>Auto translate <span class="property-type">boolean</span></dt>
@@ -277,14 +288,6 @@
     <dd>
       Disable ARP lookups otherwise used to resolve a device's IP address
       from its MAC address.
-    </dd>
-
-    <dt>Device network <span class="property-type">string</span></dt>
-    <dd>
-      Optional network of the devices in CIDR notation, e.g. <code>192.168.1.0/24</code>. If set,
-      the scanner takes only announcements of devices in this network and sends the discovery
-      broadcast only on the local interface in it, useful if the host is connected to more than
-      one network. Empty (default): all networks of the host, as before.
     </dd>
 
     <dt>Debug output in terminal <span class="property-type">boolean</span></dt>
