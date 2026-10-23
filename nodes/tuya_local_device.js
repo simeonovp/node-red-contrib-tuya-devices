@@ -85,5 +85,10 @@ module.exports = function (RED) {
     }
   }
 
+  // settings of the device extension of a category, for the editor (extension tab)
+  RED.httpAdmin.get('/tuyadevices/extension-settings/:category', RED.auth.needsPermission('flows.read'), (req, res) => {
+    res.json(Device.extensionSettings(req.params.category))
+  })
+
   RED.nodes.registerType('tuya-local-device', LocalDevice)
 }

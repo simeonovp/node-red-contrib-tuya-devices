@@ -19,9 +19,11 @@ const stub = () => {
   return proxy
 }
 
-// fake jQuery: one element per selector with a value, other methods chainable no-ops
+// fake jQuery: one element per selector with a value and properties (checked), other
+// methods chainable no-ops
 const createJQuery = () => {
   const values = {}
+  const props = {}
   const element = (selector) => {
     if (typeof selector !== 'string' || selector.startsWith('<')) return stub()
     const any = stub()
@@ -31,6 +33,13 @@ const createJQuery = () => {
           return (value) => {
             if (value === undefined) return values[selector]
             values[selector] = value
+            return any
+          }
+        }
+        if (prop === 'prop') {
+          return (name, value) => {
+            if (value === undefined) return props[selector + ':' + name]
+            props[selector + ':' + name] = value
             return any
           }
         }
@@ -78,7 +87,7 @@ const openEditor = (node) => {
     // parts of the dialog that need a real browser, the monitor part runs before
     if (!/monitor/i.test(err.stack || '')) console.log(`note: oneditprepare stopped early: ${err.message}`)
   }
-  return { $, definition }
+  return { $, definition, html }
 }
 
 // ---------------------------------------------------------------- tests
@@ -97,11 +106,41 @@ const test_stored_values_kept = () => {
   assert.strictEqual($('#node-config-input-monitorPriority').val(), 'critical')
 }
 
+// settings of device extensions are generic: no settings of a special extension in the node
+const test_extension_settings_generic = () => {
+  const { definition, html } = openEditor({ deviceId: 'dev1', name: 'device', project: 'p1' })
+  assert.deepStrictEqual(definition.defaults.extensionSettings, { value: {} }, 'one generic property')
+  assert.ok(!Object.keys(definition.defaults).some(key => key.startsWith('mal')), 'no mal properties')
+  assert.ok(!/Fault pattern|malFaultPattern|malAutoAckFaults/.test(html), 'no mal settings in the editor and help')
+}
+
+// the values of the settings shown for the extension are stored on save
+const test_extension_settings_saved = () => {
+  const node = { deviceId: 'dev1', name: 'device', project: 'p1', extensionSettings: { faultPattern: 'old' } }
+  const { $, definition } = openEditor(node)
+  node._extensionSettingsDescriptor = [
+    { key: 'faultPattern', type: 'string', default: 'batter' },
+    { key: 'autoAckFaults', type: 'boolean', default: false },
+    { key: 'delay', type: 'number', default: 3 },
+  ]
+  $('#tuya-ext-setting-faultPattern').val(' akku ')
+  $('#tuya-ext-setting-autoAckFaults').prop('checked', true)
+  $('#tuya-ext-setting-delay').val('')
+  definition.oneditsave.call(node)
+  assert.deepStrictEqual(node.extensionSettings, { faultPattern: 'akku', autoAckFaults: true }, 'empty values not stored')
+  // a device without extension keeps its stored settings
+  const other = { deviceId: 'dev2', name: 'other', project: 'p1', extensionSettings: { x: 1 } }
+  openEditor(other).definition.oneditsave.call(other)
+  assert.deepStrictEqual(other.extensionSettings, { x: 1 })
+}
+
 // ---------------------------------------------------------------- runner
 const runTests = async () => {
   const tests = {
     'monitor selection defaults': test_monitor_selection_defaults,
     'stored values kept': test_stored_values_kept,
+    'extension settings generic': test_extension_settings_generic,
+    'extension settings saved': test_extension_settings_saved,
   }
   let failed = 0
   for (const [name, test] of Object.entries(tests)) {

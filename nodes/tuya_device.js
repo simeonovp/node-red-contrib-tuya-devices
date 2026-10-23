@@ -176,6 +176,11 @@ module.exports = function (RED) {
     }
 
     onDeviceData(ev, payload, postEvents) {
+      // events of the device extension without device data
+      if (ev === 'extension-events') {
+        if (postEvents?.length) this.postMessages(postEvents)
+        return
+      }
       //this.log(`-- onDeviceData [event:${ev}]: ${JSON.stringify(payload?.data)}, dps:${this.dps}, isArray:${Array.isArray(this.dps)}, type:${typeof this.dps}`)
       const buildDpMsg = (dp, val) => {
         const msg = {}

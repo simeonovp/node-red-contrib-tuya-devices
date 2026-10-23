@@ -384,6 +384,13 @@
     </dd>
   </dl>
 
+  <h3>Extension tab</h3>
+  <p>
+    Shown only for devices with a device extension of the library (e.g. an alarm hub). It shows
+    the settings of the extension with their help and the sub-devices. Devices without an
+    extension have no such settings.
+  </p>
+
   <h3>Monitoring settings</h3>
   <p>
     Settings of the device monitor of the project (see the Monitoring tab of the project
@@ -478,6 +485,8 @@
       room: { value: '' },
       // Advanced tab
       deviceCategory: { value: '' },
+      // settings of the device extension (see DeviceExtension.Settings), empty for other devices
+      extensionSettings: { value: {} },
       tuyaVersion: { value: 'auto' },
       protocolResetAt: { value: 0 }, // set by the editor when the verified version is deselected
       retryTimeout: { value: 1000, required: true }, //validate: RED.validators.number() },
@@ -779,10 +788,55 @@
         return div
       }
 
+      // settings of the device extension of the category, described by the library
+      const loadExtensionSettings = (callback) => {
+        const category = $('#node-config-input-deviceCategory').val() || this.deviceCategory
+        if (!category) {
+          this._extensionSettingsDescriptor = []
+          return callback()
+        }
+        $.getJSON('tuyadevices/extension-settings/' + encodeURIComponent(category))
+          .done(settings => {
+            this._extensionSettingsDescriptor = Array.isArray(settings) ? settings : []
+          })
+          .fail(() => {
+            this._extensionSettingsDescriptor = []
+          })
+          .always(() => callback())
+      }
+
+      // input per setting, the values are taken in oneditsave
+      const renderExtensionSettings = (el, settings) => {
+        el.find('#tuya-extension-settings').remove()
+        if (!settings.length) return
+        const stored = this.extensionSettings || {}
+        const container = $('<div id="tuya-extension-settings"></div>')
+        for (const setting of settings) {
+          const id = 'tuya-ext-setting-' + setting.key
+          const row = $('<div class="form-row"></div>')
+          row.append($('<label></label>').attr('for', id).attr('title', setting.help || '').text(setting.label || setting.key))
+          let input
+          if (setting.type === 'boolean') {
+            input = $('<input type="checkbox">').attr('id', id)
+              .css({ display: 'inline-block', width: 'auto', 'vertical-align': 'top' })
+            input.prop('checked', (stored[setting.key] === true) || (stored[setting.key] === 'true'))
+          }
+          else {
+            input = $('<input>').attr('type', (setting.type === 'number') ? 'number' : 'text').attr('id', id)
+            input.attr('placeholder', String(setting.default ?? '')).val(stored[setting.key] ?? '')
+          }
+          row.append(input)
+          container.append(row)
+          if (setting.help) container.append($('<div class="form-tips"></div>').text(setting.help))
+        }
+        el.prepend(container)
+      }
+
       const updateExtension = (context) => {
         const tabId = 'tuya-extension-tab'
         const el = $('#tuya-extension-tab')
-        if (!context) {
+        const settings = this._extensionSettingsDescriptor || []
+        if (!context && !settings.length) {
           el.html('')
           if (tabExtensionExists) {
             tabs.removeTab(tabId)
@@ -790,11 +844,14 @@
           }
           return
         }
-        
+
         if (!tabExtensionExists) {
-          tabs.addTab({ id: tabId, label: 'SubDevices' })
+          tabs.addTab({ id: tabId, label: 'Extension' })
           tabExtensionExists = true
         }
+        renderExtensionSettings(el, settings)
+        if (!context) return
+
         const getContextTabs = () => {
           for (const item of Object.values(context)) {
             if (typeof item === 'object') {
@@ -865,15 +922,22 @@
           }
           updateDpsTable(properties)
         })
-        this.getContext(context => updateExtension(context))
+        // the settings also without context (sub-devices)
+        loadExtensionSettings(() => {
+          updateExtension(null)
+          this.getContext(context => updateExtension(context))
+        })
       }
+      $('#node-config-input-deviceCategory').on('change', () => {
+        loadExtensionSettings(() => updateExtension(this._context || null))
+      })
 
       const fillDeviceProperties = () => {
         this.getCloudDevice(cloudDevice => {
           if (!cloudDevice) return console.error('[local device] device not found')
           if (!this.deviceCategory) {
             this.deviceCategory = cloudDevice.category
-            $('#node-config-input-deviceCategory').val(this.deviceCategory)
+            $('#node-config-input-deviceCategory').val(this.deviceCategory).trigger('change')
           }
           // protocol version verified by an answer of the device, stored by the runtime
           this._verifiedVersion = cloudDevice.protocolVersion || ''
@@ -926,6 +990,24 @@
       if (this.deviceMac === undefined) this.deviceMac = ''
       this.deviceMac = normalizeMac(this.deviceMac)
       if (this.staticIp === undefined) this.staticIp = false
+      // settings of the device extension, only if the editor showed them; empty values are
+      // the defaults of the extension
+      const settings = this._extensionSettingsDescriptor
+      if (Array.isArray(settings) && settings.length) {
+        const values = {}
+        for (const setting of settings) {
+          const input = $('#tuya-ext-setting-' + setting.key)
+          if (setting.type === 'boolean') {
+            if (input.prop('checked')) values[setting.key] = true
+          }
+          else {
+            const value = String(input.val() ?? '').trim()
+            if (value !== '') values[setting.key] = (setting.type === 'number') ? Number(value) : value
+          }
+        }
+        this.extensionSettings = values
+      }
+      if (!this.extensionSettings) this.extensionSettings = {}
     }
   })
 </script>
