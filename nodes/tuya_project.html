@@ -112,6 +112,10 @@
         <input type="checkbox" id="node-config-input-disableArp" style="display: inline-block; width: auto; vertical-align: top;">
         <label for="node-config-input-disableArp"><i class="fa fa-tag"></i> Disable ARP</label>
       </div>
+      <div class="form-row">
+        <label for="node-config-input-scannerNetwork"><i class="fa fa-sitemap"></i> Device network</label>
+        <input type="text" id="node-config-input-scannerNetwork" placeholder="all networks">
+      </div>
       <fieldset>
         <legend>Debug output in terminal</legend>
         <div class="form-row">
@@ -275,6 +279,14 @@
       from its MAC address.
     </dd>
 
+    <dt>Device network <span class="property-type">string</span></dt>
+    <dd>
+      Optional network of the devices in CIDR notation, e.g. <code>192.168.1.0/24</code>. If set,
+      the scanner takes only announcements of devices in this network and sends the discovery
+      broadcast only on the local interface in it, useful if the host is connected to more than
+      one network. Empty (default): all networks of the host, as before.
+    </dd>
+
     <dt>Debug output in terminal <span class="property-type">boolean</span></dt>
     <dd>
       Enable verbose logging per subsystem: Project, Local cache, Cloud
@@ -423,6 +435,7 @@
       monitorHealingDryRun: { value: false },
       // MISC tab
       disableArp: { value: false },
+      scannerNetwork: { value: '' },
       dbgProject: { value: false },
       dbgCache: { value: false },
       dbgCloud: { value: false },
