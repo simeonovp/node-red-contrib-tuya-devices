@@ -747,45 +747,36 @@
         el.append(ilist.join(''))
       }
 
-      const updateExtTable = (context) => {
-        const data = Object.values(context).find(value => (typeof value === 'object') && (value !== null)) || {}
-        const labels = ['id'].concat(Object.keys(data))
-
-        const div = document.createElement('div')
-        div.className = 'form-row'
-
-        const table = document.createElement('table')
-        table.id = 'dps-table'
-        table.className = 'table table-hover'
-        table.style.border = '1px solid'
-        table.style.borderCollapse = 'collapse'
-        table.style.width = '100%'
-
-        const thead = document.createElement('thead')
-        const tr = document.createElement('tr')
-        tr.id = 'table-head'
-
-        const th = document.createElement('th')
-        //th.style.textAlign = 'left'
-        //th.style.width = '10%'
-
-        const input = document.createElement('input')
-        input.type = 'text'
-        input.value = 'Id' //??
-        input.style.width = '100%'
-        input.readOnly = true
-
-        th.appendChild(input)
-        tr.appendChild(th)
-        thead.appendChild(tr)
-
-        const tbody = document.createElement('tbody')
-
-        table.appendChild(thead)
-        table.appendChild(tbody)
-        div.appendChild(table)
-
-        return div
+      // read-only table of the sub-devices of a category of the extension context
+      const updateExtTable = (categoryContext) => {
+        const parts = categoryContext?.parts || {}
+        const columns = [
+          ['number', 'Nr.'],
+          ['name', 'Name'],
+          ['type', 'Type'],
+          ['zone', 'Zone'],
+          ['status', 'Status'],
+          ['battery', 'Battery'],
+          ['linking', 'Linking'],
+        ]
+        // 255: feature not supported by the device
+        const cell = (value) => (value === 255) ? '–' : String(value ?? '')
+        const table = $('<table class="table table-hover"></table>')
+          .css({ border: '1px solid', borderCollapse: 'collapse', width: '100%' })
+        const head = $('<tr></tr>')
+        for (const [, label] of columns) head.append($('<th></th>').css('text-align', 'left').text(label))
+        table.append($('<thead></thead>').append(head))
+        const body = $('<tbody></tbody>')
+        for (const [number, part] of Object.entries(parts)) {
+          const row = $('<tr></tr>')
+          for (const [key] of columns) row.append($('<td></td>').text(cell((key === 'number') ? number : part[key])))
+          body.append(row)
+        }
+        if (!Object.keys(parts).length) {
+          body.append($('<tr></tr>').append($('<td></td>').attr('colspan', columns.length).text('no sub-devices')))
+        }
+        table.append(body)
+        return $('<div class="form-row"></div>').append(table)[0]
       }
 
       // settings of the device extension of the category, described by the library
@@ -849,6 +840,8 @@
           tabs.addTab({ id: tabId, label: 'Extension' })
           tabExtensionExists = true
         }
+        // built again on every update (settings loaded, context loaded, category changed)
+        el.html('')
         renderExtensionSettings(el, settings)
         if (!context) return
 
@@ -891,13 +884,13 @@
               }
             })
             const range = contextTabs.code && ranges[contextTabs.code] || {}
+            // cleared once: clearing per category removed the tables of the categories before
+            const elExtView = $('#tuya-extension-view')
+            elExtView.html('')
             for (const tab of Object.keys(contextTabs.data)) {
               const label = range[tab] || ('Category' + tab)
               const tabId = 'tuya-extension-tab' + tab
               extTabs.addTab({ id: tabId, label})
-
-              const elExtView = $('#tuya-extension-view')
-              elExtView.html('')
 
               const tableDiv = document.createElement('div')
               tableDiv.id = tabId

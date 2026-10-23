@@ -22,7 +22,7 @@
     "preinstall": "node resources/backup_cache.js",
     "postinstall": "node resources/migrate_cache.js",
     "test": "standard",
-    "test:editor": "node test/tuya_device_editor_tests.js && node test/tuya_local_device_editor_tests.js"
+    "test:editor": "node test/tuya_device_editor_tests.js && node test/tuya_local_device_editor_tests.js && node test/tuya_local_device_dom_tests.js"
   },
   "node-red": {
     "nodes": {
@@ -40,6 +40,8 @@
     "tuya-devices": "^1.3.10"
   },
   "devDependencies": {
+    "jquery": "^3.7.1",
+    "jsdom": "^30.1.3",
     "standard": "*"
   },
   "files": [
