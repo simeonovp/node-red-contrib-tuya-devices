@@ -102,7 +102,8 @@ Gestuft, jede Stufe einzeln abschaltbar, höchste Stufe je Gerät einstellbar:
 Schutzregeln:
 
 - wachsende Wartezeit je Stufe, kein Wiederholen im festen Takt (keine Reset-Schleife);
-- Obergrenze für Heilaktionen pro Stunde im ganzen Projekt;
+- Obergrenze für Heilaktionen pro Stunde im Projekt, getrennt für kritische und übrige
+  Geräte; kritische zuerst;
 - keine Aktionen für gestoppte Geräte;
 - **Probelauf**: der Monitor meldet nur, was er tun würde.
 
@@ -148,9 +149,10 @@ Jeder Schritt einzeln, testgetrieben, einzeln committbar:
    Stunde, Probelauf; Geräte-Node: „Healing up to“; Manager-Ausgang `deviceHealing`).
    Ablauf: ab „gestört“ wechseln die Stufen 2 → 3 → 2 … bis zur höchsten Stufe; Wartezeit
    60 s, nach jeder Aktion verdoppelt, höchstens 60 min; zurückgesetzt, sobald das Gerät
-   nicht mehr gestört ist. Obergrenze 10 Aktionen pro Stunde im Projekt; das am längsten
-   nicht geheilte Gerät kommt zuerst; eine Sperre durch die Obergrenze wird einmal gemeldet
-   (`skipped`). Gateway: nur Stufe 3 (seine Clients teilen den Kanal); Gateway-Clients: keine
+   nicht mehr gestört ist. Obergrenze 10 Aktionen pro Stunde im Projekt, getrennt für
+   kritische und übrige Geräte (ergänzt 2026-10-23); kritische Geräte zuerst, danach das am
+   längsten nicht geheilte; eine Sperre durch die Obergrenze wird je Gerät einmal gemeldet
+   (`skipped`), im Log eine Sammelwarnung. Gateway: nur Stufe 3 (seine Clients teilen den Kanal); Gateway-Clients: keine
    Aktion; gestoppte Geräte: keine Aktion; pausierte Geräte werden geheilt (Stufe 2 hebt die
    Pause auf, Stufe 3 führt über den Rundruf zum Fortsetzen). Die aktive Suche sendet den
    Rundruf des Scanners sofort; darauf antworten v3.5-Geräte, ältere melden sich ohnehin

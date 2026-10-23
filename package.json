@@ -21,7 +21,8 @@
   "scripts": {
     "preinstall": "node resources/backup_cache.js",
     "postinstall": "node resources/migrate_cache.js",
-    "test": "standard"
+    "test": "standard",
+    "test:editor": "node test/tuya_device_editor_tests.js && node test/tuya_local_device_editor_tests.js"
   },
   "node-red": {
     "nodes": {

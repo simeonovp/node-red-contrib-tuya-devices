@@ -188,6 +188,9 @@
         </select>
       </div>
       <div id="tuya-monitor-power-rows">
+      <div class="form-row" id="tuya-monitor-power-hint" style="font-style:italic">
+        Active with <i>Healing up to</i> 4 (or <i>as project</i> and level 4 in the project)
+      </div>
       <div class="form-row">
         <label for="node-config-input-monitorPowerSwitch"><i class="fa fa-power-off"></i> Power switch</label>
         <select id="node-config-input-monitorPowerSwitch" style="width:200px">
@@ -416,9 +419,9 @@
     <dt>Power switch, Switch DP, Power off <span class="property-type">select, string, number</span></dt>
     <dd>
       Local device of the same project that supplies this device with power, its switch data
-      point (default <code>1</code>) and the time the power stays off (default 10 s). Shown only
-      if level 4 is possible: <i>Healing up to</i> is 4, or <i>as project</i> and the highest
-      level of the project is 4. The monitor
+      point (default <code>1</code>) and the time the power stays off (default 10 s). Editable
+      only if level 4 is possible: <i>Healing up to</i> is 4, or <i>as project</i> and the highest
+      level of the project is 4; otherwise they are shown disabled. The monitor
       switches only if the power switch is connected; switching on is tried 3 times. Do not
       use other power cycle automations for the same device at the same time.
     </dd>
@@ -493,8 +496,8 @@
       monitorHeartbeatSeconds: { value: '' },
       monitorHealingMaxLevel: { value: '' },
       monitorPowerSwitch: { value: '' },
-      monitorPowerDps: { value: '' },
-      monitorPowerOffSeconds: { value: '' },
+      monitorPowerDps: { value: '1' },
+      monitorPowerOffSeconds: { value: 10 },
       // MISC tab
       dbgDevice: { value: false },
       dbgDeviceExtension: { value: false },
@@ -644,13 +647,21 @@
       })
       powerSwitch.val(node.monitorPowerSwitch || '')
 
-      // power switch settings only where level 4 is possible: 'Healing up to' is 4, or
-      // 'as project' and the highest level of the project is 4 (default)
+      // nodes created before the Monitoring tab or the power switch settings: show the defaults
+      if (!this.monitorMode) $('#node-config-input-monitorMode').val('inherit')
+      if (!this.monitorPriority) $('#node-config-input-monitorPriority').val('normal')
+      if (!this.monitorPowerDps) $('#node-config-input-monitorPowerDps').val('1')
+      if (!this.monitorPowerOffSeconds) $('#node-config-input-monitorPowerOffSeconds').val(10)
+
+      // power switch settings always shown, editable only where level 4 is possible:
+      // 'Healing up to' is 4, or 'as project' and the highest level of the project is 4 (default)
       const updatePowerRows = () => {
         const level = $('#node-config-input-monitorHealingMaxLevel').val()
         const project = RED.nodes.node($('#node-config-input-project').val())
         const projectLevel = String(project?.monitorHealingMaxLevel || '4')
-        $('#tuya-monitor-power-rows').toggle((level === '4') || (!level && (projectLevel === '4')))
+        const active = (level === '4') || (!level && (projectLevel === '4'))
+        $('#tuya-monitor-power-rows').find('input, select').prop('disabled', !active)
+        $('#tuya-monitor-power-hint').toggle(!active)
       }
       $('#node-config-input-monitorHealingMaxLevel').on('change', updatePowerRows)
       $('#node-config-input-project').on('change', updatePowerRows)

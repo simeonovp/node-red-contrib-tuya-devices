@@ -249,7 +249,11 @@
     <dt>Highest level <span class="property-type">select</span></dt>
     <dd>Highest level the monitor uses (default 4; level 4 only for devices with a power switch).</dd>
     <dt>Actions per hour <span class="property-type">number</span></dt>
-    <dd>Limit for the whole project (default 10).</dd>
+    <dd>
+      Limit for the project (default 10), separately for devices with priority
+      <code>critical</code> and for the others, so other devices do not lock out a critical
+      one; critical devices are healed first.
+    </dd>
     <dt>Dry run <span class="property-type">boolean</span></dt>
     <dd>Reports what the monitor would do, without doing it.</dd>
   </dl>
@@ -465,6 +469,13 @@
       tabs.addTab({ id: 'tuya-project-mqtt-tab', label: 'Mqtt' })
       tabs.addTab({ id: 'tuya-project-monitor-tab', label: 'Monitoring' })
       tabs.addTab({ id: 'tuya-project-misc-tab', label: 'MISC' })
+
+      // nodes created before the monitor have no monitor values: show the defaults
+      for (const [key, def] of Object.entries(this._def.defaults)) {
+        if (!key.startsWith('monitor') || (typeof def.value === 'boolean')) continue
+        const input = $('#node-config-input-' + key)
+        if ((input.val() === null) || (input.val() === '')) input.val(def.value)
+      }
       $('#tuya-explorer-url').attr('href', `/resources/node-red-contrib-tuya-devices/${this.name || 'index'}.html`)
 
       const refreshTranslate = () => {
