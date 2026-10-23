@@ -36,6 +36,12 @@ auffiel. Die Diagnose zeigte später Muster wie ausbleibende Herzschlag-Antworte
 
 ## 1. Überwachung
 
+Überwacht werden nur aktive Geräte: solche, die ein Device-Node benutzt (bei einem Gateway
+auch über seine Clients). Ein unbenutzter Konfig-Node baut keine Verbindung auf und wird
+unabhängig von der Einstellung nicht überwacht (ergänzt 2026-10-23). Gestoppte Geräte
+ebenso nicht; ein benutztes, aber absichtlich ausgeschaltetes Gerät ist nicht von einem
+Ausfall zu unterscheiden – dafür „Monitor: off“ oder „Stopped“ am Gerät.
+
 Gesundheitszustand je Gerät: **ok**, **auffällig** (läuft, aber Warnzeichen),
 **gestört** (funktioniert nicht), **gestoppt** (vom Benutzer abgeschaltet, nicht überwacht).
 

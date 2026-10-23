@@ -209,7 +209,9 @@
   <p>
     The device monitor checks the configured devices of the project and reports a
     change of a device health on the output of the <code>tuya-manager</code> node
-    (<code>msg.topic = 'deviceHealth'</code>). Off by default.
+    (<code>msg.topic = 'deviceHealth'</code>). Off by default. Only devices used by a device
+    node are monitored: an unused local device node does not connect. Stopped devices are not
+    monitored either.
   </p>
   <dl class="message-properties">
     <dt>Monitor the devices <span class="property-type">boolean</span></dt>
