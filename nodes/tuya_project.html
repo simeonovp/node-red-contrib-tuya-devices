@@ -333,6 +333,32 @@
       for (const table of Object.keys(tuya_devices.cacheTables)) tuya_devices.loadCacheTable(project, table)
     },
     deviceNodeId: (deviceId) => ('tyd_' + deviceId),
+    // text of the popup of the device finder: devices found in the network that are not in
+    // the device table of the manager (inTable(deviceId)), and the devices only in the DHCP
+    // leases apart; returns { count, text }
+    findDevicesReport: (payload, inTable = () => false) => {
+      const lines = []
+      const found = (payload?.notShown || []).filter(d => !inTable(d.id))
+      const methods = { id: 'announcement', mac: 'MAC', key: 'local key' }
+      for (const d of found) {
+        const local = (d.local === true) ? 'yes' : (d.local === false) ? 'no (only app and cloud)' : '?'
+        lines.push(`${d.name || d.id} (${d.category || '?'})  IP ${d.ip || '-'}  MAC ${d.mac || '-'}${d.version ? '  v' + d.version : ''}  found by ${methods[d.method] || d.method}  local: ${local}  ${d.reason || ''}`.trim())
+      }
+      for (const u of payload?.unknownTuya || []) {
+        lines.push(`Tuya device not in the DB (no key fits)  IP ${u.ip}  MAC ${u.mac || '-'}`)
+      }
+      for (const a of payload?.unknownAnnouncements || []) {
+        lines.push(`Announcement of a device not in the DB  id ${a.gwId}  IP ${a.ip || '-'}${a.version ? '  v' + a.version : ''}`)
+      }
+      const count = lines.length
+      lines.unshift(count ? `${count} new device${(count > 1) ? 's' : ''} found (not in the device table):` : 'No new devices found')
+      const before = payload?.seenBefore || []
+      if (before.length) {
+        lines.push('', 'Had an address before (DHCP), not reachable now:')
+        for (const d of before) lines.push(`${d.name || d.id} (${d.category || '?'})  last IP ${d.ip || '-'}  MAC ${d.mac || '-'}`)
+      }
+      return { count, text: lines.join('\n') }
+    },
     modelNodeId: (modelId) => ('tym_' + modelId),
     addTuyaModel: (obj) => {
       if (!obj.modelId) return

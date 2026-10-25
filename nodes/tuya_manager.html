@@ -115,8 +115,11 @@
       app and cloud; <code>reason</code>, <code>hint</code>), <code>unknownTuya</code>
       (addresses with an open Tuya port where no key of the DB fits: a device of another
       account) and <code>unknownAnnouncements</code> (announcements of devices not in the DB).
-      Connected devices and devices not found (switched off) are left out. Contains IP and MAC
-      addresses, no local keys.
+      Connected devices and devices not found (switched off) are left out. <code>seenBefore</code>:
+      devices only in the DHCP leases of the host, they had an address before and do not answer
+      now. Contains IP and MAC addresses, no local keys. With the button "Find devices" the
+      editor shows the devices that are not in the device table in a popup (with "Copy"), or
+      "No new devices found", while the manager dialog is open.
     </dd>
 
     <dt>topic <span class="property-type">"deviceHealth"</span></dt>
@@ -837,7 +840,7 @@
       $('#backup-cache').click(() => { tuya_devices.sendMsg(this, { topic: 'backupCache' }, (resp) => { }) })
       $('#find-devices').click(() => {
         tuya_devices.sendMsg(this, { topic: 'findDevices' }, (resp) => { })
-        RED.notify('Device finder started (about 1 min), the result comes at the output of the manager', 'success')
+        RED.notify('Device finder started (about 1 min): keep this dialog open for the result, it also comes at the output of the manager', 'success')
       })
       $('#scanner-devices').click(() => { tuya_devices.sendMsg(this, { topic: 'scannerDevices' }, (resp) => { }) })
 
@@ -914,6 +917,29 @@
               this.deviceAddresses = payload.payload?.payload || {}
               renderDeviceAddresses()
               break
+            case 'findDevices': {
+              // popup until acknowledged, the text can be selected and copied
+              const inTable = (deviceId) => !!document.getElementById(`node-name-${deviceId}`)
+              const report = tuya_devices.findDevicesReport(payload.payload?.payload, inTable)
+              const content = $('<div></div>')
+              content.append($('<p></p>').text('Find devices'))
+              content.append($('<pre></pre>').css({ 'white-space': 'pre-wrap', 'user-select': 'text', 'max-height': '50vh', overflow: 'auto' }).text(report.text))
+              const notification = RED.notify(content, {
+                type: report.count ? 'warning' : 'success',
+                fixed: true,
+                modal: true,
+                buttons: [
+                  {
+                    text: 'Copy',
+                    click: () => navigator.clipboard?.writeText(report.text)
+                      .then(() => RED.notify('Copied', { type: 'success', timeout: 1500 }))
+                      .catch(() => RED.notify('Copy failed, select the text and press Ctrl+C', 'error')),
+                  },
+                  { text: 'OK', class: 'primary', click: () => notification.close() },
+                ],
+              })
+              break
+            }
             case 'userId': //???
               console.log('notification for userId')
               if (this.projectNode?.cloud) {

@@ -85,6 +85,7 @@ module.exports = function (RED) {
           case 'scannerDevices':
           case 'deviceStates':
           case 'deviceAddresses':
+          case 'findDevices':
             this.sendToFrontend({topic: msg.topic, payload: msg}) // notify frontend
             break
         }
