@@ -100,11 +100,36 @@ const test_cancel_keeps_node = () => {
   assert.deepStrictEqual(node.outputLabelList, ['data'], 'labels unchanged after cancel')
 }
 
+// the labels of the outputs follow a changed selection of the data points after saving
+const test_output_labels_after_save = () => {
+  const { definition } = loadDefinition(createDevice())
+  const labelList = ['data', '(1) switch_1', '(9) countdown_1', '(38) relay_status']
+  const node = { device: 'cfg1', dps: '', outputs: 2, outputsMode: 3, outputLabelList: labelList, outputSelList: [true, false, true, false], _def: definition }
+  assert.strictEqual(definition.outputLabels.call(node, 1), '(9) countdown_1', 'label of the selected data point')
+  // the user selects relay_status instead of countdown_1 and saves
+  node.outputSelList = [true, false, false, true]
+  definition.oneditsave.call(node)
+  assert.strictEqual(definition.outputLabels.call(node, 1), '(38) relay_status', 'label follows the new selection')
+}
+
+// saved with multi outputs: no single data point stays stored
+const test_save_multi_outputs_clears_dp = () => {
+  const { definition } = loadDefinition(createDevice())
+  const node = { device: 'cfg1', dps: '19', outputs: 2, outputsMode: 3, outputLabelList: ['data', '(19) cur_power'], outputSelList: [true, true], _def: definition }
+  definition.oneditsave.call(node)
+  assert.strictEqual(node.dps, '', 'single data point removed')
+  const single = { device: 'cfg1', dps: '19', outputs: 1, outputsMode: 1, outputLabelList: ['data'], _def: definition }
+  definition.oneditsave.call(single)
+  assert.strictEqual(single.dps, '19', 'kept with single output')
+}
+
 // ---------------------------------------------------------------- runner
 const runTests = async () => {
   const tests = {
     'node without mode keeps outputs': test_node_without_mode_keeps_outputs,
     'cancel keeps node': test_cancel_keeps_node,
+    'output labels after save': test_output_labels_after_save,
+    'save multi outputs clears dp': test_save_multi_outputs_clears_dp,
   }
   let failed = 0
   for (const [name, test] of Object.entries(tests)) {

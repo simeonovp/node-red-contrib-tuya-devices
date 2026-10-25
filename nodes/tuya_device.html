@@ -328,6 +328,10 @@
     },
     oneditsave: function() {
       delete this._editBackup
+      // the labels are cached in outputLabels(): computed again for the saved selection
+      delete this._outputLabels
+      // multi outputs: the data points are selected per output, no single data point
+      if (Number(this.outputsMode) === 3) this.dps = ''
       if (this.multiDps === undefined) this.multiDps = false
       if (this.outputsMode === undefined) this.outputsMode = (this.outputs < 3) ? this.outputs : 3
       if (this.outputSelList === undefined) this.outputSelList = Array.from({ length: this.outputLabelList.length }, () => true)

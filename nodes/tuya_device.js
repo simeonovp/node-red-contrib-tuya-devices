@@ -203,7 +203,9 @@ module.exports = function (RED) {
       const sendDpMsg = (dp, val) => this.send(buildDpMsg(dp, val))
       
       const dps = payload?.data?.dps || payload?.dps
-      if (this.dps && !Array.isArray(this.dps)) {
+      // with multi outputs the selection of the outputs applies, not a single data point
+      // stored from a former single output mode
+      if (this.dps && !Array.isArray(this.dps) && (this.outputsMode !== 3)) {
         if (!dps || (dps[this.dps] === undefined)) return
         sendDpMsg(this.dps, dps[this.dps])
         if (postEvents && postEvents.length) this.postMessages(postEvents)
