@@ -208,6 +208,10 @@
       </div>
     </div>
     <div id="tuya-project-misc-tab" style="display:none">
+      <div class="form-row">
+        <input type="checkbox" id="node-config-input-dbgDiagnostics" style="display: inline-block; width: auto; vertical-align: top;">
+        <label for="node-config-input-dbgDiagnostics" style="width: auto">Connection diagnostics</label>
+      </div>
       <fieldset>
         <legend>Debug output in terminal</legend>
         <div class="form-row">
@@ -436,6 +440,13 @@
 
   <h3>Debug options</h3>
   <dl class="message-properties">
+    <dt>Connection diagnostics</dt>
+    <dd>
+      Writes a status snapshot of the connection (state, last answers, errors, address,
+      protocol) to the debug window and the log when the connection is lost and after 5 min of
+      outage, without the other debug output. Off by default.
+    </dd>
+
     <dt>Device</dt>
     <dd>Enable debug output for device logic.</dd>
 
@@ -509,6 +520,7 @@
       monitorPowerOffSeconds: { value: 10 },
       // MISC tab
       dbgDevice: { value: false },
+      dbgDiagnostics: { value: false },
       dbgDeviceExtension: { value: false },
       dbgTuyaDevice: { value: false },
     },

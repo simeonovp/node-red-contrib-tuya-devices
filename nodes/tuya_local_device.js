@@ -9,6 +9,7 @@ module.exports = function (RED) {
 
       config.debug = {}
       if (config.dbgDevice) config.debug.Device = true
+      if (config.dbgDiagnostics) config.debug.Diagnostics = true
       if (config.dbgDeviceExtension) config.debug.DeviceExtension = true
       if (config.dbgTuyaDevice) config.debug.TuyaDevice = true
 

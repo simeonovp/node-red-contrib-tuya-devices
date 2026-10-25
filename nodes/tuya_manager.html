@@ -77,7 +77,7 @@
         <li><code>updateDeviceDataModel</code>: re-fetch/update all device data models from the cloud.</li>
         <li><code>translateDeviceModels</code>: (re-)translate device/schema texts.</li>
         <li><code>findDevices</code>: device finder, also the button "Find devices" in the Devices
-          tab. Matches the devices of the DB with the local network: by announcement (device id),
+          tab. Lists the devices that are switched on but not shown in Node-RED. Finds them by announcement (device id),
           by MAC (ARP table and DHCP leases of the host, after a ping of all addresses of the
           "Device network" of the project) and by the local key at unknown addresses with an open
           Tuya port. Runs only on request, about 1 min. Options in <code>msg.payload</code>:
@@ -102,16 +102,20 @@
     <dd>Details of the scanner event.</dd>
 
     <dt>topic <span class="property-type">"findDevices"</span></dt>
-    <dd>Result of the device finder.</dd>
+    <dd>Result of the device finder: devices that are switched on but not shown in Node-RED.</dd>
 
     <dt>payload <span class="property-type">object</span></dt>
     <dd>
-      <code>time</code>, <code>network</code>, <code>rows</code> (per device of the DB:
-      <code>id</code>, <code>name</code>, <code>category</code>, <code>ip</code>, <code>mac</code>,
-      <code>version</code>, <code>method</code>: <code>id</code>, <code>mac</code>,
-      <code>dhcp</code>, <code>key</code>, <code>gateway</code> or empty if not found, and
-      <code>hint</code>), <code>unknownMacs</code> (in the network, not matched) and
-      <code>unknownAnnouncements</code> (Tuya devices not in the DB). Contains IP and MAC
+      <code>time</code>, <code>network</code>, <code>notShown</code> (found in the network, but
+      without device node or with a device node that is not connected: <code>id</code>,
+      <code>name</code>, <code>category</code>, <code>ip</code>, <code>mac</code>,
+      <code>version</code>, <code>method</code> <code>id</code> | <code>mac</code> |
+      <code>dhcp</code> | <code>key</code>, <code>local</code>: answers on the Tuya port, so it can
+      be added with a device node and used locally; <code>false</code> e.g. for most cameras, only
+      app and cloud; <code>reason</code>, <code>hint</code>), <code>unknownTuya</code>
+      (addresses with an open Tuya port where no key of the DB fits: a device of another
+      account) and <code>unknownAnnouncements</code> (announcements of devices not in the DB).
+      Connected devices and devices not found (switched off) are left out. Contains IP and MAC
       addresses, no local keys.
     </dd>
 
